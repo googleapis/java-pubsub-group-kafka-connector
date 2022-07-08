@@ -13,7 +13,6 @@ branchProtectionRules:
       - lint
       - units (8)
       - units (11)
-      - 'Kokoro - Test: Integration'
       - cla/google
       - OwlBot Post Processor
   - pattern: java7
@@ -27,7 +26,6 @@ branchProtectionRules:
       - lint
       - units (8)
       - units (11)
-      - 'Kokoro - Test: Integration'
       - cla/google
 permissionRules:
   - team: yoshi-admins

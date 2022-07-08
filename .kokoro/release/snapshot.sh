@@ -1,4 +1,5 @@
-# Copyright 2022 Google LLC
+#!/bin/bash
+# Copyright 2019 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,20 +12,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# Github action job to test core java library features on
-# downstream client libraries before they are released.
-on:
-  pull_request:
-name: samples
-jobs:
-  checkstyle:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3
-        with:
-          distribution: zulu
-          java-version: 8
-      - name: Run checkstyle
-        run: mvn -P lint --quiet --batch-mode checkstyle:check
-        working-directory: samples/snippets
+
+set -eo pipefail
+
+source $(dirname "$0")/common.sh
+MAVEN_SETTINGS_FILE=$(realpath $(dirname "$0")/../../)/settings.xml
+pushd $(dirname "$0")/../../
+
+# ensure we're trying to push a snapshot (no-result returns non-zero exit code)
+grep SNAPSHOT versions.txt
+
+setup_environment_secrets
+create_settings_xml_file "settings.xml"
+
+mvn clean deploy -B \
+  --settings ${MAVEN_SETTINGS_FILE} \
+  -DperformRelease=true \
+  -Dgpg.executable=gpg \
+  -Dgpg.passphrase=${GPG_PASSPHRASE} \
+  -Dgpg.homedir=${GPG_HOMEDIR}
