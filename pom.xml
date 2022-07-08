@@ -33,7 +33,7 @@
     <dependency>
       <groupId>com.google.apis</groupId>
       <artifactId>google-api-services-pubsub</artifactId>
-      <version>v1-rev452-1.25.0</version>
+      <version>v1-rev20220524-1.32.1</version>
       <exclusions>
         <exclusion>
           <groupId>com.google.guava</groupId>
