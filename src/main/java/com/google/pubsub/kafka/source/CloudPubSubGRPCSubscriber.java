@@ -49,8 +49,11 @@ public class CloudPubSubGRPCSubscriber implements CloudPubSubSubscriber {
   private final ProjectSubscriptionName subscriptionName;
   private final int cpsMaxBatchSize;
 
-  CloudPubSubGRPCSubscriber(CredentialsProvider gcpCredentialsProvider, String endpoint,
-      ProjectSubscriptionName subscriptionName, int cpsMaxBatchSize) {
+  CloudPubSubGRPCSubscriber(
+      CredentialsProvider gcpCredentialsProvider,
+      String endpoint,
+      ProjectSubscriptionName subscriptionName,
+      int cpsMaxBatchSize) {
     this.gcpCredentialsProvider = gcpCredentialsProvider;
     this.endpoint = endpoint;
     this.subscriptionName = subscriptionName;
@@ -63,9 +66,15 @@ public class CloudPubSubGRPCSubscriber implements CloudPubSubSubscriber {
     if (System.currentTimeMillis() > nextSubscriberResetTime) {
       makeSubscriber();
     }
-    return ApiFutures.transform(subscriber.pullCallable().futureCall(
-        PullRequest.newBuilder().setSubscription(subscriptionName.toString())
-            .setMaxMessages(cpsMaxBatchSize).build()), PullResponse::getReceivedMessagesList,
+    return ApiFutures.transform(
+        subscriber
+            .pullCallable()
+            .futureCall(
+                PullRequest.newBuilder()
+                    .setSubscription(subscriptionName.toString())
+                    .setMaxMessages(cpsMaxBatchSize)
+                    .build()),
+        PullResponse::getReceivedMessagesList,
         MoreExecutors.directExecutor());
   }
 
@@ -74,9 +83,13 @@ public class CloudPubSubGRPCSubscriber implements CloudPubSubSubscriber {
     if (System.currentTimeMillis() > nextSubscriberResetTime) {
       makeSubscriber();
     }
-    return subscriber.acknowledgeCallable().futureCall(
-        AcknowledgeRequest.newBuilder().setSubscription(subscriptionName.toString())
-            .addAllAckIds(ackIds).build());
+    return subscriber
+        .acknowledgeCallable()
+        .futureCall(
+            AcknowledgeRequest.newBuilder()
+                .setSubscription(subscriptionName.toString())
+                .addAllAckIds(ackIds)
+                .build());
   }
 
   @Override
@@ -102,7 +115,8 @@ public class CloudPubSubGRPCSubscriber implements CloudPubSubSubscriber {
       subscriber = GrpcSubscriberStub.create(subscriberStubSettings);
       // We change the subscriber every 25 - 35 minutes in order to avoid GOAWAY errors.
       nextSubscriberResetTime =
-          System.currentTimeMillis() + ThreadLocalRandom.current().nextInt(10 * 60 * 1000)
+          System.currentTimeMillis()
+              + ThreadLocalRandom.current().nextInt(10 * 60 * 1000)
               + 25 * 60 * 1000;
     } catch (IOException e) {
       throw new RuntimeException("Could not create subscriber stub; no subscribing can occur.", e);

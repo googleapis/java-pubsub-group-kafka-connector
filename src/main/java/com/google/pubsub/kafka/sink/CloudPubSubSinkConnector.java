@@ -167,18 +167,18 @@ public class CloudPubSubSinkConnector extends SinkConnector {
             Importance.MEDIUM,
             "The maximum number of bytes that can be received for the messages on a topic "
                 + "partition before publishing the messages to Cloud Pub/Sub.")
-        .define(MAX_OUTSTANDING_REQUEST_BYTES,
+        .define(
+            MAX_OUTSTANDING_REQUEST_BYTES,
             Type.LONG,
             DEFAULT_MAX_OUTSTANDING_REQUEST_BYTES,
             Importance.MEDIUM,
-            "The maximum outstanding bytes from incomplete requests before the task blocks."
-        )
-        .define(MAX_OUTSTANDING_MESSAGES,
+            "The maximum outstanding bytes from incomplete requests before the task blocks.")
+        .define(
+            MAX_OUTSTANDING_MESSAGES,
             Type.LONG,
             DEFAULT_MAX_OUTSTANDING_MESSAGES,
             Importance.MEDIUM,
-            "The maximum outstanding incomplete messages before the task blocks."
-        )
+            "The maximum outstanding incomplete messages before the task blocks.")
         .define(
             MAX_DELAY_THRESHOLD_MS,
             Type.INT,
@@ -218,35 +218,40 @@ public class CloudPubSubSinkConnector extends SinkConnector {
             "When true, include the Kafka topic, partition, offset, and timestamp as message "
                 + "attributes when a message is published to Cloud Pub/Sub.")
         .define(
-           PUBLISH_KAFKA_HEADERS,
-           Type.BOOLEAN,
-           false,
-           Importance.MEDIUM,
-           "When true, include any headers as attributes when a message is published to Cloud Pub/Sub.")
-        .define(CPS_MESSAGE_BODY_NAME,
+            PUBLISH_KAFKA_HEADERS,
+            Type.BOOLEAN,
+            false,
+            Importance.MEDIUM,
+            "When true, include any headers as attributes when a message is published to Cloud Pub/Sub.")
+        .define(
+            CPS_MESSAGE_BODY_NAME,
             Type.STRING,
             DEFAULT_MESSAGE_BODY_NAME,
             Importance.MEDIUM,
             "When using a struct or map value schema, this field or key name indicates that the "
                 + "corresponding value will go into the Pub/Sub message body.")
-        .define(ConnectorUtils.GCP_CREDENTIALS_FILE_PATH_CONFIG,
+        .define(
+            ConnectorUtils.GCP_CREDENTIALS_FILE_PATH_CONFIG,
             Type.STRING,
             null,
             Importance.HIGH,
             "The path to the GCP credentials file")
-        .define(ConnectorUtils.GCP_CREDENTIALS_JSON_CONFIG,
+        .define(
+            ConnectorUtils.GCP_CREDENTIALS_JSON_CONFIG,
             Type.STRING,
             null,
             Importance.HIGH,
             "GCP JSON credentials")
-        .define(ORDERING_KEY_SOURCE,
+        .define(
+            ORDERING_KEY_SOURCE,
             Type.STRING,
             DEFAULT_ORDERING_KEY_SOURCE,
             new OrderingKeySource.Validator(),
             Importance.MEDIUM,
             "What to use to populate the Pub/Sub message ordering key. Possible values are "
                 + "\"none\", \"key\", or \"partition\".")
-        .define(ConnectorUtils.CPS_ENDPOINT,
+        .define(
+            ConnectorUtils.CPS_ENDPOINT,
             Type.STRING,
             ConnectorUtils.CPS_DEFAULT_ENDPOINT,
             Importance.LOW,

@@ -48,8 +48,7 @@ public class PubSubLiteSourceConnector extends SourceConnector {
   }
 
   @Override
-  public void stop() {
-  }
+  public void stop() {}
 
   @Override
   public ConfigDef config() {

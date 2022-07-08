@@ -21,10 +21,16 @@ import org.junit.runners.JUnit4;
 public class SchemasTest {
 
   private static List<Schema> primitiveSchemas() {
-    return ImmutableList
-        .of(Schema.INT8_SCHEMA, Schema.INT16_SCHEMA, Schema.INT32_SCHEMA, Schema.INT64_SCHEMA,
-            Schema.FLOAT32_SCHEMA, Schema.FLOAT64_SCHEMA, Schema.BOOLEAN_SCHEMA,
-            Schema.STRING_SCHEMA, Schema.BYTES_SCHEMA);
+    return ImmutableList.of(
+        Schema.INT8_SCHEMA,
+        Schema.INT16_SCHEMA,
+        Schema.INT32_SCHEMA,
+        Schema.INT64_SCHEMA,
+        Schema.FLOAT32_SCHEMA,
+        Schema.FLOAT64_SCHEMA,
+        Schema.BOOLEAN_SCHEMA,
+        Schema.STRING_SCHEMA,
+        Schema.BYTES_SCHEMA);
   }
 
   private static Object example(Schema.Type t) {
@@ -86,20 +92,26 @@ public class SchemasTest {
     assertThat(Schemas.encodeToBytes(null, "abc")).isEqualTo(ByteString.copyFromUtf8("abc"));
     assertThat(Schemas.encodeToBytes(Schema.STRING_SCHEMA, "def"))
         .isEqualTo(ByteString.copyFromUtf8("def"));
-    assertThat(Schemas
-        .encodeToBytes(Schema.BYTES_SCHEMA, ByteString.copyFromUtf8("ghi").asReadOnlyByteBuffer()))
+    assertThat(
+            Schemas.encodeToBytes(
+                Schema.BYTES_SCHEMA, ByteString.copyFromUtf8("ghi").asReadOnlyByteBuffer()))
         .isEqualTo(ByteString.copyFromUtf8("ghi"));
     assertThat(
-        Schemas.encodeToBytes(Schema.BYTES_SCHEMA, ByteString.copyFromUtf8("jkl").toByteArray()))
+            Schemas.encodeToBytes(
+                Schema.BYTES_SCHEMA, ByteString.copyFromUtf8("jkl").toByteArray()))
         .isEqualTo(ByteString.copyFromUtf8("jkl"));
   }
 
   @Test
   public void testConvertArray() {
     for (Schema schema : primitiveSchemas()) {
-      Value expected = Value.newBuilder().setListValue(
-          ListValue.newBuilder().addValues(exampleValue(schema.type()))
-              .addValues(exampleValue(schema.type()))).build();
+      Value expected =
+          Value.newBuilder()
+              .setListValue(
+                  ListValue.newBuilder()
+                      .addValues(exampleValue(schema.type()))
+                      .addValues(exampleValue(schema.type())))
+              .build();
       List<Object> objects = ImmutableList.of(example(schema.type()), example(schema.type()));
       assertThat(Schemas.encodeToBytes(SchemaBuilder.array(schema).build(), objects))
           .isEqualTo(expected.toByteString());
@@ -108,18 +120,19 @@ public class SchemasTest {
 
   @Test
   public void testConvertStruct() {
-    SchemaBuilder schemaBuilder = SchemaBuilder.struct()
-        .field("byte", Schema.INT8_SCHEMA)
-        .field("short", Schema.INT16_SCHEMA)
-        .field("int", Schema.INT32_SCHEMA)
-        .field("long", Schema.INT64_SCHEMA)
-        .field("float", Schema.FLOAT32_SCHEMA)
-        .field("double", Schema.FLOAT64_SCHEMA)
-        .field("bool", Schema.BOOLEAN_SCHEMA)
-        .field("bytes", Schema.BYTES_SCHEMA)
-        .field("string", Schema.STRING_SCHEMA);
-    org.apache.kafka.connect.data.Struct kafkaStruct = new org.apache.kafka.connect.data.Struct(
-        schemaBuilder.build());
+    SchemaBuilder schemaBuilder =
+        SchemaBuilder.struct()
+            .field("byte", Schema.INT8_SCHEMA)
+            .field("short", Schema.INT16_SCHEMA)
+            .field("int", Schema.INT32_SCHEMA)
+            .field("long", Schema.INT64_SCHEMA)
+            .field("float", Schema.FLOAT32_SCHEMA)
+            .field("double", Schema.FLOAT64_SCHEMA)
+            .field("bool", Schema.BOOLEAN_SCHEMA)
+            .field("bytes", Schema.BYTES_SCHEMA)
+            .field("string", Schema.STRING_SCHEMA);
+    org.apache.kafka.connect.data.Struct kafkaStruct =
+        new org.apache.kafka.connect.data.Struct(schemaBuilder.build());
     Struct.Builder struct = Struct.newBuilder();
     kafkaStruct.put("byte", (byte) 3);
     struct.putFields("byte", Value.newBuilder().setNumberValue(3).build());
@@ -136,8 +149,12 @@ public class SchemasTest {
     kafkaStruct.put("bool", true);
     struct.putFields("bool", Value.newBuilder().setBoolValue(true).build());
     kafkaStruct.put("bytes", ByteString.copyFromUtf8("abc").toByteArray());
-    struct.putFields("bytes", Value.newBuilder().setStringValue(
-        Base64.getEncoder().encodeToString(ByteString.copyFromUtf8("abc").toByteArray())).build());
+    struct.putFields(
+        "bytes",
+        Value.newBuilder()
+            .setStringValue(
+                Base64.getEncoder().encodeToString(ByteString.copyFromUtf8("abc").toByteArray()))
+            .build());
     kafkaStruct.put("string", "def");
     struct.putFields("string", Value.newBuilder().setStringValue("def").build());
     Value value = Value.newBuilder().setStructValue(struct).build();
@@ -175,11 +192,13 @@ public class SchemasTest {
           default:
             throw new RuntimeException("");
         }
-        Map<Object, Object> map = ImmutableMap
-            .of(example(keySchema.type()), example(valueSchema.type()));
-        Value expected = Value.newBuilder()
-            .setStructValue(Struct.newBuilder().putFields(key, exampleValue(valueSchema.type())))
-            .build();
+        Map<Object, Object> map =
+            ImmutableMap.of(example(keySchema.type()), example(valueSchema.type()));
+        Value expected =
+            Value.newBuilder()
+                .setStructValue(
+                    Struct.newBuilder().putFields(key, exampleValue(valueSchema.type())))
+                .build();
         assertThat(Schemas.encodeToBytes(mapSchema, map)).isEqualTo(expected.toByteString());
       }
     }
@@ -187,22 +206,32 @@ public class SchemasTest {
 
   @Test
   public void testConvertComplexSchema() {
-    Schema schema = SchemaBuilder.struct()
-        .field("field",
-            SchemaBuilder.array(SchemaBuilder.map(Schema.STRING_SCHEMA, Schema.BOOLEAN_SCHEMA)))
-        .build();
-    org.apache.kafka.connect.data.Struct kafkaStruct = new org.apache.kafka.connect.data.Struct(
-        schema);
+    Schema schema =
+        SchemaBuilder.struct()
+            .field(
+                "field",
+                SchemaBuilder.array(SchemaBuilder.map(Schema.STRING_SCHEMA, Schema.BOOLEAN_SCHEMA)))
+            .build();
+    org.apache.kafka.connect.data.Struct kafkaStruct =
+        new org.apache.kafka.connect.data.Struct(schema);
     Map<Object, Object> map = ImmutableMap.of("one", true, "two", false);
     List<Object> array = ImmutableList.of(map, map);
     kafkaStruct.put("field", array);
-    Value expectedMap = Value.newBuilder().setStructValue(Struct.newBuilder()
-        .putFields("one", Value.newBuilder().setBoolValue(true).build())
-        .putFields("two", Value.newBuilder().setBoolValue(false).build())).build();
-    Value expectedArray = Value.newBuilder().setListValue(ListValue.newBuilder()
-        .addValues(expectedMap).addValues(expectedMap)).build();
-    Value expected = Value.newBuilder().setStructValue(
-        Struct.newBuilder().putFields("field", expectedArray)).build();
+    Value expectedMap =
+        Value.newBuilder()
+            .setStructValue(
+                Struct.newBuilder()
+                    .putFields("one", Value.newBuilder().setBoolValue(true).build())
+                    .putFields("two", Value.newBuilder().setBoolValue(false).build()))
+            .build();
+    Value expectedArray =
+        Value.newBuilder()
+            .setListValue(ListValue.newBuilder().addValues(expectedMap).addValues(expectedMap))
+            .build();
+    Value expected =
+        Value.newBuilder()
+            .setStructValue(Struct.newBuilder().putFields("field", expectedArray))
+            .build();
     assertThat(Schemas.encodeToBytes(schema, kafkaStruct)).isEqualTo(expected.toByteString());
   }
 }

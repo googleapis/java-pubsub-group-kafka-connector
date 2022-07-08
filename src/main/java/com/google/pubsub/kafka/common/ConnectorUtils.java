@@ -31,8 +31,8 @@ public class ConnectorUtils {
   public static final String CPS_DEFAULT_ENDPOINT = "pubsub.googleapis.com:443";
   public static final String CPS_MESSAGE_KEY_ATTRIBUTE = "key";
   public static final String CPS_ORDERING_KEY_ATTRIBUTE = "orderingKey";
-  public static final String GCP_CREDENTIALS_FILE_PATH_CONFIG  = "gcp.credentials.file.path";
-  public static final String GCP_CREDENTIALS_JSON_CONFIG  = "gcp.credentials.json";
+  public static final String GCP_CREDENTIALS_FILE_PATH_CONFIG = "gcp.credentials.file.path";
+  public static final String GCP_CREDENTIALS_JSON_CONFIG = "gcp.credentials.json";
   public static final String KAFKA_MESSAGE_CPS_BODY_FIELD = "message";
   public static final String KAFKA_TOPIC_ATTRIBUTE = "kafka.topic";
   public static final String KAFKA_PARTITION_ATTRIBUTE = "kafka.partition";
@@ -47,6 +47,7 @@ public class ConnectorUtils {
 
   // A shared executor for Pub/Sub clients to use.
   private static Optional<ScheduledExecutorService> SYSTEM_EXECUTOR = Optional.empty();
+
   public static synchronized ScheduledExecutorService getSystemExecutor() {
     if (!SYSTEM_EXECUTOR.isPresent()) {
       SYSTEM_EXECUTOR = Optional.of(newDaemonExecutor("pubsub-connect-system"));
