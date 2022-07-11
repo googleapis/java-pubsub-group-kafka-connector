@@ -44,7 +44,6 @@ import org.apache.kafka.connect.header.ConnectHeaders;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.junit.Before;
 import org.junit.Test;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,15 +82,16 @@ public class CloudPubSubSourceTaskTest {
     assertEquals(sr1.topic(), sr2.topic());
 
     if (sr1.valueSchema() == Schema.BYTES_SCHEMA) {
-      assertArrayEquals((byte[])sr1.value(), (byte[])sr2.value());
+      assertArrayEquals((byte[]) sr1.value(), (byte[]) sr2.value());
     } else {
-      for(Field f : sr1.valueSchema().fields()) {
+      for (Field f : sr1.valueSchema().fields()) {
         if (f.name().equals(ConnectorUtils.KAFKA_MESSAGE_CPS_BODY_FIELD)) {
-          assertArrayEquals(((Struct)sr1.value()).getBytes(f.name()),
-                            ((Struct)sr2.value()).getBytes(f.name()));
+          assertArrayEquals(
+              ((Struct) sr1.value()).getBytes(f.name()), ((Struct) sr2.value()).getBytes(f.name()));
         } else {
-          assertEquals(((Struct)sr1.value()).getString(f.name()),
-                       ((Struct)sr2.value()).getString(f.name()));
+          assertEquals(
+              ((Struct) sr1.value()).getString(f.name()),
+              ((Struct) sr2.value()).getString(f.name()));
         }
       }
     }
@@ -107,7 +107,9 @@ public class CloudPubSubSourceTaskTest {
     props.put(CloudPubSubSourceConnector.CPS_SUBSCRIPTION_CONFIG, CPS_SUBSCRIPTION);
     props.put(CloudPubSubSourceConnector.KAFKA_TOPIC_CONFIG, KAFKA_TOPIC);
     props.put(CloudPubSubSourceConnector.KAFKA_MESSAGE_KEY_CONFIG, KAFKA_MESSAGE_KEY_ATTRIBUTE);
-    props.put(CloudPubSubSourceConnector.KAFKA_MESSAGE_TIMESTAMP_CONFIG, KAFKA_MESSAGE_TIMESTAMP_ATTRIBUTE);
+    props.put(
+        CloudPubSubSourceConnector.KAFKA_MESSAGE_TIMESTAMP_CONFIG,
+        KAFKA_MESSAGE_TIMESTAMP_ATTRIBUTE);
     props.put(CloudPubSubSourceConnector.KAFKA_PARTITIONS_CONFIG, KAFKA_PARTITIONS);
     props.put(
         CloudPubSubSourceConnector.KAFKA_PARTITION_SCHEME_CONFIG,
@@ -130,8 +132,7 @@ public class CloudPubSubSourceTaskTest {
   @Test
   public void testPollInRegularCase() throws Exception {
     task.start(props);
-    ReceivedMessage rm1 =
-        createReceivedMessage(ACK_ID1, CPS_MESSAGE, new HashMap<>(), null);
+    ReceivedMessage rm1 = createReceivedMessage(ACK_ID1, CPS_MESSAGE, new HashMap<>(), null);
     when(subscriber.pull().get()).thenReturn(ImmutableList.of(rm1));
     List<SourceRecord> result = task.poll();
     assertEquals(1, result.size());
@@ -154,8 +155,7 @@ public class CloudPubSubSourceTaskTest {
   @Test
   public void testPollWithNoMessageKeyAttribute() throws Exception {
     task.start(props);
-    ReceivedMessage rm =
-        createReceivedMessage(ACK_ID1, CPS_MESSAGE, new HashMap<>(), null);
+    ReceivedMessage rm = createReceivedMessage(ACK_ID1, CPS_MESSAGE, new HashMap<>(), null);
     when(subscriber.pull().get()).thenReturn(ImmutableList.of(rm));
     List<SourceRecord> result = task.poll();
     verify(subscriber, never()).ackMessages(any());
@@ -205,7 +205,7 @@ public class CloudPubSubSourceTaskTest {
    * #KAFKA_MESSAGE_TIMESTAMP_ATTRIBUTE} and {@link #KAFKA_MESSAGE_KEY_ATTRIBUTE}.
    */
   @Test
-  public void testPollWithMessageTimestampAttribute() throws Exception{
+  public void testPollWithMessageTimestampAttribute() throws Exception {
     task.start(props);
     Map<String, String> attributes = new HashMap<>();
     attributes.put(KAFKA_MESSAGE_KEY_ATTRIBUTE, KAFKA_MESSAGE_KEY_ATTRIBUTE_VALUE);
@@ -216,21 +216,22 @@ public class CloudPubSubSourceTaskTest {
     verify(subscriber, never()).ackMessages(any());
     assertEquals(1, result.size());
     SourceRecord expected =
-            new SourceRecord(
-                    null,
-                    null,
-                    KAFKA_TOPIC,
-                    0,
-                    Schema.OPTIONAL_STRING_SCHEMA,
-                    KAFKA_MESSAGE_KEY_ATTRIBUTE_VALUE,
-                    Schema.BYTES_SCHEMA,
-                    KAFKA_VALUE, Long.parseLong(KAFKA_MESSAGE_TIMESTAMP_ATTRIBUTE_VALUE));
+        new SourceRecord(
+            null,
+            null,
+            KAFKA_TOPIC,
+            0,
+            Schema.OPTIONAL_STRING_SCHEMA,
+            KAFKA_MESSAGE_KEY_ATTRIBUTE_VALUE,
+            Schema.BYTES_SCHEMA,
+            KAFKA_VALUE,
+            Long.parseLong(KAFKA_MESSAGE_TIMESTAMP_ATTRIBUTE_VALUE));
     assertRecordsEqual(expected, result.get(0));
   }
 
   /**
-   * Tests when the message retrieved from Cloud Pub/Sub have several attributes, including
-   * one that matches {@link #KAFKA_MESSAGE_KEY_ATTRIBUTE} and uses Kafka Record Headers to store them
+   * Tests when the message retrieved from Cloud Pub/Sub have several attributes, including one that
+   * matches {@link #KAFKA_MESSAGE_KEY_ATTRIBUTE} and uses Kafka Record Headers to store them
    */
   @Test
   public void testPollWithMultipleAttributesAndRecordHeaders() throws Exception {
@@ -265,15 +266,12 @@ public class CloudPubSubSourceTaskTest {
     assertRecordsEqual(expected, result.get(0));
   }
 
-  /**
-   * Tests when the message has an ordering key that should be stored as an attribute.
-   */
+  /** Tests when the message has an ordering key that should be stored as an attribute. */
   @Test
   public void testPollWithOrderingKeyAsAttribute() throws Exception {
     props.put(CloudPubSubSourceConnector.CPS_MAKE_ORDERING_KEY_ATTRIBUTE, "true");
     task.start(props);
-    ReceivedMessage rm =
-        createReceivedMessage(ACK_ID1, CPS_MESSAGE, new HashMap<>(), "my-key");
+    ReceivedMessage rm = createReceivedMessage(ACK_ID1, CPS_MESSAGE, new HashMap<>(), "my-key");
     when(subscriber.pull().get()).thenReturn(ImmutableList.of(rm));
     List<SourceRecord> result = task.poll();
     verify(subscriber, never()).ackMessages(any());
@@ -284,9 +282,10 @@ public class CloudPubSubSourceTaskTest {
             .field(ConnectorUtils.KAFKA_MESSAGE_CPS_BODY_FIELD, Schema.BYTES_SCHEMA)
             .field(ConnectorUtils.CPS_ORDERING_KEY_ATTRIBUTE, Schema.STRING_SCHEMA)
             .build();
-    Struct expectedValue = new Struct(expectedSchema)
-                               .put(ConnectorUtils.KAFKA_MESSAGE_CPS_BODY_FIELD, KAFKA_VALUE)
-                               .put(ConnectorUtils.CPS_ORDERING_KEY_ATTRIBUTE, "my-key");
+    Struct expectedValue =
+        new Struct(expectedSchema)
+            .put(ConnectorUtils.KAFKA_MESSAGE_CPS_BODY_FIELD, KAFKA_VALUE)
+            .put(ConnectorUtils.CPS_ORDERING_KEY_ATTRIBUTE, "my-key");
 
     SourceRecord expected =
         new SourceRecord(
@@ -310,8 +309,7 @@ public class CloudPubSubSourceTaskTest {
     props.put(CloudPubSubSourceConnector.USE_KAFKA_HEADERS, "true");
     props.put(CloudPubSubSourceConnector.CPS_MAKE_ORDERING_KEY_ATTRIBUTE, "true");
     task.start(props);
-    ReceivedMessage rm =
-        createReceivedMessage(ACK_ID1, CPS_MESSAGE, new HashMap<>(), "my-key");
+    ReceivedMessage rm = createReceivedMessage(ACK_ID1, CPS_MESSAGE, new HashMap<>(), "my-key");
     when(subscriber.pull().get()).thenReturn(ImmutableList.of(rm));
     List<SourceRecord> result = task.poll();
     verify(subscriber, never()).ackMessages(any());
@@ -336,8 +334,8 @@ public class CloudPubSubSourceTaskTest {
   }
 
   /**
-   * Tests when the message retrieved from Cloud Pub/Sub have several attributes, including
-   * one that matches {@link #KAFKA_MESSAGE_KEY_ATTRIBUTE}
+   * Tests when the message retrieved from Cloud Pub/Sub have several attributes, including one that
+   * matches {@link #KAFKA_MESSAGE_KEY_ATTRIBUTE}
    */
   @Test
   public void testPollWithMultipleAttributes() throws Exception {
@@ -357,10 +355,11 @@ public class CloudPubSubSourceTaskTest {
             .field("attribute1", Schema.STRING_SCHEMA)
             .field("attribute2", Schema.STRING_SCHEMA)
             .build();
-    Struct expectedValue = new Struct(expectedSchema)
-                               .put(ConnectorUtils.KAFKA_MESSAGE_CPS_BODY_FIELD, KAFKA_VALUE)
-                               .put("attribute1", "attribute_value1")
-                               .put("attribute2", "attribute_value2");
+    Struct expectedValue =
+        new Struct(expectedSchema)
+            .put(ConnectorUtils.KAFKA_MESSAGE_CPS_BODY_FIELD, KAFKA_VALUE)
+            .put("attribute1", "attribute_value1")
+            .put("attribute2", "attribute_value2");
     SourceRecord expected =
         new SourceRecord(
             null,
@@ -386,8 +385,7 @@ public class CloudPubSubSourceTaskTest {
     task.start(props);
     Map<String, String> attributes = new HashMap<>();
     attributes.put(KAFKA_MESSAGE_KEY_ATTRIBUTE, KAFKA_MESSAGE_KEY_ATTRIBUTE_VALUE);
-    ReceivedMessage withoutKey =
-        createReceivedMessage(ACK_ID1, CPS_MESSAGE, new HashMap<>(), null);
+    ReceivedMessage withoutKey = createReceivedMessage(ACK_ID1, CPS_MESSAGE, new HashMap<>(), null);
     ReceivedMessage withKey = createReceivedMessage(ACK_ID2, CPS_MESSAGE, attributes, null);
     when(subscriber.pull().get()).thenReturn(ImmutableList.of(withKey, withoutKey));
     List<SourceRecord> result = task.poll();
@@ -415,7 +413,8 @@ public class CloudPubSubSourceTaskTest {
             KAFKA_VALUE);
 
     assertRecordsEqual(expectedForMessageWithKey, result.get(0));
-    assertArrayEquals((byte[])expectedForMessageWithoutKey.value(), (byte[])result.get(1).value());
+    assertArrayEquals(
+        (byte[]) expectedForMessageWithoutKey.value(), (byte[]) result.get(1).value());
   }
 
   /** Tests that the correct partition is assigned when the partition scheme is "hash_value". */
@@ -425,8 +424,7 @@ public class CloudPubSubSourceTaskTest {
         CloudPubSubSourceConnector.KAFKA_PARTITION_SCHEME_CONFIG,
         CloudPubSubSourceConnector.PartitionScheme.HASH_VALUE.toString());
     task.start(props);
-    ReceivedMessage rm =
-        createReceivedMessage(ACK_ID1, CPS_MESSAGE, new HashMap<>(), null);
+    ReceivedMessage rm = createReceivedMessage(ACK_ID1, CPS_MESSAGE, new HashMap<>(), null);
     when(subscriber.pull().get()).thenReturn(ImmutableList.of(rm));
     List<SourceRecord> result = task.poll();
     verify(subscriber, never()).ackMessages(any());
@@ -448,8 +446,8 @@ public class CloudPubSubSourceTaskTest {
   @Test
   public void testPollWithPartitionSchemeKafkaPartitioner() throws Exception {
     props.put(
-            CloudPubSubSourceConnector.KAFKA_PARTITION_SCHEME_CONFIG,
-            CloudPubSubSourceConnector.PartitionScheme.KAFKA_PARTITIONER.toString());
+        CloudPubSubSourceConnector.KAFKA_PARTITION_SCHEME_CONFIG,
+        CloudPubSubSourceConnector.PartitionScheme.KAFKA_PARTITIONER.toString());
     task.start(props);
     ReceivedMessage rm = createReceivedMessage(ACK_ID1, CPS_MESSAGE, new HashMap<>(), null);
     when(subscriber.pull().get()).thenReturn(ImmutableList.of(rm));
@@ -457,15 +455,15 @@ public class CloudPubSubSourceTaskTest {
     verify(subscriber, never()).ackMessages(any());
     assertEquals(1, result.size());
     SourceRecord expected =
-            new SourceRecord(
-                    null,
-                    null,
-                    KAFKA_TOPIC,
-                    null,
-                    Schema.OPTIONAL_STRING_SCHEMA,
-                    null,
-                    Schema.BYTES_SCHEMA,
-                    KAFKA_VALUE);
+        new SourceRecord(
+            null,
+            null,
+            KAFKA_TOPIC,
+            null,
+            Schema.OPTIONAL_STRING_SCHEMA,
+            null,
+            Schema.BYTES_SCHEMA,
+            KAFKA_VALUE);
     assertRecordsEqual(expected, result.get(0));
     assertNull(result.get(0).kafkaPartition());
   }
@@ -478,8 +476,7 @@ public class CloudPubSubSourceTaskTest {
         CloudPubSubSourceConnector.KAFKA_PARTITION_SCHEME_CONFIG,
         CloudPubSubSourceConnector.PartitionScheme.ORDERING_KEY.toString());
     task.start(props);
-    ReceivedMessage rm =
-        createReceivedMessage(ACK_ID1, CPS_MESSAGE, new HashMap<>(), orderingKey);
+    ReceivedMessage rm = createReceivedMessage(ACK_ID1, CPS_MESSAGE, new HashMap<>(), orderingKey);
     when(subscriber.pull().get()).thenReturn(ImmutableList.of(rm));
     List<SourceRecord> result = task.poll();
     verify(subscriber, never()).ackMessages(any());
@@ -505,14 +502,10 @@ public class CloudPubSubSourceTaskTest {
   @Test
   public void testPollWithPartitionSchemeRoundRobin() throws Exception {
     task.start(props);
-    ReceivedMessage rm1 =
-        createReceivedMessage(ACK_ID1, CPS_MESSAGE, new HashMap<>(), null);
-    ReceivedMessage rm2 =
-        createReceivedMessage(ACK_ID2, CPS_MESSAGE, new HashMap<>(), null);
-    ReceivedMessage rm3 =
-        createReceivedMessage(ACK_ID3, CPS_MESSAGE, new HashMap<>(), null);
-    ReceivedMessage rm4 =
-        createReceivedMessage(ACK_ID4, CPS_MESSAGE, new HashMap<>(), null);
+    ReceivedMessage rm1 = createReceivedMessage(ACK_ID1, CPS_MESSAGE, new HashMap<>(), null);
+    ReceivedMessage rm2 = createReceivedMessage(ACK_ID2, CPS_MESSAGE, new HashMap<>(), null);
+    ReceivedMessage rm3 = createReceivedMessage(ACK_ID3, CPS_MESSAGE, new HashMap<>(), null);
+    ReceivedMessage rm4 = createReceivedMessage(ACK_ID4, CPS_MESSAGE, new HashMap<>(), null);
     when(subscriber.pull().get()).thenReturn(ImmutableList.of(rm1, rm2, rm3, rm4));
     List<SourceRecord> result = task.poll();
     verify(subscriber, never()).ackMessages(any());
@@ -564,13 +557,15 @@ public class CloudPubSubSourceTaskTest {
   }
 
   /**
-   * Tests when the message retrieved from Cloud Pub/Sub has an ordering key set and
-   * {@link #KAFKA_MESSAGE_KEY_ATTRIBUTE} is set to "orderingKey".
+   * Tests when the message retrieved from Cloud Pub/Sub has an ordering key set and {@link
+   * #KAFKA_MESSAGE_KEY_ATTRIBUTE} is set to "orderingKey".
    */
   @Test
   public void testSetOrderingKeyAsKey() throws Exception {
     String orderingKey = "my-key";
-    props.put(CloudPubSubSourceConnector.KAFKA_MESSAGE_KEY_CONFIG, ConnectorUtils.CPS_ORDERING_KEY_ATTRIBUTE);
+    props.put(
+        CloudPubSubSourceConnector.KAFKA_MESSAGE_KEY_CONFIG,
+        ConnectorUtils.CPS_ORDERING_KEY_ATTRIBUTE);
     task.start(props);
     Map<String, String> attributes = new HashMap<>();
     ReceivedMessage rm = createReceivedMessage(ACK_ID1, CPS_MESSAGE, attributes, orderingKey);
@@ -602,7 +597,8 @@ public class CloudPubSubSourceTaskTest {
 
   private ReceivedMessage createReceivedMessage(
       String ackId, ByteString data, Map<String, String> attributes, String orderingKey) {
-    PubsubMessage.Builder builder = PubsubMessage.newBuilder().setData(data).putAllAttributes(attributes);
+    PubsubMessage.Builder builder =
+        PubsubMessage.newBuilder().setData(data).putAllAttributes(attributes);
     if (orderingKey != null) {
       builder.setOrderingKey(orderingKey);
     }

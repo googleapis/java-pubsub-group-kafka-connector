@@ -26,8 +26,7 @@ import org.apache.kafka.connect.source.SourceTask;
 public class PubSubLiteSourceTask extends SourceTask {
 
   private final PollerFactory factory;
-  private @Nullable
-  Poller poller;
+  private @Nullable Poller poller;
 
   @VisibleForTesting
   PubSubLiteSourceTask(PollerFactory factory) {
@@ -52,8 +51,7 @@ public class PubSubLiteSourceTask extends SourceTask {
   }
 
   @Override
-  public @Nullable
-  List<SourceRecord> poll() {
+  public @Nullable List<SourceRecord> poll() {
     return poller.poll();
   }
 
