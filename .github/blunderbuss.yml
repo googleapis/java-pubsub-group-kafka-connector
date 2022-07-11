@@ -4,4 +4,4 @@ assign_prs_by:
 - labels:
   - samples
   to:
-  - googleapis/java-samples-reviewers
+  - googleapis/api-pubsub
