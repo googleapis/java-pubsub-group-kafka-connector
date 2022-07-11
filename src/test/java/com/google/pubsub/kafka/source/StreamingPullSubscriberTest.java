@@ -12,7 +12,6 @@ import static org.mockito.Mockito.when;
 
 import com.google.api.core.ApiService;
 import com.google.api.gax.rpc.ApiException;
-import com.google.api.gax.rpc.StatusCode;
 import com.google.api.gax.rpc.StatusCode.Code;
 import com.google.cloud.pubsub.v1.AckReplyConsumer;
 import com.google.cloud.pubsub.v1.MessageReceiver;
@@ -22,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
 import com.google.pubsub.v1.ReceivedMessage;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -35,7 +33,8 @@ import org.mockito.InOrder;
 import org.mockito.stubbing.Answer;
 
 public class StreamingPullSubscriberTest {
-  private final StreamingPullSubscriberFactory underlyingFactory = mock(StreamingPullSubscriberFactory.class);
+  private final StreamingPullSubscriberFactory underlyingFactory =
+      mock(StreamingPullSubscriberFactory.class);
   private final SubscriberInterface underlying = mock(SubscriberInterface.class);
   // Initialized in setUp.
   private StreamingPullSubscriber subscriber;
@@ -107,7 +106,8 @@ public class StreamingPullSubscriberTest {
 
   @Test
   public void pullSuccess() throws Exception {
-    PubsubMessage message = PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("abc")).build();
+    PubsubMessage message =
+        PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("abc")).build();
     Future<List<ReceivedMessage>> future = executorService.submit(() -> subscriber.pull().get());
     messageReceiver.receiveMessage(message, mock(AckReplyConsumer.class));
     assertThat(messagesFor(future.get())).isEqualTo(ImmutableList.of(message));
@@ -115,11 +115,14 @@ public class StreamingPullSubscriberTest {
 
   @Test
   public void pullMultiple() throws Exception {
-    PubsubMessage message1 = PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("abc")).build();
-    PubsubMessage message2 = PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("abc")).build();
+    PubsubMessage message1 =
+        PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("abc")).build();
+    PubsubMessage message2 =
+        PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("abc")).build();
     messageReceiver.receiveMessage(message1, mock(AckReplyConsumer.class));
     messageReceiver.receiveMessage(message2, mock(AckReplyConsumer.class));
-    assertThat(messagesFor(subscriber.pull().get())).isEqualTo(ImmutableList.of(message1, message2));
+    assertThat(messagesFor(subscriber.pull().get()))
+        .isEqualTo(ImmutableList.of(message1, message2));
   }
 
   @Test
@@ -136,7 +139,8 @@ public class StreamingPullSubscriberTest {
     errorListener.failed(null, expected);
     ExecutionException e = assertThrows(ExecutionException.class, () -> subscriber.pull().get());
     assertThat(e.getCause()).isEqualTo(expected);
-    PubsubMessage message1 = PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("abc")).build();
+    PubsubMessage message1 =
+        PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("abc")).build();
     AckReplyConsumer consumer = mock(AckReplyConsumer.class);
     messageReceiver.receiveMessage(message1, consumer);
     verify(consumer, times(1)).nack();
@@ -144,7 +148,8 @@ public class StreamingPullSubscriberTest {
 
   @Test
   public void messagesNackedOnError() {
-    PubsubMessage message1 = PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("abc")).build();
+    PubsubMessage message1 =
+        PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("abc")).build();
     AckReplyConsumer consumer = mock(AckReplyConsumer.class);
     messageReceiver.receiveMessage(message1, consumer);
     ApiException expected = new CheckedApiException(Code.INTERNAL).underlying;
@@ -158,7 +163,8 @@ public class StreamingPullSubscriberTest {
   public void pullMessagePrioritizeErrorOverExistingMessage() {
     ApiException expected = new CheckedApiException(Code.INTERNAL).underlying;
     errorListener.failed(null, expected);
-    PubsubMessage message = PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("abc")).build();
+    PubsubMessage message =
+        PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("abc")).build();
     messageReceiver.receiveMessage(message, mock(AckReplyConsumer.class));
 
     ExecutionException e = assertThrows(ExecutionException.class, () -> subscriber.pull().get());
@@ -167,7 +173,8 @@ public class StreamingPullSubscriberTest {
 
   @Test
   public void pullThenAck() throws Exception {
-    PubsubMessage message = PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("abc")).build();
+    PubsubMessage message =
+        PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("abc")).build();
     Future<List<ReceivedMessage>> future = executorService.submit(() -> subscriber.pull().get());
     AckReplyConsumer ackReplyConsumer = mock(AckReplyConsumer.class);
     messageReceiver.receiveMessage(message, ackReplyConsumer);
@@ -183,8 +190,10 @@ public class StreamingPullSubscriberTest {
 
   @Test
   public void multiAck() throws Exception {
-    PubsubMessage message1 = PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("abc")).build();
-    PubsubMessage message2 = PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("def")).build();
+    PubsubMessage message1 =
+        PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("abc")).build();
+    PubsubMessage message2 =
+        PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("def")).build();
     AckReplyConsumer ackReplyConsumer1 = mock(AckReplyConsumer.class);
     AckReplyConsumer ackReplyConsumer2 = mock(AckReplyConsumer.class);
     messageReceiver.receiveMessage(message1, ackReplyConsumer1);

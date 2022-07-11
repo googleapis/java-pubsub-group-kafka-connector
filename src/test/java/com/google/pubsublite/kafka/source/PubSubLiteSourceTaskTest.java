@@ -18,10 +18,8 @@ import org.mockito.Mock;
 @RunWith(JUnit4.class)
 public class PubSubLiteSourceTaskTest {
 
-  @Mock
-  PollerFactory factory;
-  @Mock
-  Poller poller;
+  @Mock PollerFactory factory;
+  @Mock Poller poller;
   PubSubLiteSourceTask task;
 
   @Before

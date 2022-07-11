@@ -27,7 +27,7 @@ import java.util.List;
 public class ConnectorCredentialsProvider implements CredentialsProvider {
 
   private static final List<String> CPS_SCOPE =
-    Arrays.asList("https://www.googleapis.com/auth/pubsub");
+      Arrays.asList("https://www.googleapis.com/auth/pubsub");
 
   GoogleCredentials credentials;
 
@@ -48,5 +48,4 @@ public class ConnectorCredentialsProvider implements CredentialsProvider {
       return this.credentials.createScoped(this.CPS_SCOPE);
     }
   }
-
 }

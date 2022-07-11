@@ -31,28 +31,25 @@ import org.apache.kafka.connect.errors.DataException;
 /**
  * Schema handling for Pub/Sub Lite.
  *
- * null schemas are treated as Schema.STRING_SCHEMA
+ * <p>null schemas are treated as Schema.STRING_SCHEMA
  *
- * Top level BYTES payloads are unmodified.
- * Top level STRING payloads are encoded using copyFromUtf8.
- * Top level Integral payloads are converted using copyFromUtf8(Long.toString(x.longValue()))
- * Top level Floating point payloads are converted using
+ * <p>Top level BYTES payloads are unmodified. Top level STRING payloads are encoded using
+ * copyFromUtf8. Top level Integral payloads are converted using
+ * copyFromUtf8(Long.toString(x.longValue())) Top level Floating point payloads are converted using
  * copyFromUtf8(Double.toString(x.doubleValue()))
  *
- * All other payloads are encoded into a protobuf Value, then converted to a ByteString.
- * Nested STRING fields are encoded into a protobuf Value.
- * Nested BYTES fields are encoded to a protobuf Value holding the base64 encoded bytes.
- * Nested Numeric fields are encoded as a double into a protobuf Value.
+ * <p>All other payloads are encoded into a protobuf Value, then converted to a ByteString. Nested
+ * STRING fields are encoded into a protobuf Value. Nested BYTES fields are encoded to a protobuf
+ * Value holding the base64 encoded bytes. Nested Numeric fields are encoded as a double into a
+ * protobuf Value.
  *
- * Maps with Array, Map, or Struct keys are not supported.
- * BYTES keys in maps are base64 encoded.
- * Integral keys are converted using Long.toString(x.longValue())
- * Floating point keys are converted using Double.toString(x.doubleValue())
+ * <p>Maps with Array, Map, or Struct keys are not supported. BYTES keys in maps are base64 encoded.
+ * Integral keys are converted using Long.toString(x.longValue()) Floating point keys are converted
+ * using Double.toString(x.doubleValue())
  */
 final class Schemas {
 
-  private Schemas() {
-  }
+  private Schemas() {}
 
   private static Schema.Type safeSchemaType(@Nullable Schema schema) {
     if (schema == null) {
@@ -99,32 +96,37 @@ final class Schemas {
       case BYTES:
         ByteString bytes = extractBytes(object);
         return Value.newBuilder()
-            .setStringValue(Base64.getEncoder().encodeToString(bytes.toByteArray())).build();
-      case ARRAY: {
-        ListValue.Builder listBuilder = ListValue.newBuilder();
-        List<Object> objects = (List<Object>) object;
-        for (Object o : objects) {
-          listBuilder.addValues(encode(schema.valueSchema(), o));
+            .setStringValue(Base64.getEncoder().encodeToString(bytes.toByteArray()))
+            .build();
+      case ARRAY:
+        {
+          ListValue.Builder listBuilder = ListValue.newBuilder();
+          List<Object> objects = (List<Object>) object;
+          for (Object o : objects) {
+            listBuilder.addValues(encode(schema.valueSchema(), o));
+          }
+          return Value.newBuilder().setListValue(listBuilder).build();
         }
-        return Value.newBuilder().setListValue(listBuilder).build();
-      }
-      case MAP: {
-        Struct.Builder builder = Struct.newBuilder();
-        Map<Object, Object> map = (Map<Object, Object>) object;
-        for (Object key : map.keySet()) {
-          builder.putFields(stringRep(schema.keySchema(), key),
-              encode(schema.valueSchema(), map.get(key)));
+      case MAP:
+        {
+          Struct.Builder builder = Struct.newBuilder();
+          Map<Object, Object> map = (Map<Object, Object>) object;
+          for (Object key : map.keySet()) {
+            builder.putFields(
+                stringRep(schema.keySchema(), key), encode(schema.valueSchema(), map.get(key)));
+          }
+          return Value.newBuilder().setStructValue(builder).build();
         }
-        return Value.newBuilder().setStructValue(builder).build();
-      }
-      case STRUCT: {
-        Struct.Builder builder = Struct.newBuilder();
-        org.apache.kafka.connect.data.Struct struct = (org.apache.kafka.connect.data.Struct) object;
-        for (Field f : schema.fields()) {
-          builder.putFields(f.name(), encode(f.schema(), struct.get(f)));
+      case STRUCT:
+        {
+          Struct.Builder builder = Struct.newBuilder();
+          org.apache.kafka.connect.data.Struct struct =
+              (org.apache.kafka.connect.data.Struct) object;
+          for (Field f : schema.fields()) {
+            builder.putFields(f.name(), encode(f.schema(), struct.get(f)));
+          }
+          return Value.newBuilder().setStructValue(builder).build();
         }
-        return Value.newBuilder().setStructValue(builder).build();
-      }
     }
     throw new DataException("Invalid schema type.");
   }

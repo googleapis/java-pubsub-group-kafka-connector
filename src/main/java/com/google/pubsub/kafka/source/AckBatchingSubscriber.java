@@ -41,13 +41,13 @@ public class AckBatchingSubscriber implements CloudPubSubSubscriber {
   };
 
   private final CloudPubSubSubscriber underlying;
+
   @GuardedBy("this")
   private final Deque<IdsAndFuture> toSend = new ArrayDeque<>();
+
   private final Future<?> alarm;
 
-  public AckBatchingSubscriber(
-      CloudPubSubSubscriber underlying,
-      AlarmFactory alarmFactory) {
+  public AckBatchingSubscriber(CloudPubSubSubscriber underlying, AlarmFactory alarmFactory) {
     this.underlying = underlying;
     this.alarm = alarmFactory.newAlarm(this::flush);
   }
@@ -73,24 +73,28 @@ public class AckBatchingSubscriber implements CloudPubSubSubscriber {
       if (toSend.isEmpty()) {
         return;
       }
-      toSend.forEach(pair -> {
-        ackIds.addAll(pair.ids);
-        futures.add(pair.future);
-      });
+      toSend.forEach(
+          pair -> {
+            ackIds.addAll(pair.ids);
+            futures.add(pair.future);
+          });
       toSend.clear();
     }
     ApiFuture<Empty> response = underlying.ackMessages(ackIds);
-    ApiFutures.addCallback(response, new ApiFutureCallback<Empty>() {
-      @Override
-      public void onFailure(Throwable t) {
-        futures.forEach(future -> future.setException(t));
-      }
+    ApiFutures.addCallback(
+        response,
+        new ApiFutureCallback<Empty>() {
+          @Override
+          public void onFailure(Throwable t) {
+            futures.forEach(future -> future.setException(t));
+          }
 
-      @Override
-      public void onSuccess(Empty result) {
-        futures.forEach(future -> future.set(result));
-      }
-    }, MoreExecutors.directExecutor());
+          @Override
+          public void onSuccess(Empty result) {
+            futures.forEach(future -> future.set(result));
+          }
+        },
+        MoreExecutors.directExecutor());
   }
 
   @Override
@@ -98,7 +102,8 @@ public class AckBatchingSubscriber implements CloudPubSubSubscriber {
     alarm.cancel(false);
     try {
       alarm.get();
-    } catch (Throwable ignored) {}
+    } catch (Throwable ignored) {
+    }
     flush();
     underlying.close();
   }

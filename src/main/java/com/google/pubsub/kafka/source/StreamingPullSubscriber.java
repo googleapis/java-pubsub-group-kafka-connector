@@ -81,17 +81,20 @@ public class StreamingPullSubscriber implements CloudPubSubSubscriber {
     } catch (ExecutionException e) {
       return toApiException(e.getCause());
     } catch (Throwable t2) {
-      return new ApiException(t2, new StatusCode() {
-        @Override
-        public Code getCode() {
-          return Code.INTERNAL;
-        }
+      return new ApiException(
+          t2,
+          new StatusCode() {
+            @Override
+            public Code getCode() {
+              return Code.INTERNAL;
+            }
 
-        @Override
-        public Object getTransportCode() {
-          return null;
-        }
-      }, false);
+            @Override
+            public Object getTransportCode() {
+              return null;
+            }
+          },
+          false);
     }
   }
 
@@ -151,17 +154,20 @@ public class StreamingPullSubscriber implements CloudPubSubSubscriber {
   @Override
   public synchronized ApiFuture<List<ReceivedMessage>> pull() {
     SettableApiFuture<List<ReceivedMessage>> toReturn = SettableApiFuture.create();
-    ApiFutures.addCallback(onData(), new ApiFutureCallback<Void>() {
-      @Override
-      public void onFailure(Throwable t) {
-        toReturn.setException(toApiException(t));
-      }
+    ApiFutures.addCallback(
+        onData(),
+        new ApiFutureCallback<Void>() {
+          @Override
+          public void onFailure(Throwable t) {
+            toReturn.setException(toApiException(t));
+          }
 
-      @Override
-      public void onSuccess(Void result) {
-        toReturn.set(takeMessages());
-      }
-    }, MoreExecutors.directExecutor());
+          @Override
+          public void onSuccess(Void result) {
+            toReturn.set(takeMessages());
+          }
+        },
+        MoreExecutors.directExecutor());
     return toReturn;
   }
 

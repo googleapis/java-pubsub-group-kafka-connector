@@ -21,19 +21,18 @@ import com.google.api.core.ApiFuture;
 import com.google.api.core.ApiFutures;
 import com.google.api.core.SettableApiFuture;
 import com.google.api.gax.batching.BatchingSettings;
-import com.google.api.gax.core.FixedExecutorProvider;
 import com.google.api.gax.batching.FlowControlSettings;
 import com.google.api.gax.batching.FlowController;
+import com.google.api.gax.core.FixedExecutorProvider;
 import com.google.api.gax.retrying.RetrySettings;
 import com.google.cloud.pubsub.v1.Publisher;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
-import com.google.pubsub.kafka.common.ConnectorUtils;
 import com.google.pubsub.kafka.common.ConnectorCredentialsProvider;
+import com.google.pubsub.kafka.common.ConnectorUtils;
 import com.google.pubsub.kafka.sink.CloudPubSubSinkConnector.OrderingKeySource;
 import com.google.pubsub.v1.ProjectTopicName;
 import com.google.pubsub.v1.PubsubMessage;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -43,7 +42,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.connect.data.Field;
@@ -87,8 +85,6 @@ public class CloudPubSubSinkTask extends SinkTask {
   private ConnectorCredentialsProvider gcpCredentialsProvider;
   private com.google.cloud.pubsub.v1.Publisher publisher;
 
-
-
   /** Holds a list of the publishing futures that have not been processed for a single partition. */
   private class OutstandingFuturesForPartition {
     public List<ApiFuture<String>> futures = new ArrayList<>();
@@ -131,8 +127,7 @@ public class CloudPubSubSinkTask extends SinkTask {
         (Integer) validatedProps.get(CloudPubSubSinkConnector.MAX_DELAY_THRESHOLD_MS);
     maxRequestTimeoutMs =
         (Integer) validatedProps.get(CloudPubSubSinkConnector.MAX_REQUEST_TIMEOUT_MS);
-    maxTotalTimeoutMs =
-        (Integer) validatedProps.get(CloudPubSubSinkConnector.MAX_TOTAL_TIMEOUT_MS);
+    maxTotalTimeoutMs = (Integer) validatedProps.get(CloudPubSubSinkConnector.MAX_TOTAL_TIMEOUT_MS);
     maxShutdownTimeoutMs =
         (Integer) validatedProps.get(CloudPubSubSinkConnector.MAX_SHUTDOWN_TIMEOUT_MS);
     messageBodyName = (String) validatedProps.get(CloudPubSubSinkConnector.CPS_MESSAGE_BODY_NAME);
@@ -142,8 +137,10 @@ public class CloudPubSubSinkTask extends SinkTask {
         OrderingKeySource.getEnum(
             (String) validatedProps.get(CloudPubSubSinkConnector.ORDERING_KEY_SOURCE));
     gcpCredentialsProvider = new ConnectorCredentialsProvider();
-    String credentialsPath = (String) validatedProps.get(ConnectorUtils.GCP_CREDENTIALS_FILE_PATH_CONFIG);
-    String credentialsJson = (String) validatedProps.get(ConnectorUtils.GCP_CREDENTIALS_JSON_CONFIG);
+    String credentialsPath =
+        (String) validatedProps.get(ConnectorUtils.GCP_CREDENTIALS_FILE_PATH_CONFIG);
+    String credentialsJson =
+        (String) validatedProps.get(ConnectorUtils.GCP_CREDENTIALS_JSON_CONFIG);
     if (credentialsPath != null) {
       try {
         gcpCredentialsProvider.loadFromFile(credentialsPath);
@@ -179,8 +176,7 @@ public class CloudPubSubSinkTask extends SinkTask {
       }
       if (includeMetadata) {
         attributes.put(ConnectorUtils.KAFKA_TOPIC_ATTRIBUTE, record.topic());
-        attributes.put(
-            ConnectorUtils.KAFKA_PARTITION_ATTRIBUTE, partition);
+        attributes.put(ConnectorUtils.KAFKA_PARTITION_ATTRIBUTE, partition);
         attributes.put(ConnectorUtils.KAFKA_OFFSET_ATTRIBUTE, Long.toString(record.kafkaOffset()));
         if (record.timestamp() != null) {
           attributes.put(ConnectorUtils.KAFKA_TIMESTAMP_ATTRIBUTE, record.timestamp().toString());
@@ -216,11 +212,11 @@ public class CloudPubSubSinkTask extends SinkTask {
 
   private Iterable<? extends Header> getRecordHeaders(SinkRecord record) {
     ConnectHeaders headers = new ConnectHeaders();
-    if(record.headers() != null) {
+    if (record.headers() != null) {
       int headerCount = 0;
       for (Header header : record.headers()) {
-        if (header.key().getBytes().length < 257 &&
-            String.valueOf(header.value()).getBytes().length < 1025) {
+        if (header.key().getBytes().length < 257
+            && String.valueOf(header.value()).getBytes().length < 1025) {
           headers.add(header);
           headerCount++;
         }
@@ -289,15 +285,17 @@ public class CloudPubSubSinkTask extends SinkTask {
         for (Field f : schema.fields()) {
           Schema.Type fieldType = f.schema().type();
           if (fieldType == Type.MAP || fieldType == Type.STRUCT) {
-            throw new DataException("Struct type does not support nested Map or Struct types, " +
-                "present in field " + f.name());
+            throw new DataException(
+                "Struct type does not support nested Map or Struct types, "
+                    + "present in field "
+                    + f.name());
           }
 
           Object val = struct.get(f);
           if (val == null) {
             if (!f.schema().isOptional()) {
               throw new DataException("Struct message missing required field " + f.name());
-            }  else {
+            } else {
               continue;
             }
           }
@@ -397,17 +395,19 @@ public class CloudPubSubSinkTask extends SinkTask {
   private void createPublisher() {
     ProjectTopicName fullTopic = ProjectTopicName.of(cpsProject, cpsTopic);
 
-    BatchingSettings.Builder batchingSettings = BatchingSettings.newBuilder()
-        .setDelayThreshold(Duration.ofMillis(maxDelayThresholdMs))
-        .setElementCountThreshold(maxBufferSize)
-        .setRequestByteThreshold(maxBufferBytes);
+    BatchingSettings.Builder batchingSettings =
+        BatchingSettings.newBuilder()
+            .setDelayThreshold(Duration.ofMillis(maxDelayThresholdMs))
+            .setElementCountThreshold(maxBufferSize)
+            .setRequestByteThreshold(maxBufferBytes);
 
     if (useFlowControl()) {
-      batchingSettings.setFlowControlSettings(FlowControlSettings.newBuilder()
-          .setMaxOutstandingRequestBytes(maxOutstandingRequestBytes)
-          .setMaxOutstandingElementCount(maxOutstandingMessages)
-          .setLimitExceededBehavior(FlowController.LimitExceededBehavior.Block)
-          .build());
+      batchingSettings.setFlowControlSettings(
+          FlowControlSettings.newBuilder()
+              .setMaxOutstandingRequestBytes(maxOutstandingRequestBytes)
+              .setMaxOutstandingElementCount(maxOutstandingMessages)
+              .setLimitExceededBehavior(FlowController.LimitExceededBehavior.Block)
+              .build());
     }
 
     com.google.cloud.pubsub.v1.Publisher.Builder builder =
@@ -429,7 +429,7 @@ public class CloudPubSubSinkTask extends SinkTask {
             .setExecutorProvider(FixedExecutorProvider.create(getSystemExecutor()))
             .setEndpoint(cpsEndpoint);
     if (orderingKeySource != OrderingKeySource.NONE) {
-      builder.setEnableMessageOrdering(true); 
+      builder.setEnableMessageOrdering(true);
     }
     try {
       publisher = builder.build();
@@ -440,7 +440,8 @@ public class CloudPubSubSinkTask extends SinkTask {
 
   private boolean useFlowControl() {
     // only enable flow control if at least one flow control config has been set
-    return maxOutstandingRequestBytes != CloudPubSubSinkConnector.DEFAULT_MAX_OUTSTANDING_REQUEST_BYTES
+    return maxOutstandingRequestBytes
+            != CloudPubSubSinkConnector.DEFAULT_MAX_OUTSTANDING_REQUEST_BYTES
         || maxOutstandingRequestBytes != CloudPubSubSinkConnector.DEFAULT_MAX_OUTSTANDING_MESSAGES;
   }
 
@@ -452,9 +453,12 @@ public class CloudPubSubSinkTask extends SinkTask {
       log.info("Shutting down PubSub publisher");
       try {
         publisher.shutdown();
-        boolean terminated = publisher.awaitTermination(maxShutdownTimeoutMs, TimeUnit.MILLISECONDS);
+        boolean terminated =
+            publisher.awaitTermination(maxShutdownTimeoutMs, TimeUnit.MILLISECONDS);
         if (!terminated) {
-          log.warn(String.format("PubSub publisher did not terminate cleanly in %d ms", maxShutdownTimeoutMs));
+          log.warn(
+              String.format(
+                  "PubSub publisher did not terminate cleanly in %d ms", maxShutdownTimeoutMs));
         }
       } catch (Exception e) {
         // There is not much we can do here besides logging it as an error
