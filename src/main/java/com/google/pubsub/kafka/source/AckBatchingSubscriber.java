@@ -38,7 +38,7 @@ public class AckBatchingSubscriber implements CloudPubSubSubscriber {
   private static class IdsAndFuture {
     Collection<String> ids;
     SettableApiFuture<Empty> future;
-  };
+  }
 
   private final CloudPubSubSubscriber underlying;
 
