@@ -19,8 +19,8 @@ import com.google.api.gax.core.CredentialsProvider;
 import com.google.cloud.pubsub.v1.stub.GrpcSubscriberStub;
 import com.google.cloud.pubsub.v1.stub.SubscriberStubSettings;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.pubsub.kafka.common.ConnectorUtils;
 import com.google.pubsub.kafka.common.ConnectorCredentialsProvider;
+import com.google.pubsub.kafka.common.ConnectorUtils;
 import com.google.pubsub.v1.GetSubscriptionRequest;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -56,11 +56,16 @@ public class CloudPubSubSourceConnector extends SourceConnector {
   public static final String CPS_SUBSCRIPTION_CONFIG = "cps.subscription";
   public static final String CPS_MAX_BATCH_SIZE_CONFIG = "cps.maxBatchSize";
   public static final String CPS_STREAMING_PULL_ENABLED = "cps.streamingPull.enabled";
-  public static final String CPS_STREAMING_PULL_FLOW_CONTROL_MESSAGES = "cps.streamingPull.flowControlMessages";
-  public static final String CPS_STREAMING_PULL_FLOW_CONTROL_BYTES = "cps.streamingPull.flowControlBytes";
-  public static final String CPS_STREAMING_PULL_PARALLEL_STREAMS = "cps.streamingPull.parallelStreams";
-  public static final String CPS_STREAMING_PULL_MAX_ACK_EXTENSION_MS = "cps.streamingPull.maxAckExtensionMs";
-  public static final String CPS_STREAMING_PULL_MAX_MS_PER_ACK_EXTENSION = "cps.streamingPull.maxMsPerAckExtension";
+  public static final String CPS_STREAMING_PULL_FLOW_CONTROL_MESSAGES =
+      "cps.streamingPull.flowControlMessages";
+  public static final String CPS_STREAMING_PULL_FLOW_CONTROL_BYTES =
+      "cps.streamingPull.flowControlBytes";
+  public static final String CPS_STREAMING_PULL_PARALLEL_STREAMS =
+      "cps.streamingPull.parallelStreams";
+  public static final String CPS_STREAMING_PULL_MAX_ACK_EXTENSION_MS =
+      "cps.streamingPull.maxAckExtensionMs";
+  public static final String CPS_STREAMING_PULL_MAX_MS_PER_ACK_EXTENSION =
+      "cps.streamingPull.maxMsPerAckExtension";
   public static final int DEFAULT_CPS_MAX_BATCH_SIZE = 100;
   public static final int DEFAULT_KAFKA_PARTITIONS = 1;
   public static final String DEFAULT_KAFKA_PARTITION_SCHEME = "round_robin";
@@ -288,7 +293,8 @@ public class CloudPubSubSourceConnector extends SourceConnector {
             Importance.LOW,
             "When true, add the ordering key to the set of attributes with the key \"orderingKey\" "
                 + "if it is non-empty.")
-        .define(ConnectorUtils.CPS_ENDPOINT,
+        .define(
+            ConnectorUtils.CPS_ENDPOINT,
             Type.STRING,
             ConnectorUtils.CPS_DEFAULT_ENDPOINT,
             Importance.LOW,
@@ -300,16 +306,17 @@ public class CloudPubSubSourceConnector extends SourceConnector {
    * #CPS_SUBSCRIPTION_CONFIG} exists or not.
    */
   @VisibleForTesting
-  public void verifySubscription(String cpsProject, String cpsSubscription, CredentialsProvider credentialsProvider) {
+  public void verifySubscription(
+      String cpsProject, String cpsSubscription, CredentialsProvider credentialsProvider) {
     try {
       SubscriberStubSettings subscriberStubSettings =
-      SubscriberStubSettings.newBuilder()
-        .setTransportChannelProvider(
-            SubscriberStubSettings.defaultGrpcTransportProviderBuilder()
-                .setMaxInboundMessageSize(20 << 20) // 20MB
-                .build())
-        .setCredentialsProvider(credentialsProvider)
-        .build();
+          SubscriberStubSettings.newBuilder()
+              .setTransportChannelProvider(
+                  SubscriberStubSettings.defaultGrpcTransportProviderBuilder()
+                      .setMaxInboundMessageSize(20 << 20) // 20MB
+                      .build())
+              .setCredentialsProvider(credentialsProvider)
+              .build();
       GrpcSubscriberStub stub = GrpcSubscriberStub.create(subscriberStubSettings);
       GetSubscriptionRequest request =
           GetSubscriptionRequest.newBuilder()

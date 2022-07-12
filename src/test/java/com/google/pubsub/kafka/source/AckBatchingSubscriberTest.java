@@ -22,12 +22,10 @@ import com.google.pubsub.kafka.source.AckBatchingSubscriber.AlarmFactory;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.mockito.Mock;
 
 @RunWith(JUnit4.class)
 public class AckBatchingSubscriberTest {
@@ -38,10 +36,12 @@ public class AckBatchingSubscriberTest {
 
   @Before
   public void setUp() {
-    when(alarmFactory.newAlarm(any())).thenAnswer(args -> {
-      onAlarm = args.getArgument(0);
-      return Futures.immediateVoidFuture();
-    });
+    when(alarmFactory.newAlarm(any()))
+        .thenAnswer(
+            args -> {
+              onAlarm = args.getArgument(0);
+              return Futures.immediateVoidFuture();
+            });
     subscriber = new AckBatchingSubscriber(underlying, alarmFactory);
     assertThat(onAlarm).isNotNull();
   }

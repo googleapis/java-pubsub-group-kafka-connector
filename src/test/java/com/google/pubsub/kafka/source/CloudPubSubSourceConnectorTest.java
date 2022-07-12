@@ -22,8 +22,8 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
 
-import com.google.pubsub.kafka.common.ConnectorUtils;
 import com.google.pubsub.kafka.common.ConnectorCredentialsProvider;
+import com.google.pubsub.kafka.common.ConnectorUtils;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +54,9 @@ public class CloudPubSubSourceConnectorTest {
 
   @Test(expected = ConnectException.class)
   public void testStartWhenSubscriptionNonexistant() {
-    doThrow(new ConnectException("")).when(connector).verifySubscription(anyString(), anyString(), any(ConnectorCredentialsProvider.class));
+    doThrow(new ConnectException(""))
+        .when(connector)
+        .verifySubscription(anyString(), anyString(), any(ConnectorCredentialsProvider.class));
     connector.start(props);
   }
 
@@ -65,7 +67,9 @@ public class CloudPubSubSourceConnectorTest {
 
   @Test
   public void testTaskConfigs() {
-    doNothing().when(connector).verifySubscription(anyString(), anyString(), any(ConnectorCredentialsProvider.class));
+    doNothing()
+        .when(connector)
+        .verifySubscription(anyString(), anyString(), any(ConnectorCredentialsProvider.class));
     connector.start(props);
     List<Map<String, String>> taskConfigs = connector.taskConfigs(NUM_TASKS);
     assertEquals(taskConfigs.size(), NUM_TASKS);

@@ -36,15 +36,22 @@ class PublisherFactoryImpl implements PublisherFactory {
   public Publisher<PublishMetadata> newPublisher(Map<String, String> params) {
     Map<String, ConfigValue> config = ConfigDefs.config().validateAll(params);
     RoutingPublisherBuilder.Builder builder = RoutingPublisherBuilder.newBuilder();
-    TopicPath topic = TopicPath.newBuilder()
-        .setProject(ProjectPath.parse("projects/" + config.get(ConfigDefs.PROJECT_FLAG).value()).project())
-        .setLocation(CloudZone.parse(config.get(ConfigDefs.LOCATION_FLAG).value().toString()))
-        .setName(TopicName.of(config.get(ConfigDefs.TOPIC_NAME_FLAG).value().toString())).build();
+    TopicPath topic =
+        TopicPath.newBuilder()
+            .setProject(
+                ProjectPath.parse("projects/" + config.get(ConfigDefs.PROJECT_FLAG).value())
+                    .project())
+            .setLocation(CloudZone.parse(config.get(ConfigDefs.LOCATION_FLAG).value().toString()))
+            .setName(TopicName.of(config.get(ConfigDefs.TOPIC_NAME_FLAG).value().toString()))
+            .build();
     builder.setTopic(topic);
     builder.setPublisherFactory(
-        partition -> SinglePartitionPublisherBuilder.newBuilder().setTopic(topic)
-            .setPartition(partition).setContext(
-                PubsubContext.of(FRAMEWORK)).build());
+        partition ->
+            SinglePartitionPublisherBuilder.newBuilder()
+                .setTopic(topic)
+                .setPartition(partition)
+                .setContext(PubsubContext.of(FRAMEWORK))
+                .build());
     return builder.build();
   }
 }

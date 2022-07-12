@@ -29,7 +29,6 @@ import com.google.cloud.pubsub.v1.Publisher;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.kafka.common.ConnectorUtils;
 import com.google.pubsub.v1.PubsubMessage;
-import java.lang.Runnable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,8 +37,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.common.record.TimestampType;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.record.TimestampType;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
@@ -131,20 +130,16 @@ public class CloudPubSubSinkTaskTest {
   @Test
   public void testPutPrimitives() {
     task.start(props);
-    SinkRecord record8 =
-        new SinkRecord(null, -1, null, null, SchemaBuilder.int8(), (byte) 5, -1);
+    SinkRecord record8 = new SinkRecord(null, -1, null, null, SchemaBuilder.int8(), (byte) 5, -1);
     SinkRecord record16 =
         new SinkRecord(null, -1, null, null, SchemaBuilder.int16(), (short) 5, -1);
-    SinkRecord record32 =
-        new SinkRecord(null, -1, null, null, SchemaBuilder.int32(), (int) 5, -1);
-    SinkRecord record64 =
-        new SinkRecord(null, -1, null, null, SchemaBuilder.int64(), (long) 5, -1);
+    SinkRecord record32 = new SinkRecord(null, -1, null, null, SchemaBuilder.int32(), (int) 5, -1);
+    SinkRecord record64 = new SinkRecord(null, -1, null, null, SchemaBuilder.int64(), (long) 5, -1);
     SinkRecord recordFloat32 =
         new SinkRecord(null, -1, null, null, SchemaBuilder.float32(), (float) 8, -1);
     SinkRecord recordFloat64 =
         new SinkRecord(null, -1, null, null, SchemaBuilder.float64(), (double) 8, -1);
-    SinkRecord recordBool =
-        new SinkRecord(null, -1, null, null, SchemaBuilder.bool(), true, -1);
+    SinkRecord recordBool = new SinkRecord(null, -1, null, null, SchemaBuilder.bool(), true, -1);
     SinkRecord recordString =
         new SinkRecord(null, -1, null, null, SchemaBuilder.string(), "Test put.", -1);
     List<SinkRecord> list = new ArrayList<>();
@@ -162,8 +157,11 @@ public class CloudPubSubSinkTaskTest {
   @Test
   public void testStructSchema() {
     task.start(props);
-    Schema schema = SchemaBuilder.struct().field(FIELD_STRING1, SchemaBuilder.string())
-        .field(FIELD_STRING2, SchemaBuilder.string()).build();
+    Schema schema =
+        SchemaBuilder.struct()
+            .field(FIELD_STRING1, SchemaBuilder.string())
+            .field(FIELD_STRING2, SchemaBuilder.string())
+            .build();
     Struct val = new Struct(schema);
     val.put(FIELD_STRING1, "tide");
     val.put(FIELD_STRING2, "eagle");
@@ -177,8 +175,11 @@ public class CloudPubSubSinkTaskTest {
   public void testStructSchemaWithOptionalField() {
     task.start(props);
 
-    Schema schema = SchemaBuilder.struct().field(FIELD_STRING1, SchemaBuilder.string())
-        .field(FIELD_STRING2, SchemaBuilder.string().optional()).build();
+    Schema schema =
+        SchemaBuilder.struct()
+            .field(FIELD_STRING1, SchemaBuilder.string())
+            .field(FIELD_STRING2, SchemaBuilder.string().optional())
+            .build();
 
     // With the optional field missing.
     Struct val = new Struct(schema);
@@ -200,8 +201,11 @@ public class CloudPubSubSinkTaskTest {
   public void testStructSchemaWithMissingField() {
     task.start(props);
 
-    Schema schema = SchemaBuilder.struct().field(FIELD_STRING1, SchemaBuilder.string())
-        .field(FIELD_STRING2, SchemaBuilder.string()).build();
+    Schema schema =
+        SchemaBuilder.struct()
+            .field(FIELD_STRING1, SchemaBuilder.string())
+            .field(FIELD_STRING2, SchemaBuilder.string())
+            .build();
     Struct val = new Struct(schema);
     val.put(FIELD_STRING1, "tide");
     SinkRecord record = new SinkRecord(null, -1, null, null, schema, val, -1);
@@ -217,8 +221,11 @@ public class CloudPubSubSinkTaskTest {
     Schema nestedSchema = SchemaBuilder.struct().build();
     Struct nestedVal = new Struct(nestedSchema);
 
-    Schema schema = SchemaBuilder.struct().field(FIELD_STRING1, SchemaBuilder.string())
-        .field(FIELD_STRING2, nestedSchema).build();
+    Schema schema =
+        SchemaBuilder.struct()
+            .field(FIELD_STRING1, SchemaBuilder.string())
+            .field(FIELD_STRING2, nestedSchema)
+            .build();
     Struct val = new Struct(schema);
     val.put(FIELD_STRING1, "tide");
     val.put(FIELD_STRING2, nestedVal);
@@ -244,7 +251,8 @@ public class CloudPubSubSinkTaskTest {
     list.add(record);
     try {
       task.put(list);
-    } catch (DataException e) { } // Expected, pass.
+    } catch (DataException e) {
+    } // Expected, pass.
   }
 
   @Test
@@ -261,7 +269,8 @@ public class CloudPubSubSinkTaskTest {
     list.add(record);
     try {
       task.put(list);
-    } catch (DataException e) { } // Expected, pass.
+    } catch (DataException e) {
+    } // Expected, pass.
   }
 
   @Test
@@ -274,9 +283,7 @@ public class CloudPubSubSinkTaskTest {
     task.put(list);
   }
 
-  /**
-   * Tests that the correct message is sent to the publisher.
-   */
+  /** Tests that the correct message is sent to the publisher. */
   @Test
   public void testPutWherePublishesAreInvoked() {
     props.put(CloudPubSubSinkConnector.MAX_BUFFER_SIZE_CONFIG, CPS_MIN_BATCH_SIZE1);
@@ -289,23 +296,14 @@ public class CloudPubSubSinkTaskTest {
     assertEquals(requestArgs, getPubsubMessagesFromSampleRecords());
   }
 
-  /**
-   * Tests that the correct message is sent to the publisher when the record has a null value.
-   */
+  /** Tests that the correct message is sent to the publisher when the record has a null value. */
   @Test
   public void testPutWithNullValues() {
     props.put(CloudPubSubSinkConnector.MAX_BUFFER_SIZE_CONFIG, CPS_MIN_BATCH_SIZE1);
     task.start(props);
     List<SinkRecord> records = new ArrayList<>();
     records.add(
-        new SinkRecord(
-            KAFKA_TOPIC,
-            0,
-            STRING_SCHEMA,
-            KAFKA_MESSAGE_KEY1,
-            STRING_SCHEMA,
-            null,
-            -1));
+        new SinkRecord(KAFKA_TOPIC, 0, STRING_SCHEMA, KAFKA_MESSAGE_KEY1, STRING_SCHEMA, null, -1));
     task.put(records);
     ArgumentCaptor<PubsubMessage> captor = ArgumentCaptor.forClass(PubsubMessage.class);
     verify(publisher, times(1)).publish(captor.capture());
@@ -313,37 +311,24 @@ public class CloudPubSubSinkTaskTest {
     List<PubsubMessage> expectedMessages = new ArrayList<>();
     Map<String, String> attributes = new HashMap<>();
     attributes.put(ConnectorUtils.CPS_MESSAGE_KEY_ATTRIBUTE, KAFKA_MESSAGE_KEY1);
-    expectedMessages.add(
-        PubsubMessage.newBuilder().putAllAttributes(attributes).build());
+    expectedMessages.add(PubsubMessage.newBuilder().putAllAttributes(attributes).build());
     assertEquals(requestArgs, expectedMessages);
   }
 
-  /**
-   * Tests that the no message is sent when a message is completely null.
-   */
+  /** Tests that the no message is sent when a message is completely null. */
   @Test
   public void testPutWithNullMessage() {
     System.out.println("NULL MSG");
     props.put(CloudPubSubSinkConnector.MAX_BUFFER_SIZE_CONFIG, CPS_MIN_BATCH_SIZE1);
     task.start(props);
     List<SinkRecord> records = new ArrayList<>();
-    records.add(
-        new SinkRecord(
-            KAFKA_TOPIC,
-            0,
-            STRING_SCHEMA,
-            null,
-            STRING_SCHEMA,
-            null,
-            -1));
+    records.add(new SinkRecord(KAFKA_TOPIC, 0, STRING_SCHEMA, null, STRING_SCHEMA, null, -1));
     task.put(records);
     ArgumentCaptor<PubsubMessage> captor = ArgumentCaptor.forClass(PubsubMessage.class);
     verify(publisher, times(0)).publish(captor.capture());
   }
 
-  /**
-   * Tests that a call to flush() processes the Futures that were generated by calls to put.
-   */
+  /** Tests that a call to flush() processes the Futures that were generated by calls to put. */
   @Test
   public void testFlushWithNoPublishInPut() throws Exception {
     task.start(props);
@@ -424,7 +409,6 @@ public class CloudPubSubSinkTaskTest {
     verify(publisher, times(3)).publish(captor.capture());
     List<PubsubMessage> requestArgs = captor.getAllValues();
 
-
     List<PubsubMessage> expectedMessages = new ArrayList<>();
     Map<String, String> attributes1 = new HashMap<>();
     attributes1.put(ConnectorUtils.CPS_MESSAGE_KEY_ATTRIBUTE, KAFKA_MESSAGE_KEY1);
@@ -462,7 +446,8 @@ public class CloudPubSubSinkTaskTest {
     props.put(CloudPubSubSinkConnector.PUBLISH_KAFKA_HEADERS, "true");
     task.start(props);
     List<SinkRecord> records = new ArrayList<SinkRecord>();
-    SinkRecord record = new SinkRecord(
+    SinkRecord record =
+        new SinkRecord(
             KAFKA_TOPIC,
             4,
             STRING_SCHEMA,
@@ -471,10 +456,11 @@ public class CloudPubSubSinkTaskTest {
             KAFKA_MESSAGE1,
             1000,
             50000L,
-        TimestampType.CREATE_TIME);
+            TimestampType.CREATE_TIME);
     record.headers().addString("myHeader", "myValue");
     records.add(record);
-    record = new SinkRecord(
+    record =
+        new SinkRecord(
             KAFKA_TOPIC,
             4,
             STRING_SCHEMA,
@@ -483,7 +469,7 @@ public class CloudPubSubSinkTaskTest {
             KAFKA_MESSAGE2,
             1001,
             50001L,
-        TimestampType.CREATE_TIME);
+            TimestampType.CREATE_TIME);
     record.headers().addString("yourHeader", "yourValue");
     records.add(record);
     task.put(records);
@@ -491,26 +477,25 @@ public class CloudPubSubSinkTaskTest {
     verify(publisher, times(2)).publish(captor.capture());
     List<PubsubMessage> requestArgs = captor.getAllValues();
 
-
     List<PubsubMessage> expectedMessages = new ArrayList<>();
     Map<String, String> attributes1 = new HashMap<>();
     attributes1.put(ConnectorUtils.CPS_MESSAGE_KEY_ATTRIBUTE, KAFKA_MESSAGE_KEY1);
     attributes1.put("myHeader", "myValue");
     expectedMessages.add(
-            PubsubMessage.newBuilder().putAllAttributes(attributes1).setData(KAFKA_MESSAGE1).build());
+        PubsubMessage.newBuilder().putAllAttributes(attributes1).setData(KAFKA_MESSAGE1).build());
     Map<String, String> attributes2 = new HashMap<>();
     attributes2.put(ConnectorUtils.CPS_MESSAGE_KEY_ATTRIBUTE, KAFKA_MESSAGE_KEY1);
     attributes2.put("yourHeader", "yourValue");
     expectedMessages.add(
-            PubsubMessage.newBuilder().putAllAttributes(attributes2).setData(KAFKA_MESSAGE2).build());
+        PubsubMessage.newBuilder().putAllAttributes(attributes2).setData(KAFKA_MESSAGE2).build());
 
     assertEquals(expectedMessages, requestArgs);
   }
 
   /**
    * Tests that when requested, Kafka headers are included in the messages published to Cloud
-   * Pub/Sub but if some of these headers are unsupported either if its key has more than 256 bytes long
-   * or its value has more than 1024 bytes it will be discarded.
+   * Pub/Sub but if some of these headers are unsupported either if its key has more than 256 bytes
+   * long or its value has more than 1024 bytes it will be discarded.
    */
   @Test
   public void testUnsupportedKafkaHeaders() {
@@ -530,38 +515,39 @@ public class CloudPubSubSinkTaskTest {
     veryLongValue = stringBuilder.toString();
     stringBuilder.setLength(0);
     List<SinkRecord> records = new ArrayList<SinkRecord>();
-    SinkRecord record = new SinkRecord(
-        KAFKA_TOPIC,
-        4,
-        STRING_SCHEMA,
-        KAFKA_MESSAGE_KEY1,
-        BYTE_STRING_SCHEMA,
-        KAFKA_MESSAGE1,
-        1000,
-        50000L,
-        TimestampType.CREATE_TIME);
+    SinkRecord record =
+        new SinkRecord(
+            KAFKA_TOPIC,
+            4,
+            STRING_SCHEMA,
+            KAFKA_MESSAGE_KEY1,
+            BYTE_STRING_SCHEMA,
+            KAFKA_MESSAGE1,
+            1000,
+            50000L,
+            TimestampType.CREATE_TIME);
     record.headers().addString("myHeader", "myValue");
     record.headers().addString(veryLongHeaderName, "anotherValue");
     record.headers().addString("anotherHeader", veryLongValue);
     record.headers().addString(veryLongHeaderName, veryLongValue);
     records.add(record);
-    record = new SinkRecord(
-        KAFKA_TOPIC,
-        4,
-        STRING_SCHEMA,
-        KAFKA_MESSAGE_KEY1,
-        BYTE_STRING_SCHEMA,
-        KAFKA_MESSAGE2,
-        1001,
-        50001L,
-        TimestampType.CREATE_TIME);
+    record =
+        new SinkRecord(
+            KAFKA_TOPIC,
+            4,
+            STRING_SCHEMA,
+            KAFKA_MESSAGE_KEY1,
+            BYTE_STRING_SCHEMA,
+            KAFKA_MESSAGE2,
+            1001,
+            50001L,
+            TimestampType.CREATE_TIME);
     record.headers().addString("yourHeader", "yourValue");
     records.add(record);
     task.put(records);
     ArgumentCaptor<PubsubMessage> captor = ArgumentCaptor.forClass(PubsubMessage.class);
     verify(publisher, times(2)).publish(captor.capture());
     List<PubsubMessage> requestArgs = captor.getAllValues();
-
 
     List<PubsubMessage> expectedMessages = new ArrayList<>();
     Map<String, String> attributes1 = new HashMap<>();
@@ -593,7 +579,10 @@ public class CloudPubSubSinkTaskTest {
     List<SinkRecord> records = getSampleRecords();
     ApiFuture<String> badFuture = getFailedPublishFuture();
     ApiFuture<String> goodFuture = getSuccessfulPublishFuture();
-    when(publisher.publish(any(PubsubMessage.class))).thenReturn(badFuture).thenReturn(badFuture).thenReturn(goodFuture);
+    when(publisher.publish(any(PubsubMessage.class)))
+        .thenReturn(badFuture)
+        .thenReturn(badFuture)
+        .thenReturn(goodFuture);
     task.put(records);
     try {
       task.flush(partitionOffsets);
@@ -610,7 +599,8 @@ public class CloudPubSubSinkTaskTest {
   @Test
   public void testPublisherShutdownOnStop() throws Exception {
     int maxShutdownTimeoutMs = 20000;
-    props.put(CloudPubSubSinkConnector.MAX_SHUTDOWN_TIMEOUT_MS, Integer.toString(maxShutdownTimeoutMs));
+    props.put(
+        CloudPubSubSinkConnector.MAX_SHUTDOWN_TIMEOUT_MS, Integer.toString(maxShutdownTimeoutMs));
 
     task.start(props);
     task.stop();
@@ -652,7 +642,8 @@ public class CloudPubSubSinkTaskTest {
     props.put(CloudPubSubSinkConnector.ORDERING_KEY_SOURCE, "key");
     task.start(props);
     List<SinkRecord> records = new ArrayList<SinkRecord>();
-    SinkRecord record = new SinkRecord(
+    SinkRecord record =
+        new SinkRecord(
             KAFKA_TOPIC,
             4,
             STRING_SCHEMA,
@@ -661,9 +652,10 @@ public class CloudPubSubSinkTaskTest {
             KAFKA_MESSAGE1,
             1000,
             50000L,
-        TimestampType.CREATE_TIME);
+            TimestampType.CREATE_TIME);
     records.add(record);
-    record = new SinkRecord(
+    record =
+        new SinkRecord(
             KAFKA_TOPIC,
             4,
             STRING_SCHEMA,
@@ -709,7 +701,8 @@ public class CloudPubSubSinkTaskTest {
     props.put(CloudPubSubSinkConnector.ORDERING_KEY_SOURCE, "partition");
     task.start(props);
     List<SinkRecord> records = new ArrayList<SinkRecord>();
-    SinkRecord record = new SinkRecord(
+    SinkRecord record =
+        new SinkRecord(
             KAFKA_TOPIC,
             4,
             STRING_SCHEMA,
@@ -718,9 +711,10 @@ public class CloudPubSubSinkTaskTest {
             KAFKA_MESSAGE1,
             1000,
             50000L,
-        TimestampType.CREATE_TIME);
+            TimestampType.CREATE_TIME);
     records.add(record);
-    record = new SinkRecord(
+    record =
+        new SinkRecord(
             KAFKA_TOPIC,
             5,
             STRING_SCHEMA,

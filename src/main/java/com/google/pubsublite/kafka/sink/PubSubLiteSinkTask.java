@@ -20,6 +20,7 @@ import static com.google.pubsublite.kafka.sink.Schemas.encodeToBytes;
 import com.google.api.core.ApiService.State;
 import com.google.cloud.pubsublite.Message;
 import com.google.cloud.pubsublite.PublishMetadata;
+import com.google.cloud.pubsublite.internal.Publisher;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.protobuf.ByteString;
@@ -35,13 +36,11 @@ import org.apache.kafka.connect.header.ConnectHeaders;
 import org.apache.kafka.connect.header.Header;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
-import com.google.cloud.pubsublite.internal.Publisher;
 
 public class PubSubLiteSinkTask extends SinkTask {
 
   private final PublisherFactory factory;
-  private @Nullable
-  Publisher<PublishMetadata> publisher;
+  private @Nullable Publisher<PublishMetadata> publisher;
 
   @VisibleForTesting
   PubSubLiteSinkTask(PublisherFactory factory) {
@@ -83,21 +82,27 @@ public class PubSubLiteSinkTask extends SinkTask {
       if (record.value() != null) {
         message.setData(encodeToBytes(record.valueSchema(), record.value()));
       }
-      ImmutableListMultimap.Builder<String, ByteString> attributes = ImmutableListMultimap
-          .builder();
-      getRecordHeaders(record).forEach(header -> attributes
-          .put(header.key(), Schemas.encodeToBytes(header.schema(), header.value())));
+      ImmutableListMultimap.Builder<String, ByteString> attributes =
+          ImmutableListMultimap.builder();
+      getRecordHeaders(record)
+          .forEach(
+              header ->
+                  attributes.put(
+                      header.key(), Schemas.encodeToBytes(header.schema(), header.value())));
       if (record.topic() != null) {
         attributes.put(Constants.KAFKA_TOPIC_HEADER, ByteString.copyFromUtf8(record.topic()));
       }
       if (record.kafkaPartition() != null) {
-        attributes.put(Constants.KAFKA_PARTITION_HEADER,
+        attributes.put(
+            Constants.KAFKA_PARTITION_HEADER,
             ByteString.copyFromUtf8(record.kafkaPartition().toString()));
-        attributes.put(Constants.KAFKA_OFFSET_HEADER,
+        attributes.put(
+            Constants.KAFKA_OFFSET_HEADER,
             ByteString.copyFromUtf8(Long.toString(record.kafkaOffset())));
       }
       if (record.timestamp() != null) {
-        attributes.put(Constants.KAFKA_EVENT_TIME_TYPE_HEADER,
+        attributes.put(
+            Constants.KAFKA_EVENT_TIME_TYPE_HEADER,
             ByteString.copyFromUtf8(record.timestampType().name));
         message.setEventTime(Timestamps.fromMillis(record.timestamp()));
       }
