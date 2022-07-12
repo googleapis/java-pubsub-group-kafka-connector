@@ -51,8 +51,7 @@ test)
     RETURN_CODE=$?
     ;;
 lint)
-    mvn com.coveo:fmt-maven-plugin:format
-    cat /home/runner/work/java-pubsub-group-kafka-connector/java-pubsub-group-kafka-connector/src/test/java/com/google/pubsublite/kafka/sink/PubSubLiteSinkTaskTest.java
+    mvn com.coveo:fmt-maven-plugin:check
     RETURN_CODE=$?
     ;;
 javadoc)

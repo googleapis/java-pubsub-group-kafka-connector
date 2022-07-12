@@ -264,14 +264,10 @@ public class PubSubLiteSinkTaskTest {
             .put(Constants.KAFKA_TOPIC_HEADER, ByteString.copyFromUtf8(KAFKA_TOPIC))
             .put(Constants.KAFKA_PARTITION_HEADER, ByteString.copyFromUtf8(Integer.toString(4)))
             .build();
-    Message expectedBase =
+    Message message1 =
         Message.builder()
             .setKey(ByteString.copyFromUtf8(KAFKA_MESSAGE_KEY1))
             .setData(KAFKA_MESSAGE1)
-            .build();
-    Message message1 =
-        expectedBase
-            .toBuilder()
             .setEventTime(Timestamps.fromMillis(50000))
             .setAttributes(
                 ImmutableListMultimap.<String, ByteString>builder()
@@ -283,8 +279,9 @@ public class PubSubLiteSinkTaskTest {
                     .build())
             .build();
     Message message2 =
-        expectedBase
-            .toBuilder()
+        Message.builder()
+            .setKey(ByteString.copyFromUtf8(KAFKA_MESSAGE_KEY1))
+            .setData(KAFKA_MESSAGE1)
             .setEventTime(Timestamps.fromMillis(50001))
             .setAttributes(
                 ImmutableListMultimap.<String, ByteString>builder()
@@ -296,8 +293,9 @@ public class PubSubLiteSinkTaskTest {
                     .build())
             .build();
     Message message3 =
-        expectedBase
-            .toBuilder()
+        Message.builder()
+            .setKey(ByteString.copyFromUtf8(KAFKA_MESSAGE_KEY1))
+            .setData(KAFKA_MESSAGE1)
             .setAttributes(
                 ImmutableListMultimap.<String, ByteString>builder()
                     .putAll(attributesBase)
@@ -343,14 +341,10 @@ public class PubSubLiteSinkTaskTest {
             .put(Constants.KAFKA_TOPIC_HEADER, ByteString.copyFromUtf8(KAFKA_TOPIC))
             .put(Constants.KAFKA_PARTITION_HEADER, ByteString.copyFromUtf8(Integer.toString(4)))
             .build();
-    Message expectedBase =
+    Message message1 =
         Message.builder()
             .setKey(ByteString.copyFromUtf8(KAFKA_MESSAGE_KEY1))
             .setData(KAFKA_MESSAGE1)
-            .build();
-    Message message1 =
-        expectedBase
-            .toBuilder()
             .setEventTime(Timestamps.fromMillis(50000))
             .setAttributes(
                 ImmutableListMultimap.<String, ByteString>builder()
@@ -363,8 +357,9 @@ public class PubSubLiteSinkTaskTest {
                     .build())
             .build();
     Message message2 =
-        expectedBase
-            .toBuilder()
+        Message.builder()
+            .setKey(ByteString.copyFromUtf8(KAFKA_MESSAGE_KEY1))
+            .setData(KAFKA_MESSAGE1)
             .setEventTime(Timestamps.fromMillis(50001))
             .setAttributes(
                 ImmutableListMultimap.<String, ByteString>builder()
