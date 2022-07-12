@@ -83,7 +83,7 @@ bash .kokoro/coerce_logs.sh
 if [[ "${ENABLE_BUILD_COP}" == "true" ]]
 then
     chmod +x ${KOKORO_GFILE_DIR}/linux_amd64/flakybot
-    ${KOKORO_GFILE_DIR}/linux_amd64/flakybot -repo=googleapis/java-pubsublite-spark
+    ${KOKORO_GFILE_DIR}/linux_amd64/flakybot -repo=googleapis/java-pubsub-group-kafka-connector
 fi
 
 echo "exiting with ${RETURN_CODE}"
