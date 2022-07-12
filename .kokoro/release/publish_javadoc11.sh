@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2021 Google LLC
+# Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ python3 -m pip install gcp-docuploader
 # compile all packages
 mvn clean install -B -q -DskipTests=true
 
-export NAME=pubsublite-spark-sql-streaming
+export NAME=pubsub-group-kafka-connector
 export VERSION=$(grep ${NAME}: versions.txt | cut -d: -f3)
 
 # cloud RAD generation
