@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2022 Google LLC
+# Copyright 2018 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ retry_with_backoff 3 10 \
   mvn clean deploy -B \
     --settings ${MAVEN_SETTINGS_FILE} \
     -DskipTests=true \
+    -Dclirr.skip=true \
     -DperformRelease=true \
     -Dgpg.executable=gpg \
     -Dgpg.passphrase=${GPG_PASSPHRASE} \

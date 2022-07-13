@@ -38,7 +38,7 @@ mvn clean verify
 ### Running Integration tests
 
 To include integration tests when building the project, you need access to
-a GCP Project with a valid service account.
+a GCP Project with a valid service account. 
 
 For instructions on how to generate a service account and corresponding
 credentials JSON see: [Creating a Service Account][1].
@@ -62,9 +62,9 @@ The samples must be separate from the primary project for a few reasons:
    selectively exclude samples from a build run.
 2. Many code samples depend on external GCP services and need
    credentials to access the service.
-3. Code samples are not released as Maven artifacts and must be excluded from
+3. Code samples are not released as Maven artifacts and must be excluded from 
    release builds.
-
+   
 ### Building
 
 ```bash

@@ -15,5 +15,5 @@
   "api_id": "pubsub.googleapis.com",
   "library_type": "AGENT",
   "transport": "grpc",
-  "requires_billing": true,
+  "requires_billing": true
 }
