@@ -1,0 +1,4 @@
+# Format:
+# module:released-version:current-version
+
+google-cloud-pubsublite:0.0.0:0.0.1-SNAPSHOT
