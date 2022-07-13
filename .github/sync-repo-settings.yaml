@@ -15,18 +15,7 @@ branchProtectionRules:
       - units (11)
       - cla/google
       - OwlBot Post Processor
-  - pattern: java7
-    isAdminEnforced: true
-    requiredApprovingReviewCount: 1
-    requiresCodeOwnerReviews: true
-    requiresStrictStatusChecks: false
-    requiredStatusCheckContexts:
-      - dependencies (8)
-      - dependencies (11)
-      - lint
-      - units (8)
-      - units (11)
-      - cla/google
+      - 'Kokoro - Test: Integration'
 permissionRules:
   - team: yoshi-admins
     permission: admin
@@ -34,5 +23,5 @@ permissionRules:
     permission: admin
   - team: yoshi-java
     permission: push
-  - team: api-pubsublite
+  - team: api-pubsub
     permission: admin
