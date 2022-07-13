@@ -18,5 +18,5 @@ import synthtool.languages.java as java
 
 java.common_templates(excludes=[
     # Exclude Java 17 in ci
-    '.github/workflows/ci.yaml',
+    ".github/workflows/ci.yaml",
 ])
