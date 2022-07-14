@@ -1,7 +1,6 @@
 package com.google.pubsub.kafka.source;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.common.truth.Truth8.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -67,7 +66,6 @@ public class AckBatchingSubscriberTest {
 
   public static void assertThrowableMatches(Throwable t, Code code) {
     Optional<CheckedApiException> statusOr = ExtractStatus.extract(t);
-    assertThat(statusOr).isPresent();
     assertThat(statusOr.get().code()).isEqualTo(code);
   }
 
