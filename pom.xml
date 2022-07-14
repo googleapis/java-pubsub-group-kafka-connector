@@ -43,7 +43,7 @@
     <dependency>
       <groupId>com.google.cloud</groupId>
       <artifactId>pubsublite-kafka</artifactId>
-      <version>0.6.11</version>
+      <version>1.0.0</version>
     </dependency>
     <dependency>
       <groupId>org.apache.kafka</groupId>
