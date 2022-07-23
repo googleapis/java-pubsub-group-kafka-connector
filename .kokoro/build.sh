@@ -59,13 +59,7 @@ javadoc)
     RETURN_CODE=$?
     ;;
 integration)
-    mvn -B ${INTEGRATION_TEST_ARGS} \
-      -Penable-integration-tests \
-      -DtrimStackTrace=false \
-      -Dclirr.skip=true \
-      -Denforcer.skip=true \
-      -fae \
-      verify
+    mvn clean test -Dtest=it.StandaloneIT
     RETURN_CODE=$?
     ;;
 *)
