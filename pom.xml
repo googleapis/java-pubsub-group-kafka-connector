@@ -121,7 +121,7 @@
     <dependency>
       <groupId>com.google.cloud</groupId>
       <artifactId>google-cloud-core</artifactId>
-      <version>1.93.9</version>
+      <version>1.96.1</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.shared</groupId>
