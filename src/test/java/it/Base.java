@@ -49,14 +49,20 @@ public class Base {
   private static final GoogleLogger log = GoogleLogger.forEnclosingClass();
 
   // TODO: System.getenv("BUCKET_NAME")
-  private static final String bucketName = "pubsublite-it";
+  private static final String bucketName = "pubsub-kafka-it-001";
   protected static final String runId = UUID.randomUUID().toString().substring(0, 8);
   protected String mavenHome;
   protected String workingDir;
   protected String connectorVersion;
-  protected String connectorJarName;
-  protected String connectorJarNameInGCS;
-  protected String connectorJarLoc;
+  protected String cpsConnectorJarName;
+  protected String cpsConnectorJarNameInGCS;
+  protected String cpsConnectorJarLoc;
+  protected String connectorPropertiesFilesLoc;
+  protected String cpsSinkConnectorPropertiesName;
+  protected String cpsSinkConnectorPropertiesGCSName;
+  protected String cpsSourceConnectorPropertiesName;
+  protected String pslSinkConnectorPropertiesName;
+  protected String pslSourceConnectorPropertiesName;
   protected String kafkaVersion;
   protected String scalaVersion;
 
@@ -110,10 +116,17 @@ public class Base {
     getVersion(workingDir, (l) -> connectorVersion = l);
     log.atInfo().log("Connector version is: %s", connectorVersion);
 
-    connectorJarName = String.format("pubsub-group-kafka-connector-%s.jar", connectorVersion);
-    connectorJarNameInGCS =
+    cpsConnectorJarName = String.format("pubsub-group-kafka-connector-%s.jar", connectorVersion);
+    cpsConnectorJarNameInGCS =
         String.format("pubsub-group-kafka-connector-%s-%s.jar", connectorVersion, runId);
-    connectorJarLoc = String.format("%s/target/%s", workingDir, connectorJarName);
+    cpsConnectorJarLoc = String.format("%s/target/%s", workingDir, cpsConnectorJarName);
+
+    connectorPropertiesFilesLoc = String.format("$s/src/test/resources/", workingDir);
+    cpsSinkConnectorPropertiesName = "cps-sink-connector-test.properties";
+    cpsSinkConnectorPropertiesGCSName = cpsSinkConnectorPropertiesName.replace(".properties", runId + ".properties");
+    cpsSourceConnectorPropertiesName = "cps-source-connector-test.properties";
+    pslSinkConnectorPropertiesName = "pubsub-lite-sink-connector-test.properties";
+    pslSourceConnectorPropertiesName = "pubsub-lite-source-connector-test.properties";
 
     // TODO: Get Kafka and Scala versions programmatically: {major}.{minor}.{patch}.
     kafkaVersion = "3.2.0";
@@ -166,17 +179,44 @@ public class Base {
           Metadata.newBuilder()
               .addItems(
                   Items.newBuilder()
-                      .setKey("url")
-                      .setValue(
-                          String.format(
-                              "https://downloads.apache.org/kafka/%s/kafka_%s-%s.tgz",
-                              kafkaVersion, scalaVersion, kafkaVersion))
+                      .setKey("project_id")
+                      .setValue(projectId)
+                      .build())
+              .addItems(
+                  Items.newBuilder()
+                      .setKey("run_id")
+                      .setValue(runId)
+                      .build())
+              .addItems(
+                  Items.newBuilder()
+                      .setKey("kafka_version")
+                      .setValue(kafkaVersion)
                       .build())
               .addItems(
                   Items.newBuilder()
                       .setKey("startup-script")
                       .setValue(
-                          "#! /bin/bash\nURL=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/url -H \"Metadata-Flavor: Google\")\nsudo apt-get update\nsudo apt-get install -yq wget openjdk-11-jdk maven\nwget $URL")
+                          "")
+                      .build())
+              .addItems(
+                  Items.newBuilder()
+                      .setKey("scala_version")
+                      .setValue(scalaVersion)
+                      .build())
+              .addItems(
+                  Items.newBuilder()
+                      .setKey("gcs_bucket")
+                      .setValue(bucketName)
+                      .build())
+              .addItems(
+                  Items.newBuilder()
+                      .setKey("cps_connector_jar_name")
+                      .setValue(cpsConnectorJarNameInGCS)
+                      .build())
+              .addItems(
+                  Items.newBuilder()
+                      .setKey("cps_sink_connector_properties_name")
+                      .setValue(cpsSinkConnectorPropertiesGCSName)
                       .build())
               .build();
 

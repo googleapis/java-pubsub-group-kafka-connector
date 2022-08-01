@@ -25,14 +25,15 @@ public class StandaloneIT extends Base {
   PrintStream out;
 
   private static final GoogleLogger log = GoogleLogger.forEnclosingClass();
-
-  private static final String projectId = System.getenv("GOOGLE_CLOUD_PROJECT");
+  // TODO: System.getenv("GOOGLE_CLOUD_PROJECT")
+  private static final String projectId = "loadtest-samarthsingal" ;
   // TODO: System.getenv("GOOGLE_CLOUD_PROJECT_NUMBER");
-  private static final String projectNumber = "779844219229";
-  private static final String sourceTopicId = "source-topic-" + runId;
-  private static final String sourceSubscriptionId = "source-subscription-" + runId;
-  private static final String sinkTopicId = "sink-topic-" + runId;
-  private static final String sinkSubscriptionId = "sink-subscription-" + runId;
+  private static final String projectNumber = "700946198918";
+  private static final String sourceTopicId = "cps-source-topic-" + runId;
+  private static final String sourceSubscriptionId = "cps-source-subscription-" + runId;
+  private static final String sinkTopicId = "cps-sink-topic-" + runId;
+  private static final String sinkTestKafkaTopic = "cps-sink-test-kafka-topic";
+  private static final String sinkSubscriptionId = "cps-sink-subscription-" + runId;
   private static final String zone = "us-central1-b";
   private static final String instanceName = "kafka-it-" + runId;
   private static final String instanceTemplateName = "kafka-it-template-" + runId;
@@ -63,8 +64,12 @@ public class StandaloneIT extends Base {
     log.atInfo().log("Packaged connector jar.");
 
     Storage storage = StorageOptions.newBuilder().setProjectId(projectId).build().getService();
-    uploadGCS(storage, connectorJarNameInGCS, connectorJarLoc);
-    log.atInfo().log("Uploaded connector jar to GCS.");
+    uploadGCS(storage, cpsConnectorJarNameInGCS, cpsConnectorJarLoc);
+    log.atInfo().log("Uploaded CPS connector jar to GCS.");
+
+    uploadGCS(storage, cpsSinkConnectorPropertiesGCSName, connectorPropertiesFilesLoc + cpsSinkConnectorPropertiesName);
+    log.atInfo().log("Uploaded CPS sink connector properties file to GCS.");
+
 
     initialized = true;
 
@@ -85,7 +90,7 @@ public class StandaloneIT extends Base {
               .setName(sinkSubscriptionName.toString())
               .setTopic(sinkTopicName.toString())
               .build());
-      log.atInfo().log("Crated source and sink subscriptions");
+      log.atInfo().log("Created source and sink subscriptions");
     }
 
     createInstanceTemplate(projectId, projectNumber, instanceTemplateName);
