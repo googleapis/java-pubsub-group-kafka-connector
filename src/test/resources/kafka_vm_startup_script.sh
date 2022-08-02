@@ -34,5 +34,5 @@ sed -i "s@#plugin.path=@plugin.path=$(pwd)\/$GCS_DIR@g" $KAFKA_DIR/config/connec
 ## Create kafka topics for connectors
 $KAFKA_DIR/bin/kafka-topics.sh --create --topic 'cps-sink-test-kafka-topic' --bootstrap-server localhost:9092
 ## Start connectors
-$KAFKA_DIR/bin/connect-standalone.sh $KAFKA_DIR/config/connect-standalone.properties $GCS_DIR/$CPS_SINK_CONNECTOR_PROPERTIES
+$KAFKA_DIR/bin/connect-standalone.sh $KAFKA_DIR/config/connect-standalone.properties $GCS_DIR/$CPS_SINK_CONNECTOR_PROPERTIES &
 

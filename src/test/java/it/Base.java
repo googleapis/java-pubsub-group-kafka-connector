@@ -6,6 +6,7 @@ import com.google.cloud.compute.v1.AccessConfig;
 import com.google.cloud.compute.v1.AccessConfig.NetworkTier;
 import com.google.cloud.compute.v1.AttachedDisk;
 import com.google.cloud.compute.v1.AttachedDiskInitializeParams;
+import com.google.cloud.compute.v1.GetInstanceRequest;
 import com.google.cloud.compute.v1.InsertInstanceRequest;
 import com.google.cloud.compute.v1.InsertInstanceTemplateRequest;
 import com.google.cloud.compute.v1.Instance;
@@ -54,10 +55,11 @@ public class Base {
   protected String mavenHome;
   protected String workingDir;
   protected String connectorVersion;
+  protected String startupScriptName;
   protected String cpsConnectorJarName;
   protected String cpsConnectorJarNameInGCS;
   protected String cpsConnectorJarLoc;
-  protected String connectorPropertiesFilesLoc;
+  protected String testResourcesDirLoc;
   protected String cpsSinkConnectorPropertiesName;
   protected String cpsSinkConnectorPropertiesGCSName;
   protected String cpsSourceConnectorPropertiesName;
@@ -116,12 +118,13 @@ public class Base {
     getVersion(workingDir, (l) -> connectorVersion = l);
     log.atInfo().log("Connector version is: %s", connectorVersion);
 
+    startupScriptName = "kafka_vm_startup_script.sh";
     cpsConnectorJarName = String.format("pubsub-group-kafka-connector-%s.jar", connectorVersion);
     cpsConnectorJarNameInGCS =
         String.format("pubsub-group-kafka-connector-%s-%s.jar", connectorVersion, runId);
     cpsConnectorJarLoc = String.format("%s/target/%s", workingDir, cpsConnectorJarName);
 
-    connectorPropertiesFilesLoc = String.format("$s/src/test/resources/", workingDir);
+    testResourcesDirLoc = String.format("%s/src/test/resources/", workingDir);
     cpsSinkConnectorPropertiesName = "cps-sink-connector-test.properties";
     cpsSinkConnectorPropertiesGCSName = cpsSinkConnectorPropertiesName.replace(".properties", runId + ".properties");
     cpsSourceConnectorPropertiesName = "cps-source-connector-test.properties";
@@ -195,8 +198,7 @@ public class Base {
               .addItems(
                   Items.newBuilder()
                       .setKey("startup-script")
-                      .setValue(
-                          "")
+                      .setValue(Files.readString(Paths.get(testResourcesDirLoc + startupScriptName)))
                       .build())
               .addItems(
                   Items.newBuilder()
@@ -290,6 +292,20 @@ public class Base {
       System.out.printf(
           "\nInstance creation from template: Operation Status %s: %s ",
           instanceName, response.getStatus());
+    }
+  }
+
+  protected Instance getInstance(String projectId, String zone, String instanceName)
+      throws IOException {
+    try (InstancesClient instancesClient = InstancesClient.create()) {
+
+      GetInstanceRequest getInstanceRequest = GetInstanceRequest.newBuilder()
+          .setProject(projectId)
+          .setZone(zone)
+          .setInstance(instanceName)
+          .build();
+      Instance instance = instancesClient.get(getInstanceRequest);
+      return instance;
     }
   }
 }
