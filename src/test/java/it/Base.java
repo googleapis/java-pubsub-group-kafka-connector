@@ -30,6 +30,7 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -50,7 +51,7 @@ public class Base {
   private static final GoogleLogger log = GoogleLogger.forEnclosingClass();
 
   // TODO: System.getenv("BUCKET_NAME")
-  private static final String bucketName = "pubsub-kafka-it-001";
+  private static final String bucketName = "test-gcs-cmd";
   protected static final String runId = UUID.randomUUID().toString().substring(0, 8);
   protected String mavenHome;
   protected String workingDir;
@@ -182,6 +183,11 @@ public class Base {
           Metadata.newBuilder()
               .addItems(
                   Items.newBuilder()
+                      .setKey("serial-port-logging-enable")
+                      .setValue(String.valueOf(true))
+                      .build())
+              .addItems(
+                  Items.newBuilder()
                       .setKey("project_id")
                       .setValue(projectId)
                       .build())
@@ -231,7 +237,10 @@ public class Base {
                   ServiceAccount.newBuilder()
                       .setEmail(
                           String.format("%s-compute@developer.gserviceaccount.com", projectNumber))
-                      .addScopes("https://www.googleapis.com/auth/pubsub")
+                      .addAllScopes(
+                          List.of(
+                              "https://www.googleapis.com/auth/pubsub",
+                              "https://www.googleapis.com/auth/devstorage.read_write"))
                       .build())
               .setMetadata(metadata)
               .build();

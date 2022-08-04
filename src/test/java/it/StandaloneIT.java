@@ -23,12 +23,24 @@ import java.io.ByteArrayOutputStream;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.apache.kafka.clients.ClientRequest;
+import org.apache.kafka.clients.ClientResponse;
+import org.apache.kafka.clients.KafkaClient;
+import org.apache.kafka.clients.RequestCompletionHandler;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.MetricName;
+import org.apache.kafka.common.Node;
+import org.apache.kafka.common.PartitionInfo;
+import org.apache.kafka.common.errors.AuthenticationException;
+import org.apache.kafka.common.requests.AbstractRequest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -42,9 +54,9 @@ public class StandaloneIT extends Base {
   private static final Long KAFKA_PORT = Long.valueOf(9092);
   private static final GoogleLogger log = GoogleLogger.forEnclosingClass();
   // TODO: System.getenv("GOOGLE_CLOUD_PROJECT")
-  private static final String projectId = "loadtest-samarthsingal" ;
+  private static final String projectId = "opportune-cairn-358320" ;
   // TODO: System.getenv("GOOGLE_CLOUD_PROJECT_NUMBER");
-  private static final String projectNumber = "700946198918";
+  private static final String projectNumber = "1086864572443";
   private static final String sourceTopicId = "cps-source-topic-" + runId;
   private static final String sourceSubscriptionId = "cps-source-subscription-" + runId;
   private static final String sinkTopicId = "cps-sink-topic-" + runId;
@@ -150,15 +162,16 @@ public class StandaloneIT extends Base {
       log.atInfo().log("Ignore. No subscriptions found.");
     }
 
-    try (InstancesClient instancesClient = InstancesClient.create()) {
-      instancesClient.deleteAsync(projectId, zone, instanceName).get(3, TimeUnit.MINUTES);
-    }
-    log.atInfo().log("Deleted Compute Engine instance.");
-
-    try (InstanceTemplatesClient instanceTemplatesClient = InstanceTemplatesClient.create()) {
-      instanceTemplatesClient.deleteAsync(projectId, instanceTemplateName).get(3, TimeUnit.MINUTES);
-    }
-    log.atInfo().log("Deleted Compute Engine instance template.");
+    // TODO: cleanup instance
+    // try (InstancesClient instancesClient = InstancesClient.create()) {
+    //   instancesClient.deleteAsync(projectId, zone, instanceName).get(3, TimeUnit.MINUTES);
+    // }
+    // log.atInfo().log("Deleted Compute Engine instance.");
+    //
+    // try (InstanceTemplatesClient instanceTemplatesClient = InstanceTemplatesClient.create()) {
+    //   instanceTemplatesClient.deleteAsync(projectId, instanceTemplateName).get(3, TimeUnit.MINUTES);
+    // }
+    // log.atInfo().log("Deleted Compute Engine instance template.");
 
     System.setOut(null);
   }
@@ -168,15 +181,29 @@ public class StandaloneIT extends Base {
     assertThat(gceKafkaInstance.getNetworkInterfaces(0).getAccessConfigsList()).isNotEmpty();
     String instanceIpAddress = gceKafkaInstance.getNetworkInterfaces(0).getAccessConfigs(0)
         .getNatIP();
+
+    Properties consumer_props = new Properties();
+    consumer_props.setProperty("bootstrap.servers", instanceIpAddress + ":" + KAFKA_PORT);
+    consumer_props.setProperty("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+    consumer_props.setProperty("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+    consumer_props.setProperty("group.id", "test");
+    consumer_props.setProperty("enable.auto.commit", "true");
+    consumer_props.setProperty("auto.commit.interval.ms", "1000");
+    KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(consumer_props);
+    Map<String, List<PartitionInfo>> topicInfo = kafkaConsumer.listTopics();
+    log.atInfo().log("Found topics: " + topicInfo.keySet().stream().reduce(String::concat));
+
+
     Properties props = new Properties();
     props.put("bootstrap.servers", instanceIpAddress + ":" + KAFKA_PORT);
-    props.put("linger.ms", 1);
     props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
     props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
 
     // Send message to Kafka topic.
     KafkaProducer<String, String> kafkaProducer = new KafkaProducer<>(props);
-    kafkaProducer.send(new ProducerRecord<String, String>(sinkTestKafkaTopic, "key0", "value0"));
+    kafkaProducer.send(new ProducerRecord<String, String>(sinkTestKafkaTopic, "key0", "value0")).get();
+    kafkaProducer.flush();
+    kafkaProducer.metrics().forEach((metricName, metric) -> { if(metricName.name() == "record-send-total") { log.atInfo().log("record-send-total: " + metric.metricValue().toString());}});
     kafkaProducer.close();
 
     // Sleep.
