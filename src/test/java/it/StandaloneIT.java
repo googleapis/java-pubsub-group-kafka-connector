@@ -1,10 +1,7 @@
 package it;
 
-import com.google.api.gax.rpc.NotFoundException;
 import static com.google.common.truth.Truth.assertThat;
 import com.google.cloud.compute.v1.Instance;
-import com.google.cloud.compute.v1.InstanceTemplatesClient;
-import com.google.cloud.compute.v1.InstancesClient;
 import com.google.cloud.pubsub.v1.AckReplyConsumer;
 import com.google.cloud.pubsub.v1.MessageReceiver;
 import com.google.cloud.pubsub.v1.Subscriber;
@@ -27,20 +24,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.apache.kafka.clients.ClientRequest;
-import org.apache.kafka.clients.ClientResponse;
-import org.apache.kafka.clients.KafkaClient;
-import org.apache.kafka.clients.RequestCompletionHandler;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.MetricName;
-import org.apache.kafka.common.Node;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.PartitionInfo;
-import org.apache.kafka.common.errors.AuthenticationException;
-import org.apache.kafka.common.requests.AbstractRequest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -144,23 +135,23 @@ public class StandaloneIT extends Base {
 
   @After
   public void tearDown() throws Exception {
-    try (SubscriptionAdminClient subscriptionAdminClient = SubscriptionAdminClient.create()) {
-      try {
-        subscriptionAdminClient.deleteSubscription(sourceSubscriptionName);
-        subscriptionAdminClient.deleteSubscription(sinkSubscriptionName);
-        log.atInfo().log("Deleted source and sink subscriptions.");
-      } catch (NotFoundException ignored) {
-        log.atInfo().log("Ignore. No topics found.");
-      }
-    }
-
-    try (TopicAdminClient topicAdminClient = TopicAdminClient.create()) {
-      topicAdminClient.deleteTopic(sourceTopicName.toString());
-      topicAdminClient.deleteTopic(sinkTopicName.toString());
-      log.atInfo().log("Deleted source and sink topics");
-    } catch (NotFoundException ignored) {
-      log.atInfo().log("Ignore. No subscriptions found.");
-    }
+    // try (SubscriptionAdminClient subscriptionAdminClient = SubscriptionAdminClient.create()) {
+    //   try {
+    //     subscriptionAdminClient.deleteSubscription(sourceSubscriptionName);
+    //     subscriptionAdminClient.deleteSubscription(sinkSubscriptionName);
+    //     log.atInfo().log("Deleted source and sink subscriptions.");
+    //   } catch (NotFoundException ignored) {
+    //     log.atInfo().log("Ignore. No topics found.");
+    //   }
+    // }
+    //
+    // try (TopicAdminClient topicAdminClient = TopicAdminClient.create()) {
+    //   topicAdminClient.deleteTopic(sourceTopicName.toString());
+    //   topicAdminClient.deleteTopic(sinkTopicName.toString());
+    //   log.atInfo().log("Deleted source and sink topics");
+    // } catch (NotFoundException ignored) {
+    //   log.atInfo().log("Ignore. No subscriptions found.");
+    // }
 
     // TODO: cleanup instance
     // try (InstancesClient instancesClient = InstancesClient.create()) {
@@ -182,18 +173,6 @@ public class StandaloneIT extends Base {
     String instanceIpAddress = gceKafkaInstance.getNetworkInterfaces(0).getAccessConfigs(0)
         .getNatIP();
 
-    Properties consumer_props = new Properties();
-    consumer_props.setProperty("bootstrap.servers", instanceIpAddress + ":" + KAFKA_PORT);
-    consumer_props.setProperty("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-    consumer_props.setProperty("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-    consumer_props.setProperty("group.id", "test");
-    consumer_props.setProperty("enable.auto.commit", "true");
-    consumer_props.setProperty("auto.commit.interval.ms", "1000");
-    KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(consumer_props);
-    Map<String, List<PartitionInfo>> topicInfo = kafkaConsumer.listTopics();
-    log.atInfo().log("Found topics: " + topicInfo.keySet().stream().reduce(String::concat));
-
-
     Properties props = new Properties();
     props.put("bootstrap.servers", instanceIpAddress + ":" + KAFKA_PORT);
     props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
@@ -201,13 +180,14 @@ public class StandaloneIT extends Base {
 
     // Send message to Kafka topic.
     KafkaProducer<String, String> kafkaProducer = new KafkaProducer<>(props);
-    kafkaProducer.send(new ProducerRecord<String, String>(sinkTestKafkaTopic, "key0", "value0")).get();
+    Future<RecordMetadata> send_future =  kafkaProducer.send(new ProducerRecord<String, String>(sinkTestKafkaTopic, "key0", "value0"));
     kafkaProducer.flush();
+    send_future.get();
     kafkaProducer.metrics().forEach((metricName, metric) -> { if(metricName.name() == "record-send-total") { log.atInfo().log("record-send-total: " + metric.metricValue().toString());}});
     kafkaProducer.close();
 
     // Sleep.
-    Thread.sleep(30 * 1000);
+    Thread.sleep(10 * 1000);
 
     // Subscribe to messages.
     ProjectSubscriptionName subscriptionName =

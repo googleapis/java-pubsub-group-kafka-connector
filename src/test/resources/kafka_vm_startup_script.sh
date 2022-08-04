@@ -20,7 +20,7 @@ RUN_ID=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attrib
 PROJECT_NAME=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/project_id -H "Metadata-Flavor: Google")
 
 sed -i "s/<runId>/$RUN_ID/g" $GCS_DIR/*.properties
-sed -i "s/<projectName>/PROJECT_NAME/g" $GCS_DIR/*.properties
+sed -i "s/<projectName>/$PROJECT_NAME/g" $GCS_DIR/*.properties
 
 # Install and run Kafka brokers
 KAFKA_VERSION=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/kafka_version -H "Metadata-Flavor: Google")
@@ -31,8 +31,8 @@ EXTERNAL_IP=$(curl http://metadata/computeMetadata/v1/instance/network-interface
 
 wget $KAFKA_URL
 tar -xzf "$KAFKA_DIR.tgz"
-sed -i "s@#advertised.listeners@advertised.listeners@g"
-sed -i "s@your.host.name@$EXTERNAL_IP@g"
+sed -i "s@#advertised.listeners@advertised.listeners@g" $KAFKA_DIR/config/server.properties
+sed -i "s@your.host.name@$EXTERNAL_IP@g" $KAFKA_DIR/config/server.properties
 $KAFKA_DIR/bin/zookeeper-server-start.sh $KAFKA_DIR/config/zookeeper.properties &
 $KAFKA_DIR/bin/kafka-server-start.sh $KAFKA_DIR/config/server.properties &
 
