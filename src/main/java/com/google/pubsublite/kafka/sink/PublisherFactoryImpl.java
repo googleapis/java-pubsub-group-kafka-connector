@@ -36,16 +36,15 @@ class PublisherFactoryImpl implements PublisherFactory {
       @Override
       public Publisher<MessageMetadata> newPublisher(Partition partition) throws ApiException {
         SinglePartitionPublisherBuilder.Builder singlePartitionBuilder =
-                SinglePartitionPublisherBuilder.newBuilder()
-                        .setTopic(topic)
-                        .setPartition(partition)
-                        .setBatchingSettings(PublisherSettings.DEFAULT_BATCHING_SETTINGS);
+            SinglePartitionPublisherBuilder.newBuilder()
+                .setTopic(topic)
+                .setPartition(partition)
+                .setBatchingSettings(PublisherSettings.DEFAULT_BATCHING_SETTINGS);
         return singlePartitionBuilder.build();
       }
 
       @Override
-      public void close() {
-      }
+      public void close() {}
     };
   }
 
