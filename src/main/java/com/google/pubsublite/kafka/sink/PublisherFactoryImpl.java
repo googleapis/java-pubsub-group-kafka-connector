@@ -16,7 +16,12 @@
 package com.google.pubsublite.kafka.sink;
 
 import com.google.api.gax.rpc.ApiException;
-import com.google.cloud.pubsublite.*;
+import com.google.cloud.pubsublite.CloudZone;
+import com.google.cloud.pubsublite.MessageMetadata;
+import com.google.cloud.pubsublite.Partition;
+import com.google.cloud.pubsublite.ProjectPath;
+import com.google.cloud.pubsublite.TopicName;
+import com.google.cloud.pubsublite.TopicPath;
 import com.google.cloud.pubsublite.cloudpubsub.PublisherSettings;
 import com.google.cloud.pubsublite.internal.Publisher;
 import com.google.cloud.pubsublite.internal.wire.PubsubContext.Framework;
