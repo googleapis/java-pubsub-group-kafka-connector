@@ -24,7 +24,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 import com.google.cloud.pubsublite.Message;
-import com.google.cloud.pubsublite.PublishMetadata;
+import com.google.cloud.pubsublite.MessageMetadata;
 import com.google.cloud.pubsublite.internal.Publisher;
 import com.google.cloud.pubsublite.internal.testing.FakeApiService;
 import com.google.common.collect.ImmutableList;
@@ -104,7 +104,7 @@ public class PubSubLiteSinkTaskTest {
   private PubSubLiteSinkTask task;
 
   abstract static class FakePublisher extends FakeApiService
-      implements Publisher<PublishMetadata> {}
+      implements Publisher<MessageMetadata> {}
 
   private @Spy FakePublisher publisher;
 
