@@ -64,6 +64,7 @@ public class Base {
   protected String cpsSinkConnectorPropertiesName;
   protected String cpsSinkConnectorPropertiesGCSName;
   protected String cpsSourceConnectorPropertiesName;
+  protected String cpsSourceConnectorPropertiesGCSName;
   protected String pslSinkConnectorPropertiesName;
   protected String pslSourceConnectorPropertiesName;
   protected String kafkaVersion;
@@ -129,6 +130,7 @@ public class Base {
     cpsSinkConnectorPropertiesName = "cps-sink-connector-test.properties";
     cpsSinkConnectorPropertiesGCSName = cpsSinkConnectorPropertiesName.replace(".properties", runId + ".properties");
     cpsSourceConnectorPropertiesName = "cps-source-connector-test.properties";
+    cpsSourceConnectorPropertiesGCSName = cpsSourceConnectorPropertiesName.replace(".properties", runId + ".properties");
     pslSinkConnectorPropertiesName = "pubsub-lite-sink-connector-test.properties";
     pslSourceConnectorPropertiesName = "pubsub-lite-source-connector-test.properties";
 
@@ -225,6 +227,11 @@ public class Base {
                   Items.newBuilder()
                       .setKey("cps_sink_connector_properties_name")
                       .setValue(cpsSinkConnectorPropertiesGCSName)
+                      .build())
+              .addItems(
+                  Items.newBuilder()
+                      .setKey("cps_source_connector_properties_name")
+                      .setValue(cpsSourceConnectorPropertiesGCSName)
                       .build())
               .build();
 

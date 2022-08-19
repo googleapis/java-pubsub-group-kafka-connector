@@ -7,11 +7,13 @@ sudo apt-get install -yq wget openjdk-11-jdk maven
 GCS_BUCKET=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/gcs_bucket -H "Metadata-Flavor: Google")
 CPS_CONNECTOR_JAR=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/cps_connector_jar_name -H "Metadata-Flavor: Google")
 CPS_SINK_CONNECTOR_PROPERTIES=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/cps_sink_connector_properties_name -H "Metadata-Flavor: Google")
+CPS_SOURCE_CONNECTOR_PROPERTIES=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/cps_source_connector_properties_name -H "Metadata-Flavor: Google")
 GCS_DIR='gcs_resources'
 
 mkdir $GCS_DIR
 gsutil cp "gs://$GCS_BUCKET/$CPS_CONNECTOR_JAR" $GCS_DIR/
 gsutil cp "gs://$GCS_BUCKET/$CPS_SINK_CONNECTOR_PROPERTIES" $GCS_DIR/
+gsutil cp "gs://$GCS_BUCKET/$CPS_SOURCE_CONNECTOR_PROPERTIES" $GCS_DIR/
 echo "Files in $GCS_DIR: "
 ls -l $GCS_DIR/
 
@@ -40,7 +42,8 @@ $KAFKA_DIR/bin/kafka-server-start.sh $KAFKA_DIR/config/server.properties &
 sed -i "s@#plugin.path=@plugin.path=$(pwd)\/$GCS_DIR@g" $KAFKA_DIR/config/connect-standalone.properties
 ## Create kafka topics for connectors
 $KAFKA_DIR/bin/kafka-topics.sh --create --topic 'cps-sink-test-kafka-topic' --bootstrap-server localhost:9092
+$KAFKA_DIR/bin/kafka-topics.sh --create --topic 'cps-source-test-kafka-topic' --bootstrap-server localhost:9092
 ## Start connectors
-$KAFKA_DIR/bin/connect-standalone.sh $KAFKA_DIR/config/connect-standalone.properties $GCS_DIR/$CPS_SINK_CONNECTOR_PROPERTIES &
+$KAFKA_DIR/bin/connect-standalone.sh $KAFKA_DIR/config/connect-standalone.properties $GCS_DIR/$CPS_SINK_CONNECTOR_PROPERTIES $GCS_DIR/$CPS_SOURCE_CONNECTOR_PROPERTIES &
 
 set +x
