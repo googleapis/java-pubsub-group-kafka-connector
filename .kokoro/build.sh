@@ -59,6 +59,10 @@ javadoc)
     RETURN_CODE=$?
     ;;
 integration)
+    if [ -f "${KOKORO_GFILE_DIR}/secret_manager/java-pubsub-group-kafka-connector-secrets" ]
+      then
+          source "${KOKORO_GFILE_DIR}/secret_manager/java-pubsub-group-kafka-connector-secrets"
+    fi
     mvn clean test -Dtest=it.StandaloneIT
     RETURN_CODE=$?
     ;;
