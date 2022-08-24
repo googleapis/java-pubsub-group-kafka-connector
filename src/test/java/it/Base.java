@@ -27,10 +27,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -195,7 +195,10 @@ public class Base {
                   Items.newBuilder()
                       .setKey("startup-script")
                       .setValue(
-                          Files.readString(Paths.get(testResourcesDirLoc + startupScriptName)))
+                          new String(
+                              Files.readAllBytes(
+                                  Paths.get(testResourcesDirLoc + startupScriptName)),
+                              StandardCharsets.UTF_8))
                       .build())
               .addItems(Items.newBuilder().setKey("scala_version").setValue(scalaVersion).build())
               .addItems(Items.newBuilder().setKey("gcs_bucket").setValue(bucketName).build())
@@ -226,7 +229,7 @@ public class Base {
                       .setEmail(
                           String.format("%s-compute@developer.gserviceaccount.com", projectNumber))
                       .addAllScopes(
-                          List.of(
+                          Arrays.asList(
                               "https://www.googleapis.com/auth/pubsub",
                               "https://www.googleapis.com/auth/devstorage.read_write"))
                       .build())
