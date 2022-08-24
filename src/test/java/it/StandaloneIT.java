@@ -57,6 +57,7 @@ public class StandaloneIT extends Base {
 
   @BeforeClass
   public static void checkRequirements() {
+    requireEnvVar("GOOGLE_CLOUD_PROJECT");
     requireEnvVar("GOOGLE_CLOUD_PROJECT_NUMBER");
     requireEnvVar("BUCKET_NAME");
   }
