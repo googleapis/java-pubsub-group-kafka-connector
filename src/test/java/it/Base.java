@@ -48,8 +48,7 @@ public class Base {
 
   private static final GoogleLogger log = GoogleLogger.forEnclosingClass();
 
-  // TODO: System.getenv("BUCKET_NAME")
-  private static final String bucketName = "pubsublite-it";
+  private static final String bucketName = System.getenv("BUCKET_NAME");
   protected static final String runId = UUID.randomUUID().toString().substring(0, 8);
   protected String mavenHome;
   protected String workingDir;
