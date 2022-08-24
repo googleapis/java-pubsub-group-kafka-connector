@@ -50,8 +50,8 @@ public class Base {
 
   private static final GoogleLogger log = GoogleLogger.forEnclosingClass();
 
-  // TODO: System.getenv("BUCKET_NAME")
-  private static final String bucketName = "test-gcs-cmd";
+
+  private static final String bucketName = System.getenv("BUCKET_NAME");
   protected static final String runId = UUID.randomUUID().toString().substring(0, 8);
   protected String mavenHome;
   protected String workingDir;
@@ -180,7 +180,6 @@ public class Base {
                       .build())
               .build();
 
-      // TODO: flesh out the complete startup script. Possibly link to a file.
       Metadata metadata =
           Metadata.newBuilder()
               .addItems(

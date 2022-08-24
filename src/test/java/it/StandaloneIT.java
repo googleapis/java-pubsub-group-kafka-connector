@@ -6,7 +6,10 @@ import com.google.api.core.ApiFuture;
 import com.google.api.core.ApiFutureCallback;
 import com.google.api.core.ApiFutures;
 import com.google.api.gax.rpc.ApiException;
+import com.google.api.gax.rpc.NotFoundException;
 import com.google.cloud.compute.v1.Instance;
+import com.google.cloud.compute.v1.InstanceTemplatesClient;
+import com.google.cloud.compute.v1.InstancesClient;
 import com.google.cloud.pubsub.v1.AckReplyConsumer;
 import com.google.cloud.pubsub.v1.MessageReceiver;
 import com.google.cloud.pubsub.v1.Publisher;
@@ -58,10 +61,8 @@ public class StandaloneIT extends Base {
 
   private static final Long KAFKA_PORT = Long.valueOf(9092);
   private static final GoogleLogger log = GoogleLogger.forEnclosingClass();
-  // TODO: System.getenv("GOOGLE_CLOUD_PROJECT")
-  private static final String projectId = "opportune-cairn-358320" ;
-  // TODO: System.getenv("GOOGLE_CLOUD_PROJECT_NUMBER");
-  private static final String projectNumber = "1086864572443";
+  private static final String projectId = System.getenv("GOOGLE_CLOUD_PROJECT");
+  private static final String projectNumber = System.getenv("GOOGLE_CLOUD_PROJECT_NUMBER");
   private static final String sourceTopicId = "cps-source-topic-" + runId;
   private static final String sourceSubscriptionId = "cps-source-subscription-" + runId;
   private static final String sourceKafkTopic = "cps-source-test-kafka-topic";
@@ -161,34 +162,34 @@ public class StandaloneIT extends Base {
       return;
     }
     cleaned.getAndSet(true);
-    // try (SubscriptionAdminClient subscriptionAdminClient = SubscriptionAdminClient.create()) {
-    //   try {
-    //     subscriptionAdminClient.deleteSubscription(sourceSubscriptionName);
-    //     subscriptionAdminClient.deleteSubscription(sinkSubscriptionName);
-    //     log.atInfo().log("Deleted source and sink subscriptions.");
-    //   } catch (NotFoundException ignored) {
-    //     log.atInfo().log("Ignore. No topics found.");
-    //   }
-    // }
-    //
-    // try (TopicAdminClient topicAdminClient = TopicAdminClient.create()) {
-    //   topicAdminClient.deleteTopic(sourceTopicName.toString());
-    //   topicAdminClient.deleteTopic(sinkTopicName.toString());
-    //   log.atInfo().log("Deleted source and sink topics");
-    // } catch (NotFoundException ignored) {
-    //   log.atInfo().log("Ignore. No subscriptions found.");
-    // }
+    try (SubscriptionAdminClient subscriptionAdminClient = SubscriptionAdminClient.create()) {
+      try {
+        subscriptionAdminClient.deleteSubscription(sourceSubscriptionName);
+        subscriptionAdminClient.deleteSubscription(sinkSubscriptionName);
+        log.atInfo().log("Deleted source and sink subscriptions.");
+      } catch (NotFoundException ignored) {
+        log.atInfo().log("Ignore. No topics found.");
+      }
+    }
+
+    try (TopicAdminClient topicAdminClient = TopicAdminClient.create()) {
+      topicAdminClient.deleteTopic(sourceTopicName.toString());
+      topicAdminClient.deleteTopic(sinkTopicName.toString());
+      log.atInfo().log("Deleted source and sink topics");
+    } catch (NotFoundException ignored) {
+      log.atInfo().log("Ignore. No subscriptions found.");
+    }
 
     // TODO: cleanup instance
-    // try (InstancesClient instancesClient = InstancesClient.create()) {
-    //   instancesClient.deleteAsync(projectId, zone, instanceName).get(3, TimeUnit.MINUTES);
-    // }
-    // log.atInfo().log("Deleted Compute Engine instance.");
-    //
-    // try (InstanceTemplatesClient instanceTemplatesClient = InstanceTemplatesClient.create()) {
-    //   instanceTemplatesClient.deleteAsync(projectId, instanceTemplateName).get(3, TimeUnit.MINUTES);
-    // }
-    // log.atInfo().log("Deleted Compute Engine instance template.");
+    try (InstancesClient instancesClient = InstancesClient.create()) {
+      instancesClient.deleteAsync(projectId, zone, instanceName).get(3, TimeUnit.MINUTES);
+    }
+    log.atInfo().log("Deleted Compute Engine instance.");
+
+    try (InstanceTemplatesClient instanceTemplatesClient = InstanceTemplatesClient.create()) {
+      instanceTemplatesClient.deleteAsync(projectId, instanceTemplateName).get(3, TimeUnit.MINUTES);
+    }
+    log.atInfo().log("Deleted Compute Engine instance template.");
 
     System.setOut(null);
   }
@@ -238,50 +239,50 @@ public class StandaloneIT extends Base {
     assertThat(this.cpsMessageReceived).isTrue();
   }
 
-  @Test
-  public void testCpsSourceConnector() throws Exception {
-    // Publish to CPS topic
-    ProjectTopicName sourceTopic = ProjectTopicName.of(projectId, sourceTopicId);
-    Publisher publisher = Publisher.newBuilder(sourceTopic).build();
-    PubsubMessage msg0 = PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("msg0")).build();
-    ApiFuture<String> publishFuture = publisher.publish(msg0);
-    ApiFutures.addCallback(
-        publishFuture,
-        new ApiFutureCallback<String>() {
-
-          @Override
-          public void onFailure(Throwable throwable) {
-            if (throwable instanceof ApiException) {
-              ApiException apiException = ((ApiException) throwable);
-              // details on the API exception
-              System.out.println(apiException.getStatusCode().getCode());
-              System.out.println(apiException.isRetryable());
-            }
-            Assert.fail("Error publishing message : " + msg0);
-          }
-
-          @Override
-          public void onSuccess(String messageId) {
-            // Once published, returns server-assigned message ids (unique within the topic)
-            System.out.println("Published message ID: " + messageId);
-          }
-        },
-        MoreExecutors.directExecutor());
-
-    // Sleep for 10s.
-    Thread.sleep(10*1000);
-
-    // Consume from Kafka connect.
-    Properties consumer_props = new Properties();
-    consumer_props.setProperty("bootstrap.servers", kafkaInstanceIpAddress + ":" + KAFKA_PORT);
-    consumer_props.setProperty("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-    consumer_props.setProperty("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-    consumer_props.setProperty("group.id", "test");
-    KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(consumer_props);
-    kafkaConsumer.subscribe(List.of(sourceKafkTopic));
-    ConsumerRecords<String, String> records = kafkaConsumer.poll(Duration.of(10, ChronoUnit.SECONDS));
-    Iterator<ConsumerRecord<String, String>> recordIterator = records.records(sourceKafkTopic).iterator();
-    assertThat(recordIterator.hasNext()).isTrue();
-    assertThat(recordIterator.next().value()).isEqualTo("msg0");
-  }
+  // @Test
+  // public void testCpsSourceConnector() throws Exception {
+  //   // Publish to CPS topic
+  //   ProjectTopicName sourceTopic = ProjectTopicName.of(projectId, sourceTopicId);
+  //   Publisher publisher = Publisher.newBuilder(sourceTopic).build();
+  //   PubsubMessage msg0 = PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("msg0")).build();
+  //   ApiFuture<String> publishFuture = publisher.publish(msg0);
+  //   ApiFutures.addCallback(
+  //       publishFuture,
+  //       new ApiFutureCallback<String>() {
+  //
+  //         @Override
+  //         public void onFailure(Throwable throwable) {
+  //           if (throwable instanceof ApiException) {
+  //             ApiException apiException = ((ApiException) throwable);
+  //             // details on the API exception
+  //             System.out.println(apiException.getStatusCode().getCode());
+  //             System.out.println(apiException.isRetryable());
+  //           }
+  //           Assert.fail("Error publishing message : " + msg0);
+  //         }
+  //
+  //         @Override
+  //         public void onSuccess(String messageId) {
+  //           // Once published, returns server-assigned message ids (unique within the topic)
+  //           System.out.println("Published message ID: " + messageId);
+  //         }
+  //       },
+  //       MoreExecutors.directExecutor());
+  //
+  //   // Sleep for 10s.
+  //   Thread.sleep(10*1000);
+  //
+  //   // Consume from Kafka connect.
+  //   Properties consumer_props = new Properties();
+  //   consumer_props.setProperty("bootstrap.servers", kafkaInstanceIpAddress + ":" + KAFKA_PORT);
+  //   consumer_props.setProperty("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+  //   consumer_props.setProperty("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+  //   consumer_props.setProperty("group.id", "test");
+  //   KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(consumer_props);
+  //   kafkaConsumer.subscribe(List.of(sourceKafkTopic));
+  //   ConsumerRecords<String, String> records = kafkaConsumer.poll(Duration.of(10, ChronoUnit.SECONDS));
+  //   Iterator<ConsumerRecord<String, String>> recordIterator = records.records(sourceKafkTopic).iterator();
+  //   assertThat(recordIterator.hasNext()).isTrue();
+  //   assertThat(recordIterator.next().value()).isEqualTo("msg0");
+  // }
 }
