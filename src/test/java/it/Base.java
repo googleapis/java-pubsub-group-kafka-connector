@@ -50,7 +50,6 @@ public class Base {
 
   private static final GoogleLogger log = GoogleLogger.forEnclosingClass();
 
-
   private static final String bucketName = System.getenv("BUCKET_NAME");
   protected static final String runId = UUID.randomUUID().toString().substring(0, 8);
   protected String mavenHome;
@@ -128,9 +127,11 @@ public class Base {
 
     testResourcesDirLoc = String.format("%s/src/test/resources/", workingDir);
     cpsSinkConnectorPropertiesName = "cps-sink-connector-test.properties";
-    cpsSinkConnectorPropertiesGCSName = cpsSinkConnectorPropertiesName.replace(".properties", runId + ".properties");
+    cpsSinkConnectorPropertiesGCSName =
+        cpsSinkConnectorPropertiesName.replace(".properties", runId + ".properties");
     cpsSourceConnectorPropertiesName = "cps-source-connector-test.properties";
-    cpsSourceConnectorPropertiesGCSName = cpsSourceConnectorPropertiesName.replace(".properties", runId + ".properties");
+    cpsSourceConnectorPropertiesGCSName =
+        cpsSourceConnectorPropertiesName.replace(".properties", runId + ".properties");
     pslSinkConnectorPropertiesName = "pubsub-lite-sink-connector-test.properties";
     pslSourceConnectorPropertiesName = "pubsub-lite-source-connector-test.properties";
 
@@ -187,36 +188,17 @@ public class Base {
                       .setKey("serial-port-logging-enable")
                       .setValue(String.valueOf(true))
                       .build())
-              .addItems(
-                  Items.newBuilder()
-                      .setKey("project_id")
-                      .setValue(projectId)
-                      .build())
-              .addItems(
-                  Items.newBuilder()
-                      .setKey("run_id")
-                      .setValue(runId)
-                      .build())
-              .addItems(
-                  Items.newBuilder()
-                      .setKey("kafka_version")
-                      .setValue(kafkaVersion)
-                      .build())
+              .addItems(Items.newBuilder().setKey("project_id").setValue(projectId).build())
+              .addItems(Items.newBuilder().setKey("run_id").setValue(runId).build())
+              .addItems(Items.newBuilder().setKey("kafka_version").setValue(kafkaVersion).build())
               .addItems(
                   Items.newBuilder()
                       .setKey("startup-script")
-                      .setValue(Files.readString(Paths.get(testResourcesDirLoc + startupScriptName)))
+                      .setValue(
+                          Files.readString(Paths.get(testResourcesDirLoc + startupScriptName)))
                       .build())
-              .addItems(
-                  Items.newBuilder()
-                      .setKey("scala_version")
-                      .setValue(scalaVersion)
-                      .build())
-              .addItems(
-                  Items.newBuilder()
-                      .setKey("gcs_bucket")
-                      .setValue(bucketName)
-                      .build())
+              .addItems(Items.newBuilder().setKey("scala_version").setValue(scalaVersion).build())
+              .addItems(Items.newBuilder().setKey("gcs_bucket").setValue(bucketName).build())
               .addItems(
                   Items.newBuilder()
                       .setKey("cps_connector_jar_name")
@@ -314,11 +296,12 @@ public class Base {
       throws IOException {
     try (InstancesClient instancesClient = InstancesClient.create()) {
 
-      GetInstanceRequest getInstanceRequest = GetInstanceRequest.newBuilder()
-          .setProject(projectId)
-          .setZone(zone)
-          .setInstance(instanceName)
-          .build();
+      GetInstanceRequest getInstanceRequest =
+          GetInstanceRequest.newBuilder()
+              .setProject(projectId)
+              .setZone(zone)
+              .setInstance(instanceName)
+              .build();
       Instance instance = instancesClient.get(getInstanceRequest);
       return instance;
     }

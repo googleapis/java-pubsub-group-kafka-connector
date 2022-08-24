@@ -2,54 +2,37 @@ package it;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.api.core.ApiFuture;
-import com.google.api.core.ApiFutureCallback;
-import com.google.api.core.ApiFutures;
-import com.google.api.gax.rpc.ApiException;
 import com.google.api.gax.rpc.NotFoundException;
 import com.google.cloud.compute.v1.Instance;
 import com.google.cloud.compute.v1.InstanceTemplatesClient;
 import com.google.cloud.compute.v1.InstancesClient;
 import com.google.cloud.pubsub.v1.AckReplyConsumer;
 import com.google.cloud.pubsub.v1.MessageReceiver;
-import com.google.cloud.pubsub.v1.Publisher;
 import com.google.cloud.pubsub.v1.Subscriber;
 import com.google.cloud.pubsub.v1.SubscriptionAdminClient;
 import com.google.cloud.pubsub.v1.TopicAdminClient;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import com.google.common.flogger.GoogleLogger;
-import com.google.common.util.concurrent.MoreExecutors;
-import com.google.protobuf.ByteString;
 import com.google.pubsub.kafka.common.ConnectorUtils;
 import com.google.pubsub.v1.ProjectSubscriptionName;
-import com.google.pubsub.v1.ProjectTopicName;
 import com.google.pubsub.v1.PubsubMessage;
 import com.google.pubsub.v1.Subscription;
 import com.google.pubsub.v1.SubscriptionName;
 import com.google.pubsub.v1.TopicName;
 import java.io.ByteArrayOutputStream;
-
 import java.io.IOException;
 import java.io.PrintStream;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -97,7 +80,7 @@ public class StandaloneIT extends Base {
     if (initialized.get()) {
       return;
     }
-    initialized.getAndSet( true);
+    initialized.getAndSet(true);
 
     findMavenHome();
     setupVersions();
@@ -108,10 +91,16 @@ public class StandaloneIT extends Base {
     uploadGCS(storage, cpsConnectorJarNameInGCS, cpsConnectorJarLoc);
     log.atInfo().log("Uploaded CPS connector jar to GCS.");
 
-    uploadGCS(storage, cpsSinkConnectorPropertiesGCSName, testResourcesDirLoc + cpsSinkConnectorPropertiesName);
+    uploadGCS(
+        storage,
+        cpsSinkConnectorPropertiesGCSName,
+        testResourcesDirLoc + cpsSinkConnectorPropertiesName);
     log.atInfo().log("Uploaded CPS sink connector properties file to GCS.");
 
-    uploadGCS(storage, cpsSourceConnectorPropertiesGCSName, testResourcesDirLoc + cpsSourceConnectorPropertiesName);
+    uploadGCS(
+        storage,
+        cpsSourceConnectorPropertiesGCSName,
+        testResourcesDirLoc + cpsSourceConnectorPropertiesName);
     log.atInfo().log("Uploaded CPS source connector properties file to GCS.");
 
     setupCpsResources();
@@ -150,10 +139,13 @@ public class StandaloneIT extends Base {
     log.atInfo().log("Created Compute Engine instance from instance template");
 
     this.gceKafkaInstance = getInstance(projectId, zone, instanceName);
-    this.kafkaInstanceIpAddress = gceKafkaInstance.getNetworkInterfaces(0).getAccessConfigs(0)
-        .getNatIP();
-    log.atInfo().log("Kafka GCE Instance: " + gceKafkaInstance.getSelfLink() + " " + gceKafkaInstance.getDescription());
-
+    this.kafkaInstanceIpAddress =
+        gceKafkaInstance.getNetworkInterfaces(0).getAccessConfigs(0).getNatIP();
+    log.atInfo().log(
+        "Kafka GCE Instance: "
+            + gceKafkaInstance.getSelfLink()
+            + " "
+            + gceKafkaInstance.getDescription());
   }
 
   @After
@@ -203,10 +195,19 @@ public class StandaloneIT extends Base {
 
     // Send message to Kafka topic.
     KafkaProducer<String, String> kafkaProducer = new KafkaProducer<>(props);
-    Future<RecordMetadata> send_future =  kafkaProducer.send(new ProducerRecord<String, String>(sinkTestKafkaTopic, "key0", "value0"));
+    Future<RecordMetadata> send_future =
+        kafkaProducer.send(
+            new ProducerRecord<String, String>(sinkTestKafkaTopic, "key0", "value0"));
     kafkaProducer.flush();
     send_future.get();
-    kafkaProducer.metrics().forEach((metricName, metric) -> { if(metricName.name() == "record-send-total") { log.atInfo().log("record-send-total: " + metric.metricValue().toString());}});
+    kafkaProducer
+        .metrics()
+        .forEach(
+            (metricName, metric) -> {
+              if (metricName.name() == "record-send-total") {
+                log.atInfo().log("record-send-total: " + metric.metricValue().toString());
+              }
+            });
     kafkaProducer.close();
 
     // Sleep.
@@ -220,9 +221,8 @@ public class StandaloneIT extends Base {
     MessageReceiver receiver =
         (PubsubMessage message, AckReplyConsumer consumer) -> {
           assertThat(message.getData().toStringUtf8()).isEqualTo("value0");
-          assertThat(
-              message.getAttributesMap().get(ConnectorUtils.CPS_MESSAGE_KEY_ATTRIBUTE)).isEqualTo(
-              "key0");
+          assertThat(message.getAttributesMap().get(ConnectorUtils.CPS_MESSAGE_KEY_ATTRIBUTE))
+              .isEqualTo("key0");
           this.cpsMessageReceived = true;
           consumer.ack();
         };
@@ -244,7 +244,8 @@ public class StandaloneIT extends Base {
   //   // Publish to CPS topic
   //   ProjectTopicName sourceTopic = ProjectTopicName.of(projectId, sourceTopicId);
   //   Publisher publisher = Publisher.newBuilder(sourceTopic).build();
-  //   PubsubMessage msg0 = PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("msg0")).build();
+  //   PubsubMessage msg0 =
+  // PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("msg0")).build();
   //   ApiFuture<String> publishFuture = publisher.publish(msg0);
   //   ApiFutures.addCallback(
   //       publishFuture,
@@ -275,13 +276,17 @@ public class StandaloneIT extends Base {
   //   // Consume from Kafka connect.
   //   Properties consumer_props = new Properties();
   //   consumer_props.setProperty("bootstrap.servers", kafkaInstanceIpAddress + ":" + KAFKA_PORT);
-  //   consumer_props.setProperty("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-  //   consumer_props.setProperty("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+  //   consumer_props.setProperty("key.deserializer",
+  // "org.apache.kafka.common.serialization.StringDeserializer");
+  //   consumer_props.setProperty("value.deserializer",
+  // "org.apache.kafka.common.serialization.StringDeserializer");
   //   consumer_props.setProperty("group.id", "test");
   //   KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(consumer_props);
   //   kafkaConsumer.subscribe(List.of(sourceKafkTopic));
-  //   ConsumerRecords<String, String> records = kafkaConsumer.poll(Duration.of(10, ChronoUnit.SECONDS));
-  //   Iterator<ConsumerRecord<String, String>> recordIterator = records.records(sourceKafkTopic).iterator();
+  //   ConsumerRecords<String, String> records = kafkaConsumer.poll(Duration.of(10,
+  // ChronoUnit.SECONDS));
+  //   Iterator<ConsumerRecord<String, String>> recordIterator =
+  // records.records(sourceKafkTopic).iterator();
   //   assertThat(recordIterator.hasNext()).isTrue();
   //   assertThat(recordIterator.next().value()).isEqualTo("msg0");
   // }
