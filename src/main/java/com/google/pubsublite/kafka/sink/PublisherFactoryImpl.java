@@ -15,13 +15,16 @@
  */
 package com.google.pubsublite.kafka.sink;
 
+import com.google.api.gax.rpc.ApiException;
 import com.google.cloud.pubsublite.CloudZone;
+import com.google.cloud.pubsublite.MessageMetadata;
+import com.google.cloud.pubsublite.Partition;
 import com.google.cloud.pubsublite.ProjectPath;
-import com.google.cloud.pubsublite.PublishMetadata;
 import com.google.cloud.pubsublite.TopicName;
 import com.google.cloud.pubsublite.TopicPath;
+import com.google.cloud.pubsublite.cloudpubsub.PublisherSettings;
 import com.google.cloud.pubsublite.internal.Publisher;
-import com.google.cloud.pubsublite.internal.wire.PubsubContext;
+import com.google.cloud.pubsublite.internal.wire.PartitionPublisherFactory;
 import com.google.cloud.pubsublite.internal.wire.PubsubContext.Framework;
 import com.google.cloud.pubsublite.internal.wire.RoutingPublisherBuilder;
 import com.google.cloud.pubsublite.internal.wire.SinglePartitionPublisherBuilder;
@@ -32,8 +35,25 @@ class PublisherFactoryImpl implements PublisherFactory {
 
   private static final Framework FRAMEWORK = Framework.of("KAFKA_CONNECT");
 
+  private PartitionPublisherFactory getPartitionPublisherFactory(TopicPath topic) {
+    return new PartitionPublisherFactory() {
+      @Override
+      public Publisher<MessageMetadata> newPublisher(Partition partition) throws ApiException {
+        SinglePartitionPublisherBuilder.Builder singlePartitionBuilder =
+            SinglePartitionPublisherBuilder.newBuilder()
+                .setTopic(topic)
+                .setPartition(partition)
+                .setBatchingSettings(PublisherSettings.DEFAULT_BATCHING_SETTINGS);
+        return singlePartitionBuilder.build();
+      }
+
+      @Override
+      public void close() {}
+    };
+  }
+
   @Override
-  public Publisher<PublishMetadata> newPublisher(Map<String, String> params) {
+  public Publisher<MessageMetadata> newPublisher(Map<String, String> params) {
     Map<String, ConfigValue> config = ConfigDefs.config().validateAll(params);
     RoutingPublisherBuilder.Builder builder = RoutingPublisherBuilder.newBuilder();
     TopicPath topic =
@@ -45,13 +65,7 @@ class PublisherFactoryImpl implements PublisherFactory {
             .setName(TopicName.of(config.get(ConfigDefs.TOPIC_NAME_FLAG).value().toString()))
             .build();
     builder.setTopic(topic);
-    builder.setPublisherFactory(
-        partition ->
-            SinglePartitionPublisherBuilder.newBuilder()
-                .setTopic(topic)
-                .setPartition(partition)
-                .setContext(PubsubContext.of(FRAMEWORK))
-                .build());
+    builder.setPublisherFactory(getPartitionPublisherFactory(topic));
     return builder.build();
   }
 }
