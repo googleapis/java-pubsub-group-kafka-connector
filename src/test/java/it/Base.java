@@ -6,6 +6,7 @@ import com.google.cloud.compute.v1.AccessConfig;
 import com.google.cloud.compute.v1.AccessConfig.NetworkTier;
 import com.google.cloud.compute.v1.AttachedDisk;
 import com.google.cloud.compute.v1.AttachedDiskInitializeParams;
+import com.google.cloud.compute.v1.GetInstanceRequest;
 import com.google.cloud.compute.v1.InsertInstanceRequest;
 import com.google.cloud.compute.v1.InsertInstanceTemplateRequest;
 import com.google.cloud.compute.v1.Instance;
@@ -26,6 +27,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -53,9 +55,17 @@ public class Base {
   protected String mavenHome;
   protected String workingDir;
   protected String connectorVersion;
-  protected String connectorJarName;
-  protected String connectorJarNameInGCS;
-  protected String connectorJarLoc;
+  protected String startupScriptName;
+  protected String cpsConnectorJarName;
+  protected String cpsConnectorJarNameInGCS;
+  protected String cpsConnectorJarLoc;
+  protected String testResourcesDirLoc;
+  protected String cpsSinkConnectorPropertiesName;
+  protected String cpsSinkConnectorPropertiesGCSName;
+  protected String cpsSourceConnectorPropertiesName;
+  protected String cpsSourceConnectorPropertiesGCSName;
+  protected String pslSinkConnectorPropertiesName;
+  protected String pslSourceConnectorPropertiesName;
   protected String kafkaVersion;
   protected String scalaVersion;
 
@@ -109,10 +119,21 @@ public class Base {
     getVersion(workingDir, (l) -> connectorVersion = l);
     log.atInfo().log("Connector version is: %s", connectorVersion);
 
-    connectorJarName = String.format("pubsub-group-kafka-connector-%s.jar", connectorVersion);
-    connectorJarNameInGCS =
+    startupScriptName = "kafka_vm_startup_script.sh";
+    cpsConnectorJarName = String.format("pubsub-group-kafka-connector-%s.jar", connectorVersion);
+    cpsConnectorJarNameInGCS =
         String.format("pubsub-group-kafka-connector-%s-%s.jar", connectorVersion, runId);
-    connectorJarLoc = String.format("%s/target/%s", workingDir, connectorJarName);
+    cpsConnectorJarLoc = String.format("%s/target/%s", workingDir, cpsConnectorJarName);
+
+    testResourcesDirLoc = String.format("%s/src/test/resources/", workingDir);
+    cpsSinkConnectorPropertiesName = "cps-sink-connector-test.properties";
+    cpsSinkConnectorPropertiesGCSName =
+        cpsSinkConnectorPropertiesName.replace(".properties", runId + ".properties");
+    cpsSourceConnectorPropertiesName = "cps-source-connector-test.properties";
+    cpsSourceConnectorPropertiesGCSName =
+        cpsSourceConnectorPropertiesName.replace(".properties", runId + ".properties");
+    pslSinkConnectorPropertiesName = "pubsub-lite-sink-connector-test.properties";
+    pslSourceConnectorPropertiesName = "pubsub-lite-source-connector-test.properties";
 
     // TODO: Get Kafka and Scala versions programmatically: {major}.{minor}.{patch}.
     kafkaVersion = "3.2.0";
@@ -160,22 +181,41 @@ public class Base {
                       .build())
               .build();
 
-      // TODO: flesh out the complete startup script. Possibly link to a file.
       Metadata metadata =
           Metadata.newBuilder()
               .addItems(
                   Items.newBuilder()
-                      .setKey("url")
-                      .setValue(
-                          String.format(
-                              "https://downloads.apache.org/kafka/%s/kafka_%s-%s.tgz",
-                              kafkaVersion, scalaVersion, kafkaVersion))
+                      .setKey("serial-port-logging-enable")
+                      .setValue(String.valueOf(true))
                       .build())
+              .addItems(Items.newBuilder().setKey("project_id").setValue(projectId).build())
+              .addItems(Items.newBuilder().setKey("run_id").setValue(runId).build())
+              .addItems(Items.newBuilder().setKey("kafka_version").setValue(kafkaVersion).build())
               .addItems(
                   Items.newBuilder()
                       .setKey("startup-script")
                       .setValue(
-                          "#! /bin/bash\nURL=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/url -H \"Metadata-Flavor: Google\")\nsudo apt-get update\nsudo apt-get install -yq wget openjdk-11-jdk maven\nwget $URL")
+                          new String(
+                              Files.readAllBytes(
+                                  Paths.get(testResourcesDirLoc + startupScriptName)),
+                              StandardCharsets.UTF_8))
+                      .build())
+              .addItems(Items.newBuilder().setKey("scala_version").setValue(scalaVersion).build())
+              .addItems(Items.newBuilder().setKey("gcs_bucket").setValue(bucketName).build())
+              .addItems(
+                  Items.newBuilder()
+                      .setKey("cps_connector_jar_name")
+                      .setValue(cpsConnectorJarNameInGCS)
+                      .build())
+              .addItems(
+                  Items.newBuilder()
+                      .setKey("cps_sink_connector_properties_name")
+                      .setValue(cpsSinkConnectorPropertiesGCSName)
+                      .build())
+              .addItems(
+                  Items.newBuilder()
+                      .setKey("cps_source_connector_properties_name")
+                      .setValue(cpsSourceConnectorPropertiesGCSName)
                       .build())
               .build();
 
@@ -188,7 +228,10 @@ public class Base {
                   ServiceAccount.newBuilder()
                       .setEmail(
                           String.format("%s-compute@developer.gserviceaccount.com", projectNumber))
-                      .addScopes("https://www.googleapis.com/auth/pubsub")
+                      .addAllScopes(
+                          Arrays.asList(
+                              "https://www.googleapis.com/auth/pubsub",
+                              "https://www.googleapis.com/auth/devstorage.read_write"))
                       .build())
               .setMetadata(metadata)
               .build();
@@ -249,6 +292,21 @@ public class Base {
       System.out.printf(
           "\nInstance creation from template: Operation Status %s: %s ",
           instanceName, response.getStatus());
+    }
+  }
+
+  protected Instance getInstance(String projectId, String zone, String instanceName)
+      throws IOException {
+    try (InstancesClient instancesClient = InstancesClient.create()) {
+
+      GetInstanceRequest getInstanceRequest =
+          GetInstanceRequest.newBuilder()
+              .setProject(projectId)
+              .setZone(zone)
+              .setInstance(instanceName)
+              .build();
+      Instance instance = instancesClient.get(getInstanceRequest);
+      return instance;
     }
   }
 }
