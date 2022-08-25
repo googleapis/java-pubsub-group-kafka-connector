@@ -1,6 +1,8 @@
 package it;
 
+
 import static com.google.common.truth.Truth.assertThat;
+import static junit.framework.TestCase.assertNotNull;
 
 import com.google.api.gax.rpc.NotFoundException;
 import com.google.cloud.compute.v1.Instance;
@@ -34,6 +36,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -66,10 +69,24 @@ public class StandaloneIT extends Base {
   private static final SubscriptionName sinkSubscriptionName =
       SubscriptionName.of(projectId, sinkSubscriptionId);
 
+
   private static Instance gceKafkaInstance;
   private static String kafkaInstanceIpAddress;
+  
+  private static void requireEnvVar(String varName) {
+    assertNotNull(
+        "Environment variable " + varName + " is required to perform these tests.",
+        System.getenv(varName));
+  }
 
   @Rule public Timeout globalTimeout = Timeout.seconds(600); // 10 minute timeout
+
+  @BeforeClass
+  public static void checkRequirements() {
+    requireEnvVar("GOOGLE_CLOUD_PROJECT");
+    requireEnvVar("GOOGLE_CLOUD_PROJECT_NUMBER");
+    requireEnvVar("BUCKET_NAME");
+  }
 
   @Before
   public void setUp() throws Exception {
