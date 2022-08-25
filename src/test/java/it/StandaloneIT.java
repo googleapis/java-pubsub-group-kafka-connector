@@ -1,6 +1,5 @@
 package it;
 
-
 import static com.google.common.truth.Truth.assertThat;
 import static junit.framework.TestCase.assertNotNull;
 
@@ -69,10 +68,9 @@ public class StandaloneIT extends Base {
   private static final SubscriptionName sinkSubscriptionName =
       SubscriptionName.of(projectId, sinkSubscriptionId);
 
-
   private static Instance gceKafkaInstance;
   private static String kafkaInstanceIpAddress;
-  
+
   private static void requireEnvVar(String varName) {
     assertNotNull(
         "Environment variable " + varName + " is required to perform these tests.",
