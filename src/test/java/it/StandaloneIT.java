@@ -2,20 +2,28 @@ package it;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.api.core.ApiFuture;
+import com.google.api.core.ApiFutureCallback;
+import com.google.api.core.ApiFutures;
+import com.google.api.gax.rpc.ApiException;
 import com.google.api.gax.rpc.NotFoundException;
 import com.google.cloud.compute.v1.Instance;
 import com.google.cloud.compute.v1.InstanceTemplatesClient;
 import com.google.cloud.compute.v1.InstancesClient;
 import com.google.cloud.pubsub.v1.AckReplyConsumer;
 import com.google.cloud.pubsub.v1.MessageReceiver;
+import com.google.cloud.pubsub.v1.Publisher;
 import com.google.cloud.pubsub.v1.Subscriber;
 import com.google.cloud.pubsub.v1.SubscriptionAdminClient;
 import com.google.cloud.pubsub.v1.TopicAdminClient;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import com.google.common.flogger.GoogleLogger;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.google.protobuf.ByteString;
 import com.google.pubsub.kafka.common.ConnectorUtils;
 import com.google.pubsub.v1.ProjectSubscriptionName;
+import com.google.pubsub.v1.ProjectTopicName;
 import com.google.pubsub.v1.PubsubMessage;
 import com.google.pubsub.v1.Subscription;
 import com.google.pubsub.v1.SubscriptionName;
@@ -23,16 +31,30 @@ import com.google.pubsub.v1.TopicName;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.time.Duration;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.TopicPartition;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -48,7 +70,7 @@ public class StandaloneIT extends Base {
   private static final String projectNumber = System.getenv("GOOGLE_CLOUD_PROJECT_NUMBER");
   private static final String sourceTopicId = "cps-source-topic-" + runId;
   private static final String sourceSubscriptionId = "cps-source-subscription-" + runId;
-  private static final String sourceKafkTopic = "cps-source-test-kafka-topic";
+  private static final String kafkaSourceTestTopic = "cps-source-test-kafka-topic";
   private static final String sinkTopicId = "cps-sink-topic-" + runId;
   private static final String sinkTestKafkaTopic = "cps-sink-test-kafka-topic";
   private static final String sinkSubscriptionId = "cps-sink-subscription-" + runId;
@@ -182,7 +204,6 @@ public class StandaloneIT extends Base {
       instanceTemplatesClient.deleteAsync(projectId, instanceTemplateName).get(3, TimeUnit.MINUTES);
     }
     log.atInfo().log("Deleted Compute Engine instance template.");
-
     System.setOut(null);
   }
 
@@ -217,6 +238,7 @@ public class StandaloneIT extends Base {
     ProjectSubscriptionName subscriptionName =
         ProjectSubscriptionName.of(projectId, sinkSubscriptionId);
 
+
     // Instantiate an asynchronous message receiver.
     MessageReceiver receiver =
         (PubsubMessage message, AckReplyConsumer consumer) -> {
@@ -239,55 +261,83 @@ public class StandaloneIT extends Base {
     assertThat(this.cpsMessageReceived).isTrue();
   }
 
-  // @Test
-  // public void testCpsSourceConnector() throws Exception {
-  //   // Publish to CPS topic
-  //   ProjectTopicName sourceTopic = ProjectTopicName.of(projectId, sourceTopicId);
-  //   Publisher publisher = Publisher.newBuilder(sourceTopic).build();
-  //   PubsubMessage msg0 =
-  // PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("msg0")).build();
-  //   ApiFuture<String> publishFuture = publisher.publish(msg0);
-  //   ApiFutures.addCallback(
-  //       publishFuture,
-  //       new ApiFutureCallback<String>() {
-  //
-  //         @Override
-  //         public void onFailure(Throwable throwable) {
-  //           if (throwable instanceof ApiException) {
-  //             ApiException apiException = ((ApiException) throwable);
-  //             // details on the API exception
-  //             System.out.println(apiException.getStatusCode().getCode());
-  //             System.out.println(apiException.isRetryable());
-  //           }
-  //           Assert.fail("Error publishing message : " + msg0);
-  //         }
-  //
-  //         @Override
-  //         public void onSuccess(String messageId) {
-  //           // Once published, returns server-assigned message ids (unique within the topic)
-  //           System.out.println("Published message ID: " + messageId);
-  //         }
-  //       },
-  //       MoreExecutors.directExecutor());
-  //
-  //   // Sleep for 10s.
-  //   Thread.sleep(10*1000);
-  //
-  //   // Consume from Kafka connect.
-  //   Properties consumer_props = new Properties();
-  //   consumer_props.setProperty("bootstrap.servers", kafkaInstanceIpAddress + ":" + KAFKA_PORT);
-  //   consumer_props.setProperty("key.deserializer",
-  // "org.apache.kafka.common.serialization.StringDeserializer");
-  //   consumer_props.setProperty("value.deserializer",
-  // "org.apache.kafka.common.serialization.StringDeserializer");
-  //   consumer_props.setProperty("group.id", "test");
-  //   KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(consumer_props);
-  //   kafkaConsumer.subscribe(List.of(sourceKafkTopic));
-  //   ConsumerRecords<String, String> records = kafkaConsumer.poll(Duration.of(10,
-  // ChronoUnit.SECONDS));
-  //   Iterator<ConsumerRecord<String, String>> recordIterator =
-  // records.records(sourceKafkTopic).iterator();
-  //   assertThat(recordIterator.hasNext()).isTrue();
-  //   assertThat(recordIterator.next().value()).isEqualTo("msg0");
-  // }
+  @Test
+  public void testCpsSourceConnector() throws Exception {
+    // Publish to CPS topic
+    ProjectTopicName sourceTopic = ProjectTopicName.of(projectId, sourceTopicId);
+    Publisher publisher = Publisher.newBuilder(sourceTopic).build();
+    PubsubMessage msg0 =
+  PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("msg0")).build();
+    ApiFuture<String> publishFuture = publisher.publish(msg0);
+    ApiFutures.addCallback(
+        publishFuture,
+        new ApiFutureCallback<String>() {
+
+          @Override
+          public void onFailure(Throwable throwable) {
+            if (throwable instanceof ApiException) {
+              ApiException apiException = ((ApiException) throwable);
+              // details on the API exception
+              System.out.println(apiException.getStatusCode().getCode());
+              System.out.println(apiException.isRetryable());
+            }
+            Assert.fail("Error publishing message : " + msg0);
+          }
+
+          @Override
+          public void onSuccess(String messageId) {
+            // Once published, returns server-assigned message ids (unique within the topic)
+            System.out.println("Published message ID: " + messageId);
+          }
+        },
+        MoreExecutors.directExecutor());
+
+    // Sleep for 10s.
+    Thread.sleep(10*1000);
+
+    // Consume from Kafka connect.
+    Properties consumer_props = new Properties();
+    consumer_props.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaInstanceIpAddress + ":" + KAFKA_PORT);
+    consumer_props.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+  "org.apache.kafka.common.serialization.StringDeserializer");
+    consumer_props.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+  "org.apache.kafka.common.serialization.StringDeserializer");
+    consumer_props.setProperty(ConsumerConfig.GROUP_ID_CONFIG, "unittest");
+    consumer_props.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+    consumer_props.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
+    KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(consumer_props);
+    final boolean[] assignmentReceived = {false};
+    kafkaConsumer.subscribe(Arrays.asList(kafkaSourceTestTopic), new ConsumerRebalanceListener() {
+      @Override
+      public void onPartitionsRevoked(Collection<TopicPartition> collection) {}
+
+      @Override
+      public void onPartitionsAssigned(Collection<TopicPartition> collection) {
+        assignmentReceived[0] = true;
+      }
+    });
+    LocalTime startTime = LocalTime.now();
+    boolean messageReceived = false;
+    try {
+      while (Duration.between(startTime, LocalTime.now())
+          .compareTo(Duration.of(1, ChronoUnit.MINUTES))
+          < 0) {
+        ConsumerRecords<String, String> records =
+            kafkaConsumer.poll(Duration.of(1, ChronoUnit.SECONDS));
+        if (!assignmentReceived[0]) {
+          continue;
+        }
+        Iterator<ConsumerRecord<String, String>> recordIterator =
+            records.records(kafkaSourceTestTopic).iterator();
+        assertThat(recordIterator.hasNext()).isTrue();
+        assertThat(recordIterator.next().value()).isEqualTo("msg0");
+        messageReceived = true;
+        break;
+      }
+    } finally {
+      kafkaConsumer.commitSync();
+      kafkaConsumer.close();
+    }
+    assertThat(messageReceived).isTrue();
+  }
 }
