@@ -39,7 +39,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -253,7 +252,6 @@ public class StandaloneIT extends Base {
     ProjectSubscriptionName subscriptionName =
         ProjectSubscriptionName.of(projectId, sinkSubscriptionId);
 
-
     // Instantiate an asynchronous message receiver.
     MessageReceiver receiver =
         (PubsubMessage message, AckReplyConsumer consumer) -> {
@@ -282,7 +280,7 @@ public class StandaloneIT extends Base {
     ProjectTopicName sourceTopic = ProjectTopicName.of(projectId, sourceTopicId);
     Publisher publisher = Publisher.newBuilder(sourceTopic).build();
     PubsubMessage msg0 =
-  PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("msg0")).build();
+        PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("msg0")).build();
     ApiFuture<String> publishFuture = publisher.publish(msg0);
     ApiFutures.addCallback(
         publishFuture,
@@ -308,34 +306,39 @@ public class StandaloneIT extends Base {
         MoreExecutors.directExecutor());
 
     // Sleep for 10s.
-    Thread.sleep(10*1000);
+    Thread.sleep(10 * 1000);
 
     // Consume from Kafka connect.
     Properties consumer_props = new Properties();
-    consumer_props.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaInstanceIpAddress + ":" + KAFKA_PORT);
-    consumer_props.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
-  "org.apache.kafka.common.serialization.StringDeserializer");
-    consumer_props.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
-  "org.apache.kafka.common.serialization.StringDeserializer");
+    consumer_props.setProperty(
+        ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaInstanceIpAddress + ":" + KAFKA_PORT);
+    consumer_props.setProperty(
+        ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+        "org.apache.kafka.common.serialization.StringDeserializer");
+    consumer_props.setProperty(
+        ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+        "org.apache.kafka.common.serialization.StringDeserializer");
     consumer_props.setProperty(ConsumerConfig.GROUP_ID_CONFIG, "unittest");
     consumer_props.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
     consumer_props.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
     KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(consumer_props);
     final boolean[] assignmentReceived = {false};
-    kafkaConsumer.subscribe(Arrays.asList(kafkaSourceTestTopic), new ConsumerRebalanceListener() {
-      @Override
-      public void onPartitionsRevoked(Collection<TopicPartition> collection) {}
+    kafkaConsumer.subscribe(
+        Arrays.asList(kafkaSourceTestTopic),
+        new ConsumerRebalanceListener() {
+          @Override
+          public void onPartitionsRevoked(Collection<TopicPartition> collection) {}
 
-      @Override
-      public void onPartitionsAssigned(Collection<TopicPartition> collection) {
-        assignmentReceived[0] = true;
-      }
-    });
+          @Override
+          public void onPartitionsAssigned(Collection<TopicPartition> collection) {
+            assignmentReceived[0] = true;
+          }
+        });
     LocalTime startTime = LocalTime.now();
     boolean messageReceived = false;
     try {
       while (Duration.between(startTime, LocalTime.now())
-          .compareTo(Duration.of(1, ChronoUnit.MINUTES))
+              .compareTo(Duration.of(1, ChronoUnit.MINUTES))
           < 0) {
         ConsumerRecords<String, String> records =
             kafkaConsumer.poll(Duration.of(1, ChronoUnit.SECONDS));
