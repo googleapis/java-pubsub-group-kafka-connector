@@ -245,8 +245,8 @@ public class StandaloneIT extends Base {
             });
     kafkaProducer.close();
 
-    // Sleep.
-    Thread.sleep(10 * 1000);
+    // Sleep for 1min.
+    Thread.sleep(60 * 1000);
 
     // Subscribe to messages.
     ProjectSubscriptionName subscriptionName =
@@ -305,8 +305,8 @@ public class StandaloneIT extends Base {
         },
         MoreExecutors.directExecutor());
 
-    // Sleep for 10s.
-    Thread.sleep(10 * 1000);
+    // Sleep for 1min.
+    Thread.sleep(60 * 1000);
 
     // Consume from Kafka connect.
     Properties consumer_props = new Properties();
