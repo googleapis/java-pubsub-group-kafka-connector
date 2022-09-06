@@ -65,9 +65,13 @@ public class Base {
   protected String cpsSourceConnectorPropertiesName;
   protected String cpsSourceConnectorPropertiesGCSName;
   protected String pslSinkConnectorPropertiesName;
+  protected String pslSinkConnectorPropertiesGCSName;
   protected String pslSourceConnectorPropertiesName;
   protected String kafkaVersion;
   protected String scalaVersion;
+  protected static final String region = "us-central1";
+  protected static final Character zone = 'b';
+  protected static final String location = region + "-" + String.valueOf(zone);
 
   protected void findMavenHome() throws Exception {
     Process p = Runtime.getRuntime().exec("mvn --version");
@@ -133,6 +137,7 @@ public class Base {
     cpsSourceConnectorPropertiesGCSName =
         cpsSourceConnectorPropertiesName.replace(".properties", runId + ".properties");
     pslSinkConnectorPropertiesName = "pubsub-lite-sink-connector-test.properties";
+    pslSinkConnectorPropertiesGCSName = pslSinkConnectorPropertiesName.replace(".properties", runId + ".properties");
     pslSourceConnectorPropertiesName = "pubsub-lite-source-connector-test.properties";
 
     // TODO: Get Kafka and Scala versions programmatically: {major}.{minor}.{patch}.
@@ -216,6 +221,16 @@ public class Base {
                   Items.newBuilder()
                       .setKey("cps_source_connector_properties_name")
                       .setValue(cpsSourceConnectorPropertiesGCSName)
+                      .build())
+              .addItems(
+                  Items.newBuilder()
+                      .setKey("psl_zone")
+                      .setValue(location)
+                      .build())
+              .addItems(
+                  Items.newBuilder()
+                      .setKey("psl_sink_connector_properties_name")
+                      .setValue(pslSinkConnectorPropertiesGCSName)
                       .build())
               .build();
 

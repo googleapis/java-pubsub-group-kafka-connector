@@ -17,11 +17,27 @@ import com.google.cloud.pubsub.v1.Publisher;
 import com.google.cloud.pubsub.v1.Subscriber;
 import com.google.cloud.pubsub.v1.SubscriptionAdminClient;
 import com.google.cloud.pubsub.v1.TopicAdminClient;
+import com.google.cloud.pubsublite.AdminClient;
+import com.google.cloud.pubsublite.AdminClientSettings;
+import com.google.cloud.pubsublite.CloudRegion;
+import com.google.cloud.pubsublite.CloudZone;
+import com.google.cloud.pubsublite.ProjectId;
+import com.google.cloud.pubsublite.SubscriptionPath;
+import com.google.cloud.pubsublite.TopicPath;
+import com.google.cloud.pubsublite.cloudpubsub.FlowControlSettings;
+import com.google.cloud.pubsublite.cloudpubsub.SubscriberSettings;
+import com.google.cloud.pubsublite.proto.Subscription.DeliveryConfig;
+import com.google.cloud.pubsublite.proto.Subscription.DeliveryConfig.DeliveryRequirement;
+import com.google.cloud.pubsublite.proto.Topic;
+import com.google.cloud.pubsublite.proto.Topic.PartitionConfig;
+import com.google.cloud.pubsublite.proto.Topic.PartitionConfig.Capacity;
+import com.google.cloud.pubsublite.proto.Topic.RetentionConfig;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.util.Durations;
 import com.google.pubsub.kafka.common.ConnectorUtils;
 import com.google.pubsub.v1.ProjectSubscriptionName;
 import com.google.pubsub.v1.ProjectTopicName;
@@ -69,25 +85,42 @@ public class StandaloneIT extends Base {
   private static final GoogleLogger log = GoogleLogger.forEnclosingClass();
   private static final String projectId = System.getenv("GOOGLE_CLOUD_PROJECT");
   private static final String projectNumber = System.getenv("GOOGLE_CLOUD_PROJECT_NUMBER");
-  private static final String sourceTopicId = "cps-source-topic-" + runId;
-  private static final String sourceSubscriptionId = "cps-source-subscription-" + runId;
-  private static final String kafkaSourceTestTopic = "cps-source-test-kafka-topic";
-  private static final String sinkTopicId = "cps-sink-topic-" + runId;
-  private static final String sinkTestKafkaTopic = "cps-sink-test-kafka-topic";
-  private static final String sinkSubscriptionId = "cps-sink-subscription-" + runId;
-  private static final String zone = "us-central1-b";
+
+  private static final String cpsSourceTopicId = "cps-source-topic-" + runId;
+  private static final String kafkaCpsSourceTestTopic = "cps-source-test-kafka-topic";
+  private static final TopicName cpsSourceTopicName = TopicName.of(projectId, cpsSourceTopicId);
+
+
+  private static final String kafkaCpsSinkTestTopic = "cps-sink-test-kafka-topic";
+  private static final String cpsSinkSubscriptionId = "cps-sink-subscription-" + runId;
+  private static final String cpsSinkTopicId = "cps-sink-topic-" + runId;
+  private static final SubscriptionName cpsSinkSubscriptionName =
+      SubscriptionName.of(projectId, cpsSinkSubscriptionId);
+  private static final TopicName cpsSinkTopicName = TopicName.of(projectId, cpsSinkTopicId);
+
+  private static final String kafkaPslSinkTestTopic = "psl-sink-test-topic";
+  private static final String pslSinkTopicId = "psl-sink-topic-" + runId;
+  private static final TopicPath pslSinkTopicPath =
+      TopicPath.newBuilder()
+          .setProject(ProjectId.of(projectId))
+          .setLocation(CloudZone.of(CloudRegion.of(region), zone))
+          .setName(com.google.cloud.pubsublite.TopicName.of(pslSinkTopicId))
+          .build();
+  private static final String pslSinkSubscriptionId = "psl-sink-subscription-" + runId;
+  private static final SubscriptionPath pslSinkSubscriptionPath =
+      SubscriptionPath.newBuilder()
+          .setName(com.google.cloud.pubsublite.SubscriptionName.of(pslSinkSubscriptionId))
+          .setProject(ProjectId.of(projectId))
+          .setLocation(CloudZone.of(CloudRegion.of(region), zone))
+          .build();
+
+
   private static final String instanceName = "kafka-it-" + runId;
   private static final String instanceTemplateName = "kafka-it-template-" + runId;
   private static AtomicBoolean initialized = new AtomicBoolean(false);
   private static AtomicBoolean cleaned = new AtomicBoolean(false);
-  private Boolean cpsMessageReceived = false;
-
-  private static final TopicName sourceTopicName = TopicName.of(projectId, sourceTopicId);
-  private static final TopicName sinkTopicName = TopicName.of(projectId, sinkTopicId);
-  private static final SubscriptionName sourceSubscriptionName =
-      SubscriptionName.of(projectId, sourceSubscriptionId);
-  private static final SubscriptionName sinkSubscriptionName =
-      SubscriptionName.of(projectId, sinkSubscriptionId);
+  private static Boolean cpsMessageReceived = false;
+  private static Boolean pslMessageReceived = false;
 
   private static Instance gceKafkaInstance;
   private static String kafkaInstanceIpAddress;
@@ -122,7 +155,14 @@ public class StandaloneIT extends Base {
     setupVersions();
     mavenPackage(workingDir);
     log.atInfo().log("Packaged connector jar.");
+    uploadGCSResources();
+    setupCpsResources();
+    setupPslResources();
+    setupGceInstance();
+  }
 
+  protected void uploadGCSResources() throws Exception {
+    // Upload the connector JAR and properties files to GCS.
     Storage storage = StorageOptions.newBuilder().setProjectId(projectId).build().getService();
     uploadGCS(storage, cpsConnectorJarNameInGCS, cpsConnectorJarLoc);
     log.atInfo().log("Uploaded CPS connector jar to GCS.");
@@ -139,29 +179,51 @@ public class StandaloneIT extends Base {
         testResourcesDirLoc + cpsSourceConnectorPropertiesName);
     log.atInfo().log("Uploaded CPS source connector properties file to GCS.");
 
-    setupCpsResources();
-    setupGceInstance();
+    uploadGCS(
+        storage,
+        pslSinkConnectorPropertiesGCSName,
+        testResourcesDirLoc + pslSinkConnectorPropertiesName);
+    log.atInfo().log("Uploaded PSL sink connector properties file to GCS.");
   }
 
   protected void setupCpsResources() throws IOException {
     try (TopicAdminClient topicAdminClient = TopicAdminClient.create()) {
-      topicAdminClient.createTopic(sourceTopicName);
-      topicAdminClient.createTopic(sinkTopicName);
-      log.atInfo().log("Created source and sink topics.");
+      topicAdminClient.createTopic(cpsSourceTopicName);
+      log.atInfo().log("Created CPS source topic: " + cpsSourceTopicName);
+      topicAdminClient.createTopic(cpsSinkTopicName);
+      log.atInfo().log("Created CPS sink topic: " + cpsSinkTopicName);
     }
 
     try (SubscriptionAdminClient subscriptionAdminClient = SubscriptionAdminClient.create()) {
       subscriptionAdminClient.createSubscription(
           Subscription.newBuilder()
-              .setName(sourceSubscriptionName.toString())
-              .setTopic(sourceTopicName.toString())
+              .setName(cpsSinkSubscriptionName.toString())
+              .setTopic(cpsSinkTopicName.toString())
               .build());
-      subscriptionAdminClient.createSubscription(
-          Subscription.newBuilder()
-              .setName(sinkSubscriptionName.toString())
-              .setTopic(sinkTopicName.toString())
-              .build());
-      log.atInfo().log("Created source and sink subscriptions");
+      log.atInfo().log("Created CPS sink subscription: " + cpsSinkSubscriptionName);
+    }
+  }
+
+  protected void setupPslResources() throws Exception {
+    try (AdminClient pslAdminClient = AdminClient.create(AdminClientSettings.newBuilder().setRegion(CloudRegion.of(region)).build())) {
+      Topic sinkTopic = Topic.newBuilder()
+          .setName(pslSinkTopicPath.toString())
+          .setPartitionConfig(PartitionConfig.newBuilder().setCount(2).setCapacity(
+              Capacity.newBuilder().setPublishMibPerSec(4).setSubscribeMibPerSec(4).build()))
+          .setRetentionConfig(RetentionConfig.newBuilder().setPerPartitionBytes(30 * 1024 * 1024 * 1024L).setPeriod(Durations.fromHours(1))).build();
+      sinkTopic = pslAdminClient.createTopic(sinkTopic).get();
+      log.atInfo().log("Created PSL sink topic( " + pslSinkTopicPath + "): " + sinkTopic.toString());
+
+      com.google.cloud.pubsublite.proto.Subscription pslSinkSubscription =
+          com.google.cloud.pubsublite.proto.Subscription.newBuilder()
+              .setDeliveryConfig(
+                  DeliveryConfig.newBuilder()
+                      .setDeliveryRequirement(DeliveryRequirement.DELIVER_AFTER_STORED))
+              .setName(pslSinkSubscriptionPath.toString())
+              .setTopic(pslSinkTopicPath.toString())
+              .build();
+      pslSinkSubscription = pslAdminClient.createSubscription(pslSinkSubscription).get();
+      log.atInfo().log("Created PSL sink subscription( " + pslSinkSubscriptionPath.toString() + "): " + pslSinkSubscription.toString());
     }
   }
 
@@ -171,10 +233,10 @@ public class StandaloneIT extends Base {
     createInstanceTemplate(projectId, projectNumber, instanceTemplateName);
     log.atInfo().log("Created Compute Engine instance template.");
 
-    createInstanceFromTemplate(projectId, zone, instanceName, instanceTemplateName);
+    createInstanceFromTemplate(projectId, location, instanceName, instanceTemplateName);
     log.atInfo().log("Created Compute Engine instance from instance template");
 
-    this.gceKafkaInstance = getInstance(projectId, zone, instanceName);
+    this.gceKafkaInstance = getInstance(projectId, location, instanceName);
     this.kafkaInstanceIpAddress =
         gceKafkaInstance.getNetworkInterfaces(0).getAccessConfigs(0).getNatIP();
     log.atInfo().log(
@@ -190,35 +252,33 @@ public class StandaloneIT extends Base {
       return;
     }
     cleaned.getAndSet(true);
-    try (SubscriptionAdminClient subscriptionAdminClient = SubscriptionAdminClient.create()) {
-      try {
-        subscriptionAdminClient.deleteSubscription(sourceSubscriptionName);
-        subscriptionAdminClient.deleteSubscription(sinkSubscriptionName);
-        log.atInfo().log("Deleted source and sink subscriptions.");
-      } catch (NotFoundException ignored) {
-        log.atInfo().log("Ignore. No topics found.");
-      }
-    }
-
-    try (TopicAdminClient topicAdminClient = TopicAdminClient.create()) {
-      topicAdminClient.deleteTopic(sourceTopicName.toString());
-      topicAdminClient.deleteTopic(sinkTopicName.toString());
-      log.atInfo().log("Deleted source and sink topics");
-    } catch (NotFoundException ignored) {
-      log.atInfo().log("Ignore. No subscriptions found.");
-    }
-
-    // TODO: cleanup instance
-    try (InstancesClient instancesClient = InstancesClient.create()) {
-      instancesClient.deleteAsync(projectId, zone, instanceName).get(3, TimeUnit.MINUTES);
-    }
-    log.atInfo().log("Deleted Compute Engine instance.");
-
-    try (InstanceTemplatesClient instanceTemplatesClient = InstanceTemplatesClient.create()) {
-      instanceTemplatesClient.deleteAsync(projectId, instanceTemplateName).get(3, TimeUnit.MINUTES);
-    }
-    log.atInfo().log("Deleted Compute Engine instance template.");
-    System.setOut(null);
+    // try (SubscriptionAdminClient subscriptionAdminClient = SubscriptionAdminClient.create()) {
+    //   try {
+    //     subscriptionAdminClient.deleteSubscription(cpsSinkSubscriptionName);
+    //     log.atInfo().log("Deleted CPS subscriptions.");
+    //   } catch (NotFoundException ignored) {
+    //     log.atInfo().log("Ignore. No topics found.");
+    //   }
+    // }
+    //
+    // try (TopicAdminClient topicAdminClient = TopicAdminClient.create()) {
+    //   topicAdminClient.deleteTopic(cpsSourceTopicName.toString());
+    //   topicAdminClient.deleteTopic(cpsSinkTopicName.toString());
+    //   log.atInfo().log("Deleted CPS topics");
+    // } catch (NotFoundException ignored) {
+    //   log.atInfo().log("Ignore. No subscriptions found.");
+    // }
+    //
+    // try (InstancesClient instancesClient = InstancesClient.create()) {
+    //   instancesClient.deleteAsync(projectId, location, instanceName).get(3, TimeUnit.MINUTES);
+    // }
+    // log.atInfo().log("Deleted Compute Engine instance.");
+    //
+    // try (InstanceTemplatesClient instanceTemplatesClient = InstanceTemplatesClient.create()) {
+    //   instanceTemplatesClient.deleteAsync(projectId, instanceTemplateName).get(3, TimeUnit.MINUTES);
+    // }
+    // log.atInfo().log("Deleted Compute Engine instance template.");
+    // System.setOut(null);
   }
 
   @Test
@@ -232,7 +292,7 @@ public class StandaloneIT extends Base {
     KafkaProducer<String, String> kafkaProducer = new KafkaProducer<>(props);
     Future<RecordMetadata> send_future =
         kafkaProducer.send(
-            new ProducerRecord<String, String>(sinkTestKafkaTopic, "key0", "value0"));
+            new ProducerRecord<String, String>(kafkaCpsSinkTestTopic, "key0", "value0"));
     kafkaProducer.flush();
     send_future.get();
     kafkaProducer
@@ -250,7 +310,7 @@ public class StandaloneIT extends Base {
 
     // Subscribe to messages.
     ProjectSubscriptionName subscriptionName =
-        ProjectSubscriptionName.of(projectId, sinkSubscriptionId);
+        ProjectSubscriptionName.of(projectId, cpsSinkSubscriptionId);
 
     // Instantiate an asynchronous message receiver.
     MessageReceiver receiver =
@@ -277,7 +337,7 @@ public class StandaloneIT extends Base {
   @Test
   public void testCpsSourceConnector() throws Exception {
     // Publish to CPS topic
-    ProjectTopicName sourceTopic = ProjectTopicName.of(projectId, sourceTopicId);
+    ProjectTopicName sourceTopic = ProjectTopicName.of(projectId, cpsSourceTopicId);
     Publisher publisher = Publisher.newBuilder(sourceTopic).build();
     PubsubMessage msg0 =
         PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("msg0")).build();
@@ -324,7 +384,7 @@ public class StandaloneIT extends Base {
     KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(consumer_props);
     final boolean[] assignmentReceived = {false};
     kafkaConsumer.subscribe(
-        Arrays.asList(kafkaSourceTestTopic),
+        Arrays.asList(kafkaCpsSourceTestTopic),
         new ConsumerRebalanceListener() {
           @Override
           public void onPartitionsRevoked(Collection<TopicPartition> collection) {}
@@ -346,7 +406,7 @@ public class StandaloneIT extends Base {
           continue;
         }
         Iterator<ConsumerRecord<String, String>> recordIterator =
-            records.records(kafkaSourceTestTopic).iterator();
+            records.records(kafkaCpsSourceTestTopic).iterator();
         assertThat(recordIterator.hasNext()).isTrue();
         assertThat(recordIterator.next().value()).isEqualTo("msg0");
         messageReceived = true;
@@ -357,5 +417,58 @@ public class StandaloneIT extends Base {
       kafkaConsumer.close();
     }
     assertThat(messageReceived).isTrue();
+  }
+
+  @Test
+  public void testPslSinkConnector() throws Exception {
+    Properties props = new Properties();
+    props.put("bootstrap.servers", kafkaInstanceIpAddress + ":" + KAFKA_PORT);
+    props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+    props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+
+    // Send message to Kafka topic.
+    KafkaProducer<String, String> kafkaProducer = new KafkaProducer<>(props);
+    Future<RecordMetadata> send_future =
+        kafkaProducer.send(
+            new ProducerRecord<String, String>(kafkaPslSinkTestTopic, "key0", "value0"));
+    kafkaProducer.flush();
+    send_future.get();
+    kafkaProducer
+        .metrics()
+        .forEach(
+            (metricName, metric) -> {
+              if (metricName.name() == "record-send-total") {
+                log.atInfo().log("record-send-total: " + metric.metricValue().toString());
+              }
+            });
+    kafkaProducer.close();
+
+    // Sleep for 1min.
+    Thread.sleep(60 * 1000);
+
+    // Subscribe to messages.
+    // Instantiate an asynchronous message receiver.
+    MessageReceiver receiver =
+        (PubsubMessage message, AckReplyConsumer consumer) -> {
+          assertThat(message.getData().toStringUtf8()).isEqualTo("value0");
+          assertThat(message.getOrderingKey()).isEqualTo("key0");
+          this.pslMessageReceived = true;
+          consumer.ack();
+        };
+
+    com.google.cloud.pubsublite.cloudpubsub.Subscriber subscriber =
+        com.google.cloud.pubsublite.cloudpubsub.Subscriber.create(SubscriberSettings.newBuilder()
+            .setSubscriptionPath(pslSinkSubscriptionPath)
+            .setReceiver(receiver)
+            .setPerPartitionFlowControlSettings(FlowControlSettings.builder().setBytesOutstanding(10 * 1024 * 1024L).setMessagesOutstanding(1000L).build())
+            .build());
+    try {
+      subscriber.startAsync().awaitRunning();
+      subscriber.awaitTerminated(30, TimeUnit.SECONDS);
+    } catch (TimeoutException timeoutException) {
+      // Shut down the subscriber after 30s. Stop receiving messages.
+      subscriber.stopAsync();
+    }
+    assertThat(this.pslMessageReceived).isTrue();
   }
 }
