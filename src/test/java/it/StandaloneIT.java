@@ -7,10 +7,7 @@ import com.google.api.core.ApiFuture;
 import com.google.api.core.ApiFutureCallback;
 import com.google.api.core.ApiFutures;
 import com.google.api.gax.rpc.ApiException;
-import com.google.api.gax.rpc.NotFoundException;
 import com.google.cloud.compute.v1.Instance;
-import com.google.cloud.compute.v1.InstanceTemplatesClient;
-import com.google.cloud.compute.v1.InstancesClient;
 import com.google.cloud.pubsub.v1.AckReplyConsumer;
 import com.google.cloud.pubsub.v1.MessageReceiver;
 import com.google.cloud.pubsub.v1.Publisher;
@@ -90,7 +87,6 @@ public class StandaloneIT extends Base {
   private static final String kafkaCpsSourceTestTopic = "cps-source-test-kafka-topic";
   private static final TopicName cpsSourceTopicName = TopicName.of(projectId, cpsSourceTopicId);
 
-
   private static final String kafkaCpsSinkTestTopic = "cps-sink-test-kafka-topic";
   private static final String cpsSinkSubscriptionId = "cps-sink-subscription-" + runId;
   private static final String cpsSinkTopicId = "cps-sink-topic-" + runId;
@@ -113,7 +109,6 @@ public class StandaloneIT extends Base {
           .setProject(ProjectId.of(projectId))
           .setLocation(CloudZone.of(CloudRegion.of(region), zone))
           .build();
-
 
   private static final String instanceName = "kafka-it-" + runId;
   private static final String instanceTemplateName = "kafka-it-template-" + runId;
@@ -205,14 +200,28 @@ public class StandaloneIT extends Base {
   }
 
   protected void setupPslResources() throws Exception {
-    try (AdminClient pslAdminClient = AdminClient.create(AdminClientSettings.newBuilder().setRegion(CloudRegion.of(region)).build())) {
-      Topic sinkTopic = Topic.newBuilder()
-          .setName(pslSinkTopicPath.toString())
-          .setPartitionConfig(PartitionConfig.newBuilder().setCount(2).setCapacity(
-              Capacity.newBuilder().setPublishMibPerSec(4).setSubscribeMibPerSec(4).build()))
-          .setRetentionConfig(RetentionConfig.newBuilder().setPerPartitionBytes(30 * 1024 * 1024 * 1024L).setPeriod(Durations.fromHours(1))).build();
+    try (AdminClient pslAdminClient =
+        AdminClient.create(
+            AdminClientSettings.newBuilder().setRegion(CloudRegion.of(region)).build())) {
+      Topic sinkTopic =
+          Topic.newBuilder()
+              .setName(pslSinkTopicPath.toString())
+              .setPartitionConfig(
+                  PartitionConfig.newBuilder()
+                      .setCount(2)
+                      .setCapacity(
+                          Capacity.newBuilder()
+                              .setPublishMibPerSec(4)
+                              .setSubscribeMibPerSec(4)
+                              .build()))
+              .setRetentionConfig(
+                  RetentionConfig.newBuilder()
+                      .setPerPartitionBytes(30 * 1024 * 1024 * 1024L)
+                      .setPeriod(Durations.fromHours(1)))
+              .build();
       sinkTopic = pslAdminClient.createTopic(sinkTopic).get();
-      log.atInfo().log("Created PSL sink topic( " + pslSinkTopicPath + "): " + sinkTopic.toString());
+      log.atInfo().log(
+          "Created PSL sink topic( " + pslSinkTopicPath + "): " + sinkTopic.toString());
 
       com.google.cloud.pubsublite.proto.Subscription pslSinkSubscription =
           com.google.cloud.pubsublite.proto.Subscription.newBuilder()
@@ -223,7 +232,11 @@ public class StandaloneIT extends Base {
               .setTopic(pslSinkTopicPath.toString())
               .build();
       pslSinkSubscription = pslAdminClient.createSubscription(pslSinkSubscription).get();
-      log.atInfo().log("Created PSL sink subscription( " + pslSinkSubscriptionPath.toString() + "): " + pslSinkSubscription.toString());
+      log.atInfo().log(
+          "Created PSL sink subscription( "
+              + pslSinkSubscriptionPath.toString()
+              + "): "
+              + pslSinkSubscription.toString());
     }
   }
 
@@ -275,7 +288,8 @@ public class StandaloneIT extends Base {
     // log.atInfo().log("Deleted Compute Engine instance.");
     //
     // try (InstanceTemplatesClient instanceTemplatesClient = InstanceTemplatesClient.create()) {
-    //   instanceTemplatesClient.deleteAsync(projectId, instanceTemplateName).get(3, TimeUnit.MINUTES);
+    //   instanceTemplatesClient.deleteAsync(projectId, instanceTemplateName).get(3,
+    // TimeUnit.MINUTES);
     // }
     // log.atInfo().log("Deleted Compute Engine instance template.");
     // System.setOut(null);
@@ -457,11 +471,16 @@ public class StandaloneIT extends Base {
         };
 
     com.google.cloud.pubsublite.cloudpubsub.Subscriber subscriber =
-        com.google.cloud.pubsublite.cloudpubsub.Subscriber.create(SubscriberSettings.newBuilder()
-            .setSubscriptionPath(pslSinkSubscriptionPath)
-            .setReceiver(receiver)
-            .setPerPartitionFlowControlSettings(FlowControlSettings.builder().setBytesOutstanding(10 * 1024 * 1024L).setMessagesOutstanding(1000L).build())
-            .build());
+        com.google.cloud.pubsublite.cloudpubsub.Subscriber.create(
+            SubscriberSettings.newBuilder()
+                .setSubscriptionPath(pslSinkSubscriptionPath)
+                .setReceiver(receiver)
+                .setPerPartitionFlowControlSettings(
+                    FlowControlSettings.builder()
+                        .setBytesOutstanding(10 * 1024 * 1024L)
+                        .setMessagesOutstanding(1000L)
+                        .build())
+                .build());
     try {
       subscriber.startAsync().awaitRunning();
       subscriber.awaitTerminated(30, TimeUnit.SECONDS);
