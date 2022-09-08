@@ -55,16 +55,20 @@ class PublisherFactoryImpl implements PublisherFactory {
       private synchronized PublisherServiceClient getServiceClient() throws ApiException {
         if (publisherServiceClient.isPresent()) return publisherServiceClient.get();
         try {
-          publisherServiceClient = Optional.of(PublisherServiceClient.create(
-              addDefaultSettings(
-                  topic.location().extractRegion(),
-                  PublisherServiceSettings.newBuilder().setCredentialsProvider(PublisherServiceSettings.defaultCredentialsProviderBuilder().build()))));
+          publisherServiceClient =
+              Optional.of(
+                  PublisherServiceClient.create(
+                      addDefaultSettings(
+                          topic.location().extractRegion(),
+                          PublisherServiceSettings.newBuilder()
+                              .setCredentialsProvider(
+                                  PublisherServiceSettings.defaultCredentialsProviderBuilder()
+                                      .build()))));
           return publisherServiceClient.get();
         } catch (Throwable t) {
           throw toCanonical(t).underlying;
         }
       }
-
 
       @Override
       public Publisher<MessageMetadata> newPublisher(Partition partition) throws ApiException {
