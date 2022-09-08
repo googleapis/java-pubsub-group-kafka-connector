@@ -245,6 +245,7 @@ public class Base {
                           String.format("%s-compute@developer.gserviceaccount.com", projectNumber))
                       .addAllScopes(
                           Arrays.asList(
+                              "https://www.googleapis.com/auth/cloud-platform",
                               "https://www.googleapis.com/auth/pubsub",
                               "https://www.googleapis.com/auth/devstorage.read_write"))
                       .build())

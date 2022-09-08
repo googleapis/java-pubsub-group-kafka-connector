@@ -87,8 +87,11 @@ public class StandaloneIT extends Base {
   private static final String projectNumber = System.getenv("GOOGLE_CLOUD_PROJECT_NUMBER");
 
   private static final String cpsSourceTopicId = "cps-source-topic-" + runId;
+  private static final String cpsSourceSubscriptionId = "cps-source-subscription-" + runId;
   private static final String kafkaCpsSourceTestTopic = "cps-source-test-kafka-topic";
   private static final TopicName cpsSourceTopicName = TopicName.of(projectId, cpsSourceTopicId);
+  private static final SubscriptionName cpsSourceSubscriptionName =
+      SubscriptionName.of(projectId, cpsSourceSubscriptionId);
 
 
   private static final String kafkaCpsSinkTestTopic = "cps-sink-test-kafka-topic";
@@ -131,7 +134,7 @@ public class StandaloneIT extends Base {
         System.getenv(varName));
   }
 
-  @Rule public Timeout globalTimeout = Timeout.seconds(600); // 10 minute timeout
+  @Rule public Timeout globalTimeout = Timeout.seconds(300); // TODO: 10 minute timeout
 
   @BeforeClass
   public static void checkRequirements() {
@@ -201,6 +204,12 @@ public class StandaloneIT extends Base {
               .setTopic(cpsSinkTopicName.toString())
               .build());
       log.atInfo().log("Created CPS sink subscription: " + cpsSinkSubscriptionName);
+      subscriptionAdminClient.createSubscription(
+          Subscription.newBuilder()
+              .setName(cpsSourceSubscriptionName.toString())
+              .setTopic(cpsSourceTopicName.toString())
+              .build());
+      log.atInfo().log("Created CPS source subscription: " + cpsSourceSubscriptionName);
     }
   }
 
@@ -467,7 +476,7 @@ public class StandaloneIT extends Base {
       subscriber.awaitTerminated(30, TimeUnit.SECONDS);
     } catch (TimeoutException timeoutException) {
       // Shut down the subscriber after 30s. Stop receiving messages.
-      subscriber.stopAsync();
+      subscriber.stopAsync().awaitTerminated();
     }
     assertThat(this.pslMessageReceived).isTrue();
   }
