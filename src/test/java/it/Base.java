@@ -56,8 +56,8 @@ public class Base {
   protected String workingDir;
   protected String connectorVersion;
   protected String startupScriptName;
-  protected String cpsConnectorJarName;
-  protected String cpsConnectorJarNameInGCS;
+  protected String connectorJarName;
+  protected String connectorJarNameInGCS;
   protected String cpsConnectorJarLoc;
   protected String testResourcesDirLoc;
   protected String cpsSinkConnectorPropertiesName;
@@ -67,6 +67,7 @@ public class Base {
   protected String pslSinkConnectorPropertiesName;
   protected String pslSinkConnectorPropertiesGCSName;
   protected String pslSourceConnectorPropertiesName;
+  protected String pslSourceConnectorPropertiesGCSName;
   protected String kafkaVersion;
   protected String scalaVersion;
   protected static final String region = "us-central1";
@@ -124,10 +125,10 @@ public class Base {
     log.atInfo().log("Connector version is: %s", connectorVersion);
 
     startupScriptName = "kafka_vm_startup_script.sh";
-    cpsConnectorJarName = String.format("pubsub-group-kafka-connector-%s.jar", connectorVersion);
-    cpsConnectorJarNameInGCS =
+    connectorJarName = String.format("pubsub-group-kafka-connector-%s.jar", connectorVersion);
+    connectorJarNameInGCS =
         String.format("pubsub-group-kafka-connector-%s-%s.jar", connectorVersion, runId);
-    cpsConnectorJarLoc = String.format("%s/target/%s", workingDir, cpsConnectorJarName);
+    cpsConnectorJarLoc = String.format("%s/target/%s", workingDir, connectorJarName);
 
     testResourcesDirLoc = String.format("%s/src/test/resources/", workingDir);
     cpsSinkConnectorPropertiesName = "cps-sink-connector-test.properties";
@@ -140,6 +141,7 @@ public class Base {
     pslSinkConnectorPropertiesGCSName =
         pslSinkConnectorPropertiesName.replace(".properties", runId + ".properties");
     pslSourceConnectorPropertiesName = "pubsub-lite-source-connector-test.properties";
+    pslSourceConnectorPropertiesGCSName = pslSourceConnectorPropertiesName.replace(".properties", runId + ".properties");
 
     // TODO: Get Kafka and Scala versions programmatically: {major}.{minor}.{patch}.
     kafkaVersion = "3.2.0";
@@ -211,7 +213,7 @@ public class Base {
               .addItems(
                   Items.newBuilder()
                       .setKey("cps_connector_jar_name")
-                      .setValue(cpsConnectorJarNameInGCS)
+                      .setValue(connectorJarNameInGCS)
                       .build())
               .addItems(
                   Items.newBuilder()
@@ -228,6 +230,11 @@ public class Base {
                   Items.newBuilder()
                       .setKey("psl_sink_connector_properties_name")
                       .setValue(pslSinkConnectorPropertiesGCSName)
+                      .build())
+              .addItems(
+                  Items.newBuilder()
+                      .setKey("psl_source_connector_properties_name")
+                      .setValue(pslSourceConnectorPropertiesGCSName)
                       .build())
               .build();
 

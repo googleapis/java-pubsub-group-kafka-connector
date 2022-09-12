@@ -9,6 +9,7 @@ CPS_CONNECTOR_JAR=$(curl http://metadata.google.internal/computeMetadata/v1/inst
 CPS_SINK_CONNECTOR_PROPERTIES=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/cps_sink_connector_properties_name -H "Metadata-Flavor: Google")
 CPS_SOURCE_CONNECTOR_PROPERTIES=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/cps_source_connector_properties_name -H "Metadata-Flavor: Google")
 PSL_SINK_CONNECTOR_PROPERTIES=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/psl_sink_connector_properties_name -H "Metadata-Flavor: Google")
+PSL_SOURCE_CONNECTOR_PROPERTIES=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/psl_source_connector_properties_name -H "Metadata-Flavor: Google")
 GCS_DIR='gcs_resources'
 
 mkdir $GCS_DIR
@@ -16,6 +17,7 @@ gsutil cp "gs://$GCS_BUCKET/$CPS_CONNECTOR_JAR" $GCS_DIR/
 gsutil cp "gs://$GCS_BUCKET/$CPS_SINK_CONNECTOR_PROPERTIES" $GCS_DIR/
 gsutil cp "gs://$GCS_BUCKET/$CPS_SOURCE_CONNECTOR_PROPERTIES" $GCS_DIR/
 gsutil cp "gs://$GCS_BUCKET/$PSL_SINK_CONNECTOR_PROPERTIES" $GCS_DIR/
+gsutil cp "gs://$GCS_BUCKET/$PSL_SOURCE_CONNECTOR_PROPERTIES" $GCS_DIR/
 echo "Files in $GCS_DIR: "
 ls -l $GCS_DIR/
 
@@ -48,7 +50,12 @@ sed -i "s@#plugin.path=@plugin.path=$(pwd)\/$GCS_DIR@g" $KAFKA_DIR/config/connec
 $KAFKA_DIR/bin/kafka-topics.sh --create --topic 'cps-sink-test-kafka-topic' --bootstrap-server localhost:9092
 $KAFKA_DIR/bin/kafka-topics.sh --create --topic 'cps-source-test-kafka-topic' --bootstrap-server localhost:9092
 $KAFKA_DIR/bin/kafka-topics.sh --create --topic 'psl-sink-test-topic' --bootstrap-server localhost:9092
+$KAFKA_DIR/bin/kafka-topics.sh --create --topic 'psl-source-test-topic' --bootstrap-server localhost:9092
 ## Start connectors
-$KAFKA_DIR/bin/connect-standalone.sh $KAFKA_DIR/config/connect-standalone.properties $GCS_DIR/$CPS_SINK_CONNECTOR_PROPERTIES $GCS_DIR/$CPS_SOURCE_CONNECTOR_PROPERTIES $GCS_DIR/$PSL_SINK_CONNECTOR_PROPERTIES &
+$KAFKA_DIR/bin/connect-standalone.sh $KAFKA_DIR/config/connect-standalone.properties \
+ $GCS_DIR/$CPS_SINK_CONNECTOR_PROPERTIES \
+ $GCS_DIR/$CPS_SOURCE_CONNECTOR_PROPERTIES \
+ $GCS_DIR/$PSL_SINK_CONNECTOR_PROPERTIES \
+ $GCS_DIR/$PSL_SOURCE_CONNECTOR_PROPERTIES &
 
 set +x

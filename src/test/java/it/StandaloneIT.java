@@ -7,7 +7,10 @@ import com.google.api.core.ApiFuture;
 import com.google.api.core.ApiFutureCallback;
 import com.google.api.core.ApiFutures;
 import com.google.api.gax.rpc.ApiException;
+import com.google.api.gax.rpc.NotFoundException;
 import com.google.cloud.compute.v1.Instance;
+import com.google.cloud.compute.v1.InstanceTemplatesClient;
+import com.google.cloud.compute.v1.InstancesClient;
 import com.google.cloud.pubsub.v1.AckReplyConsumer;
 import com.google.cloud.pubsub.v1.MessageReceiver;
 import com.google.cloud.pubsub.v1.Publisher;
@@ -22,6 +25,7 @@ import com.google.cloud.pubsublite.ProjectId;
 import com.google.cloud.pubsublite.SubscriptionPath;
 import com.google.cloud.pubsublite.TopicPath;
 import com.google.cloud.pubsublite.cloudpubsub.FlowControlSettings;
+import com.google.cloud.pubsublite.cloudpubsub.PublisherSettings;
 import com.google.cloud.pubsublite.cloudpubsub.SubscriberSettings;
 import com.google.cloud.pubsublite.proto.Subscription.DeliveryConfig;
 import com.google.cloud.pubsublite.proto.Subscription.DeliveryConfig.DeliveryRequirement;
@@ -42,9 +46,7 @@ import com.google.pubsub.v1.PubsubMessage;
 import com.google.pubsub.v1.Subscription;
 import com.google.pubsub.v1.SubscriptionName;
 import com.google.pubsub.v1.TopicName;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
@@ -57,6 +59,11 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -75,9 +82,6 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 
 public class StandaloneIT extends Base {
-  ByteArrayOutputStream bout;
-  PrintStream out;
-
   private static final Long KAFKA_PORT = Long.valueOf(9092);
   private static final GoogleLogger log = GoogleLogger.forEnclosingClass();
   private static final String projectId = System.getenv("GOOGLE_CLOUD_PROJECT");
@@ -113,10 +117,26 @@ public class StandaloneIT extends Base {
           .setLocation(CloudZone.of(CloudRegion.of(region), zone))
           .build();
 
+  private static final String kafkaPslSourceTestTopic = "psl-source-test-topic";
+  private static final String pslSourceTopicId = "psl-source-topic-" + runId;
+  private static final TopicPath pslSourceTopicPath =
+      TopicPath.newBuilder()
+          .setProject(ProjectId.of(projectId))
+          .setLocation(CloudZone.of(CloudRegion.of(region), zone))
+          .setName(com.google.cloud.pubsublite.TopicName.of(pslSourceTopicId))
+          .build();
+  private static final String pslSourceSubscriptionId = "psl-source-subscription-" + runId;
+  private static final SubscriptionPath pslSourceSubscriptionPath =
+      SubscriptionPath.newBuilder()
+          .setName(com.google.cloud.pubsublite.SubscriptionName.of(pslSourceSubscriptionId))
+          .setProject(ProjectId.of(projectId))
+          .setLocation(CloudZone.of(CloudRegion.of(region), zone))
+          .build();
+
   private static final String instanceName = "kafka-it-" + runId;
   private static final String instanceTemplateName = "kafka-it-template-" + runId;
   private static AtomicBoolean initialized = new AtomicBoolean(false);
-  private static AtomicBoolean cleaned = new AtomicBoolean(false);
+  private static AtomicInteger testRunCount = new AtomicInteger(0);
   private static Boolean cpsMessageReceived = false;
   private static Boolean pslMessageReceived = false;
 
@@ -129,7 +149,7 @@ public class StandaloneIT extends Base {
         System.getenv(varName));
   }
 
-  @Rule public Timeout globalTimeout = Timeout.seconds(300); // TODO: 10 minute timeout
+  @Rule public Timeout globalTimeout = Timeout.seconds(20 * 60); // TODO: 10 minute timeout
 
   @BeforeClass
   public static void checkRequirements() {
@@ -140,15 +160,10 @@ public class StandaloneIT extends Base {
 
   @Before
   public void setUp() throws Exception {
-    bout = new ByteArrayOutputStream();
-    out = new PrintStream(bout);
-    System.setOut(out);
-
-    if (initialized.get()) {
+    testRunCount.incrementAndGet();
+    if (!initialized.compareAndSet(false, true)) {
       return;
     }
-    initialized.getAndSet(true);
-
     findMavenHome();
     setupVersions();
     mavenPackage(workingDir);
@@ -162,7 +177,7 @@ public class StandaloneIT extends Base {
   protected void uploadGCSResources() throws Exception {
     // Upload the connector JAR and properties files to GCS.
     Storage storage = StorageOptions.newBuilder().setProjectId(projectId).build().getService();
-    uploadGCS(storage, cpsConnectorJarNameInGCS, cpsConnectorJarLoc);
+    uploadGCS(storage, connectorJarNameInGCS, cpsConnectorJarLoc);
     log.atInfo().log("Uploaded CPS connector jar to GCS.");
 
     uploadGCS(
@@ -182,6 +197,12 @@ public class StandaloneIT extends Base {
         pslSinkConnectorPropertiesGCSName,
         testResourcesDirLoc + pslSinkConnectorPropertiesName);
     log.atInfo().log("Uploaded PSL sink connector properties file to GCS.");
+
+    uploadGCS(
+        storage,
+        pslSourceConnectorPropertiesGCSName,
+        testResourcesDirLoc + pslSourceConnectorPropertiesName);
+    log.atInfo().log("Uploaded PSL source connector properties file to GCS.");
   }
 
   protected void setupCpsResources() throws IOException {
@@ -229,8 +250,7 @@ public class StandaloneIT extends Base {
                       .setPeriod(Durations.fromHours(1)))
               .build();
       sinkTopic = pslAdminClient.createTopic(sinkTopic).get();
-      log.atInfo().log(
-          "Created PSL sink topic( " + pslSinkTopicPath + "): " + sinkTopic.toString());
+      log.atInfo().log("Created PSL sink topic: " + pslSinkTopicPath);
 
       com.google.cloud.pubsublite.proto.Subscription pslSinkSubscription =
           com.google.cloud.pubsublite.proto.Subscription.newBuilder()
@@ -242,10 +262,38 @@ public class StandaloneIT extends Base {
               .build();
       pslSinkSubscription = pslAdminClient.createSubscription(pslSinkSubscription).get();
       log.atInfo().log(
-          "Created PSL sink subscription( "
-              + pslSinkSubscriptionPath.toString()
-              + "): "
-              + pslSinkSubscription.toString());
+          "Created PSL sink subscription: " + pslSinkSubscriptionPath.toString());
+
+      Topic sourceTopic =
+          Topic.newBuilder()
+              .setName(pslSourceTopicPath.toString())
+              .setPartitionConfig(
+                  PartitionConfig.newBuilder()
+                      .setCount(2)
+                      .setCapacity(
+                          Capacity.newBuilder()
+                              .setPublishMibPerSec(4)
+                              .setSubscribeMibPerSec(4)
+                              .build()))
+              .setRetentionConfig(
+                  RetentionConfig.newBuilder()
+                      .setPerPartitionBytes(30 * 1024 * 1024 * 1024L)
+                      .setPeriod(Durations.fromHours(1)))
+              .build();
+      sourceTopic = pslAdminClient.createTopic(sourceTopic).get();
+      log.atInfo().log("Created PSL source topic: " + pslSourceTopicPath);
+
+      com.google.cloud.pubsublite.proto.Subscription pslSourceSubscription =
+          com.google.cloud.pubsublite.proto.Subscription.newBuilder()
+              .setDeliveryConfig(
+                  DeliveryConfig.newBuilder()
+                      .setDeliveryRequirement(DeliveryRequirement.DELIVER_AFTER_STORED))
+              .setName(pslSourceSubscriptionPath.toString())
+              .setTopic(pslSourceTopicPath.toString())
+              .build();
+      pslSourceSubscription = pslAdminClient.createSubscription(pslSourceSubscription).get();
+      log.atInfo().log(
+          "Created PSL source subscription:  " + pslSinkSubscriptionPath.toString());
     }
   }
 
@@ -270,25 +318,41 @@ public class StandaloneIT extends Base {
 
   @After
   public void tearDown() throws Exception {
-    if (cleaned.get()) {
+    if (testRunCount.decrementAndGet() > 0) {
       return;
     }
-    cleaned.getAndSet(true);
-    // try (SubscriptionAdminClient subscriptionAdminClient = SubscriptionAdminClient.create()) {
-    //   try {
-    //     subscriptionAdminClient.deleteSubscription(cpsSinkSubscriptionName);
-    //     log.atInfo().log("Deleted CPS subscriptions.");
-    //   } catch (NotFoundException ignored) {
-    //     log.atInfo().log("Ignore. No topics found.");
+    log.atInfo().log("Attempting teardown!");
+    // Function<Runnable, Void> notFoundIgnoredClosureRunner = new Function<Runnable, Void>() {
+    //   @Override
+    //   public Void apply(Runnable runnable) {
+    //     try {
+    //       runnable.run();
+    //     } catch (NotFoundException ignored) {
+    //       log.atInfo().log(ignored.getMessage());
+    //       log.atInfo().log("Ignored. Resource not found!");
+    //     }
+    //     return null;
     //   }
+    // };
+    // try (SubscriptionAdminClient subscriptionAdminClient = SubscriptionAdminClient.create()) {
+    //   notFoundIgnoredClosureRunner.apply(() -> {subscriptionAdminClient.deleteSubscription(cpsSinkSubscriptionName);});
+    //   log.atInfo().log("Deleted CPS subscriptions.");
     // }
     //
     // try (TopicAdminClient topicAdminClient = TopicAdminClient.create()) {
-    //   topicAdminClient.deleteTopic(cpsSourceTopicName.toString());
-    //   topicAdminClient.deleteTopic(cpsSinkTopicName.toString());
-    //   log.atInfo().log("Deleted CPS topics");
-    // } catch (NotFoundException ignored) {
-    //   log.atInfo().log("Ignore. No subscriptions found.");
+    //   notFoundIgnoredClosureRunner.apply(() -> {topicAdminClient.deleteTopic(cpsSourceTopicName.toString());});
+    //   notFoundIgnoredClosureRunner.apply(() -> {topicAdminClient.deleteTopic(cpsSinkTopicName.toString());});
+    //   log.atInfo().log("Deleted CPS topics.");
+    // }
+    //
+    // try (AdminClient pslAdminClient =
+    //     AdminClient.create(
+    //         AdminClientSettings.newBuilder().setRegion(CloudRegion.of(region)).build())) {
+    //   notFoundIgnoredClosureRunner.apply(() -> {pslAdminClient.deleteSubscription(pslSinkSubscriptionPath);});
+    //   notFoundIgnoredClosureRunner.apply(() -> {pslAdminClient.deleteSubscription(pslSourceSubscriptionPath);});
+    //   notFoundIgnoredClosureRunner.apply(() -> {pslAdminClient.deleteTopic(pslSinkTopicPath);});
+    //   notFoundIgnoredClosureRunner.apply(() -> {pslAdminClient.deleteTopic(pslSourceTopicPath);});
+    //   log.atInfo().log("Deleted PSL topics and subscriptions.");
     // }
     //
     // try (InstancesClient instancesClient = InstancesClient.create()) {
@@ -301,11 +365,11 @@ public class StandaloneIT extends Base {
     // TimeUnit.MINUTES);
     // }
     // log.atInfo().log("Deleted Compute Engine instance template.");
-    // System.setOut(null);
   }
 
   @Test
   public void testCpsSinkConnector() throws Exception {
+
     Properties props = new Properties();
     props.put("bootstrap.servers", kafkaInstanceIpAddress + ":" + KAFKA_PORT);
     props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
@@ -473,9 +537,11 @@ public class StandaloneIT extends Base {
     // Instantiate an asynchronous message receiver.
     MessageReceiver receiver =
         (PubsubMessage message, AckReplyConsumer consumer) -> {
+          log.atInfo().log("Received message: " + message);
           assertThat(message.getData().toStringUtf8()).isEqualTo("value0");
           assertThat(message.getOrderingKey()).isEqualTo("key0");
           this.pslMessageReceived = true;
+          log.atInfo().log("this.pslMessageReceived: " + this.pslMessageReceived);
           consumer.ack();
         };
 
@@ -492,11 +558,100 @@ public class StandaloneIT extends Base {
                 .build());
     try {
       subscriber.startAsync().awaitRunning();
-      subscriber.awaitTerminated(30, TimeUnit.SECONDS);
+      subscriber.awaitTerminated(60, TimeUnit.SECONDS);
     } catch (TimeoutException timeoutException) {
       // Shut down the subscriber after 30s. Stop receiving messages.
-      subscriber.stopAsync().awaitTerminated();
+      subscriber.stopAsync();
     }
     assertThat(this.pslMessageReceived).isTrue();
+  }
+
+  @Test
+  public void testPslSourceConnector() throws Exception {
+    // Publish to CPS topic
+    PublisherSettings publisherSettings =
+        PublisherSettings.newBuilder().setTopicPath(pslSourceTopicPath).build();
+
+    com.google.cloud.pubsublite.cloudpubsub.Publisher publisher = com.google.cloud.pubsublite.cloudpubsub.Publisher.create(publisherSettings);
+    publisher.startAsync().awaitRunning();
+
+    PubsubMessage msg0 =
+        PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("msg0")).build();
+    ApiFuture<String> publishFuture = publisher.publish(msg0);
+    ApiFutures.addCallback(
+        publishFuture,
+        new ApiFutureCallback<String>() {
+
+          @Override
+          public void onFailure(Throwable throwable) {
+            if (throwable instanceof ApiException) {
+              ApiException apiException = ((ApiException) throwable);
+              // details on the API exception
+              log.atInfo().log(apiException.fillInStackTrace().toString());
+            }
+            Assert.fail("Error publishing message : " + msg0);
+          }
+
+          @Override
+          public void onSuccess(String messageId) {
+            // Once published, returns server-assigned message ids (unique within the topic)
+            log.atInfo().log("Published message ID: " + messageId);
+          }
+        },
+        MoreExecutors.directExecutor());
+
+    // Sleep for 1min.
+    Thread.sleep(60 * 1000);
+
+    // Consume from Kafka connect.
+    Properties consumer_props = new Properties();
+    consumer_props.setProperty(
+        ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaInstanceIpAddress + ":" + KAFKA_PORT);
+    consumer_props.setProperty(
+        ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+        "org.apache.kafka.common.serialization.StringDeserializer");
+    consumer_props.setProperty(
+        ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+        "org.apache.kafka.common.serialization.StringDeserializer");
+    consumer_props.setProperty(ConsumerConfig.GROUP_ID_CONFIG, "unittest");
+    consumer_props.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+    consumer_props.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
+    KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(consumer_props);
+    final boolean[] assignmentReceived = {false};
+    kafkaConsumer.subscribe(
+        Arrays.asList(kafkaPslSourceTestTopic),
+        new ConsumerRebalanceListener() {
+          @Override
+          public void onPartitionsRevoked(Collection<TopicPartition> collection) {}
+
+          @Override
+          public void onPartitionsAssigned(Collection<TopicPartition> collection) {
+            assignmentReceived[0] = true;
+          }
+        });
+    LocalTime startTime = LocalTime.now();
+    boolean messageReceived = false;
+    try {
+      while (Duration.between(startTime, LocalTime.now())
+          .compareTo(Duration.of(1, ChronoUnit.MINUTES))
+          < 0) {
+        ConsumerRecords<String, String> records =
+            kafkaConsumer.poll(Duration.of(1, ChronoUnit.SECONDS));
+        if (!assignmentReceived[0]) {
+          continue;
+        }
+        Iterator<ConsumerRecord<String, String>> recordIterator =
+            records.records(kafkaPslSourceTestTopic).iterator();
+        assertThat(recordIterator.hasNext()).isTrue();
+        assertThat(recordIterator.next().value()).isEqualTo("msg0");
+        messageReceived = true;
+        break;
+      }
+    } finally {
+      kafkaConsumer.commitSync();
+      kafkaConsumer.close();
+    }
+    assertThat(messageReceived).isTrue();
+    publisher.stopAsync().awaitTerminated();
   }
 }
