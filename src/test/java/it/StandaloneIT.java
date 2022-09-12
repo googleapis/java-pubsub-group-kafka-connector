@@ -143,8 +143,6 @@ public class StandaloneIT extends Base {
         System.getenv(varName));
   }
 
-  // @Rule public Timeout globalTimeout = Timeout.seconds(20 * 60);
-
   @BeforeClass
   public static void checkRequirements() {
     requireEnvVar("GOOGLE_CLOUD_PROJECT");
