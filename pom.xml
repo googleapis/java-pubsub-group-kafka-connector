@@ -51,6 +51,11 @@
       <version>1.6.0</version>
     </dependency>
     <dependency>
+      <groupId>com.google.flogger</groupId>
+      <artifactId>google-extensions</artifactId>
+      <version>0.7.4</version>
+    </dependency>
+    <dependency>
       <groupId>org.apache.kafka</groupId>
       <artifactId>connect-api</artifactId>
       <version>3.2.1</version>
@@ -178,12 +183,6 @@
       <version>2.0.0</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>com.google.flogger</groupId>
-      <artifactId>google-extensions</artifactId>
-      <version>0.7.4</version>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>
@@ -208,6 +207,7 @@
             </ignoredUnusedDeclaredDependencies>
             <ignoredNonTestScopedDependencies>
               <ignoredNonTestScopedDependency>com.google.api.grpc:proto-google-cloud-pubsublite-v1</ignoredNonTestScopedDependency>
+              <ignoredNonTestScopedDependency>com.google.flogger:google-extensions</ignoredNonTestScopedDependency>
             </ignoredNonTestScopedDependencies>
           </configuration>
         </plugin>

@@ -52,29 +52,29 @@ public class Base {
 
   private static final String bucketName = System.getenv("BUCKET_NAME");
   protected static final String runId = UUID.randomUUID().toString().substring(0, 8);
-  protected String mavenHome;
-  protected String workingDir;
-  protected String connectorVersion;
-  protected String startupScriptName;
-  protected String connectorJarName;
-  protected String connectorJarNameInGCS;
-  protected String cpsConnectorJarLoc;
-  protected String testResourcesDirLoc;
-  protected String cpsSinkConnectorPropertiesName;
-  protected String cpsSinkConnectorPropertiesGCSName;
-  protected String cpsSourceConnectorPropertiesName;
-  protected String cpsSourceConnectorPropertiesGCSName;
-  protected String pslSinkConnectorPropertiesName;
-  protected String pslSinkConnectorPropertiesGCSName;
-  protected String pslSourceConnectorPropertiesName;
-  protected String pslSourceConnectorPropertiesGCSName;
-  protected String kafkaVersion;
-  protected String scalaVersion;
+  protected static String mavenHome;
+  protected static String workingDir;
+  protected static String connectorVersion;
+  protected static String startupScriptName;
+  protected static String connectorJarName;
+  protected static String connectorJarNameInGCS;
+  protected static String cpsConnectorJarLoc;
+  protected static String testResourcesDirLoc;
+  protected static String cpsSinkConnectorPropertiesName;
+  protected static String cpsSinkConnectorPropertiesGCSName;
+  protected static String cpsSourceConnectorPropertiesName;
+  protected static String cpsSourceConnectorPropertiesGCSName;
+  protected static String pslSinkConnectorPropertiesName;
+  protected static String pslSinkConnectorPropertiesGCSName;
+  protected static String pslSourceConnectorPropertiesName;
+  protected static String pslSourceConnectorPropertiesGCSName;
+  protected static String kafkaVersion;
+  protected static String scalaVersion;
   protected static final String region = "us-central1";
   protected static final Character zone = 'b';
   protected static final String location = region + "-" + String.valueOf(zone);
 
-  protected void findMavenHome() throws Exception {
+  protected static void findMavenHome() throws Exception {
     Process p = Runtime.getRuntime().exec("mvn --version");
     BufferedReader stdOut = new BufferedReader(new InputStreamReader(p.getInputStream()));
     assertThat(p.waitFor()).isEqualTo(0);
@@ -86,7 +86,7 @@ public class Base {
     }
   }
 
-  private void runMavenCommand(
+  private static void runMavenCommand(
       String workingDir, Optional<InvocationOutputHandler> outputHandler, String... goals)
       throws MavenInvocationException, CommandLineException {
     InvocationRequest request = new DefaultInvocationRequest();
@@ -102,12 +102,12 @@ public class Base {
     assertThat(result.getExitCode()).isEqualTo(0);
   }
 
-  protected void mavenPackage(String workingDir)
+  protected static void mavenPackage(String workingDir)
       throws MavenInvocationException, CommandLineException {
     runMavenCommand(workingDir, Optional.empty(), "clean", "package", "-DskipTests=true");
   }
 
-  private void getVersion(String workingDir, InvocationOutputHandler outputHandler)
+  private static void getVersion(String workingDir, InvocationOutputHandler outputHandler)
       throws MavenInvocationException, CommandLineException {
     runMavenCommand(
         workingDir,
@@ -119,7 +119,7 @@ public class Base {
         "exec:exec");
   }
 
-  protected void setupVersions() throws MavenInvocationException, CommandLineException {
+  protected static void setupVersions() throws MavenInvocationException, CommandLineException {
     workingDir = System.getProperty("user.dir");
     getVersion(workingDir, (l) -> connectorVersion = l);
     log.atInfo().log("Connector version is: %s", connectorVersion);
@@ -149,13 +149,14 @@ public class Base {
     scalaVersion = "2.13";
   }
 
-  protected void uploadGCS(Storage storage, String fileNameInGCS, String fileLoc) throws Exception {
+  protected static void uploadGCS(Storage storage, String fileNameInGCS, String fileLoc)
+      throws Exception {
     BlobId blobId = BlobId.of(bucketName, fileNameInGCS);
     BlobInfo blobInfo = BlobInfo.newBuilder(blobId).build();
     storage.create(blobInfo, Files.readAllBytes(Paths.get(fileLoc)));
   }
 
-  protected void createInstanceTemplate(
+  protected static void createInstanceTemplate(
       String projectId, String projectNumber, String instanceTemplateName)
       throws IOException, ExecutionException, InterruptedException, TimeoutException {
     try (InstanceTemplatesClient instanceTemplatesClient = InstanceTemplatesClient.create()) {
@@ -285,7 +286,7 @@ public class Base {
     }
   }
 
-  protected void createInstanceFromTemplate(
+  protected static void createInstanceFromTemplate(
       String projectId, String zone, String instanceName, String instanceTemplateName)
       throws IOException, ExecutionException, InterruptedException, TimeoutException {
 
@@ -316,10 +317,9 @@ public class Base {
     }
   }
 
-  protected Instance getInstance(String projectId, String zone, String instanceName)
+  protected static Instance getInstance(String projectId, String zone, String instanceName)
       throws IOException {
     try (InstancesClient instancesClient = InstancesClient.create()) {
-
       GetInstanceRequest getInstanceRequest =
           GetInstanceRequest.newBuilder()
               .setProject(projectId)

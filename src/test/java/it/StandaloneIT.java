@@ -6,6 +6,7 @@ import static junit.framework.TestCase.assertNotNull;
 import com.google.api.core.ApiFuture;
 import com.google.api.core.ApiFutureCallback;
 import com.google.api.core.ApiFutures;
+import com.google.api.gax.batching.BatchingSettings;
 import com.google.api.gax.rpc.ApiException;
 import com.google.api.gax.rpc.NotFoundException;
 import com.google.cloud.compute.v1.Instance;
@@ -70,13 +71,10 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.TopicPartition;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.Timeout;
 
 public class StandaloneIT extends Base {
   private static final Long KAFKA_PORT = Long.valueOf(9092);
@@ -136,7 +134,6 @@ public class StandaloneIT extends Base {
   private static AtomicInteger testRunCount = new AtomicInteger(4);
   private static Boolean cpsMessageReceived = false;
   private static Boolean pslMessageReceived = false;
-
   private static Instance gceKafkaInstance;
   private static String kafkaInstanceIpAddress;
 
@@ -146,7 +143,7 @@ public class StandaloneIT extends Base {
         System.getenv(varName));
   }
 
-  @Rule public Timeout globalTimeout = Timeout.seconds(20 * 60);
+  // @Rule public Timeout globalTimeout = Timeout.seconds(20 * 60);
 
   @BeforeClass
   public static void checkRequirements() {
@@ -155,8 +152,8 @@ public class StandaloneIT extends Base {
     requireEnvVar("BUCKET_NAME");
   }
 
-  @Before
-  public void setUp() throws Exception {
+  @BeforeClass
+  public static void setUp() throws Exception {
     if (!initialized.compareAndSet(false, true)) {
       return;
     }
@@ -170,7 +167,7 @@ public class StandaloneIT extends Base {
     setupGceInstance();
   }
 
-  protected void uploadGCSResources() throws Exception {
+  protected static void uploadGCSResources() throws Exception {
     // Upload the connector JAR and properties files to GCS.
     Storage storage = StorageOptions.newBuilder().setProjectId(projectId).build().getService();
     uploadGCS(storage, connectorJarNameInGCS, cpsConnectorJarLoc);
@@ -201,7 +198,7 @@ public class StandaloneIT extends Base {
     log.atInfo().log("Uploaded PSL source connector properties file to GCS.");
   }
 
-  protected void setupCpsResources() throws IOException {
+  protected static void setupCpsResources() throws IOException {
     try (TopicAdminClient topicAdminClient = TopicAdminClient.create()) {
       topicAdminClient.createTopic(cpsSourceTopicName);
       log.atInfo().log("Created CPS source topic: " + cpsSourceTopicName);
@@ -225,7 +222,7 @@ public class StandaloneIT extends Base {
     }
   }
 
-  protected void setupPslResources() throws Exception {
+  protected static void setupPslResources() throws Exception {
     try (AdminClient pslAdminClient =
         AdminClient.create(
             AdminClientSettings.newBuilder().setRegion(CloudRegion.of(region)).build())) {
@@ -291,7 +288,7 @@ public class StandaloneIT extends Base {
     }
   }
 
-  protected void setupGceInstance()
+  protected static void setupGceInstance()
       throws IOException, ExecutionException, InterruptedException, TimeoutException {
 
     createInstanceTemplate(projectId, projectNumber, instanceTemplateName);
@@ -300,8 +297,8 @@ public class StandaloneIT extends Base {
     createInstanceFromTemplate(projectId, location, instanceName, instanceTemplateName);
     log.atInfo().log("Created Compute Engine instance from instance template");
 
-    this.gceKafkaInstance = getInstance(projectId, location, instanceName);
-    this.kafkaInstanceIpAddress =
+    gceKafkaInstance = getInstance(projectId, location, instanceName);
+    kafkaInstanceIpAddress =
         gceKafkaInstance.getNetworkInterfaces(0).getAccessConfigs(0).getNatIP();
     log.atInfo().log(
         "Kafka GCE Instance: "
@@ -310,8 +307,8 @@ public class StandaloneIT extends Base {
             + gceKafkaInstance.getDescription());
   }
 
-  @After
-  public void tearDown() throws Exception {
+  @AfterClass
+  public static void tearDown() throws Exception {
     if (testRunCount.decrementAndGet() > 0) {
       return;
     }
@@ -573,7 +570,7 @@ public class StandaloneIT extends Base {
                 .build());
     try {
       subscriber.startAsync().awaitRunning();
-      subscriber.awaitTerminated(120, TimeUnit.SECONDS);
+      subscriber.awaitTerminated(3, TimeUnit.MINUTES);
     } catch (TimeoutException timeoutException) {
       // Shut down the subscriber after 30s. Stop receiving messages.
       subscriber.stopAsync();
@@ -585,7 +582,14 @@ public class StandaloneIT extends Base {
   public void testPslSourceConnector() throws Exception {
     // Publish to CPS topic
     PublisherSettings publisherSettings =
-        PublisherSettings.newBuilder().setTopicPath(pslSourceTopicPath).build();
+        PublisherSettings.newBuilder()
+            .setTopicPath(pslSourceTopicPath)
+            .setBatchingSettings(
+                BatchingSettings.newBuilder()
+                    .setDelayThreshold(
+                        org.threeten.bp.Duration.of(1, org.threeten.bp.temporal.ChronoUnit.SECONDS))
+                    .build())
+            .build();
 
     com.google.cloud.pubsublite.cloudpubsub.Publisher publisher =
         com.google.cloud.pubsublite.cloudpubsub.Publisher.create(publisherSettings);
@@ -649,10 +653,10 @@ public class StandaloneIT extends Base {
     boolean messageReceived = false;
     try {
       while (Duration.between(startTime, LocalTime.now())
-              .compareTo(Duration.of(1, ChronoUnit.MINUTES))
+              .compareTo(Duration.of(2, ChronoUnit.MINUTES))
           < 0) {
         ConsumerRecords<String, String> records =
-            kafkaConsumer.poll(Duration.of(2, ChronoUnit.SECONDS));
+            kafkaConsumer.poll(Duration.of(1, ChronoUnit.SECONDS));
         if (!assignmentReceived[0]) {
           continue;
         }
