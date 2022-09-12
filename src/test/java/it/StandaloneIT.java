@@ -7,10 +7,7 @@ import com.google.api.core.ApiFuture;
 import com.google.api.core.ApiFutureCallback;
 import com.google.api.core.ApiFutures;
 import com.google.api.gax.rpc.ApiException;
-import com.google.api.gax.rpc.NotFoundException;
 import com.google.cloud.compute.v1.Instance;
-import com.google.cloud.compute.v1.InstanceTemplatesClient;
-import com.google.cloud.compute.v1.InstancesClient;
 import com.google.cloud.pubsub.v1.AckReplyConsumer;
 import com.google.cloud.pubsub.v1.MessageReceiver;
 import com.google.cloud.pubsub.v1.Publisher;
@@ -60,10 +57,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Function;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -261,8 +254,7 @@ public class StandaloneIT extends Base {
               .setTopic(pslSinkTopicPath.toString())
               .build();
       pslSinkSubscription = pslAdminClient.createSubscription(pslSinkSubscription).get();
-      log.atInfo().log(
-          "Created PSL sink subscription: " + pslSinkSubscriptionPath.toString());
+      log.atInfo().log("Created PSL sink subscription: " + pslSinkSubscriptionPath.toString());
 
       Topic sourceTopic =
           Topic.newBuilder()
@@ -292,8 +284,7 @@ public class StandaloneIT extends Base {
               .setTopic(pslSourceTopicPath.toString())
               .build();
       pslSourceSubscription = pslAdminClient.createSubscription(pslSourceSubscription).get();
-      log.atInfo().log(
-          "Created PSL source subscription:  " + pslSinkSubscriptionPath.toString());
+      log.atInfo().log("Created PSL source subscription:  " + pslSinkSubscriptionPath.toString());
     }
   }
 
@@ -335,23 +326,29 @@ public class StandaloneIT extends Base {
     //   }
     // };
     // try (SubscriptionAdminClient subscriptionAdminClient = SubscriptionAdminClient.create()) {
-    //   notFoundIgnoredClosureRunner.apply(() -> {subscriptionAdminClient.deleteSubscription(cpsSinkSubscriptionName);});
+    //   notFoundIgnoredClosureRunner.apply(() ->
+    // {subscriptionAdminClient.deleteSubscription(cpsSinkSubscriptionName);});
     //   log.atInfo().log("Deleted CPS subscriptions.");
     // }
     //
     // try (TopicAdminClient topicAdminClient = TopicAdminClient.create()) {
-    //   notFoundIgnoredClosureRunner.apply(() -> {topicAdminClient.deleteTopic(cpsSourceTopicName.toString());});
-    //   notFoundIgnoredClosureRunner.apply(() -> {topicAdminClient.deleteTopic(cpsSinkTopicName.toString());});
+    //   notFoundIgnoredClosureRunner.apply(() ->
+    // {topicAdminClient.deleteTopic(cpsSourceTopicName.toString());});
+    //   notFoundIgnoredClosureRunner.apply(() ->
+    // {topicAdminClient.deleteTopic(cpsSinkTopicName.toString());});
     //   log.atInfo().log("Deleted CPS topics.");
     // }
     //
     // try (AdminClient pslAdminClient =
     //     AdminClient.create(
     //         AdminClientSettings.newBuilder().setRegion(CloudRegion.of(region)).build())) {
-    //   notFoundIgnoredClosureRunner.apply(() -> {pslAdminClient.deleteSubscription(pslSinkSubscriptionPath);});
-    //   notFoundIgnoredClosureRunner.apply(() -> {pslAdminClient.deleteSubscription(pslSourceSubscriptionPath);});
+    //   notFoundIgnoredClosureRunner.apply(() ->
+    // {pslAdminClient.deleteSubscription(pslSinkSubscriptionPath);});
+    //   notFoundIgnoredClosureRunner.apply(() ->
+    // {pslAdminClient.deleteSubscription(pslSourceSubscriptionPath);});
     //   notFoundIgnoredClosureRunner.apply(() -> {pslAdminClient.deleteTopic(pslSinkTopicPath);});
-    //   notFoundIgnoredClosureRunner.apply(() -> {pslAdminClient.deleteTopic(pslSourceTopicPath);});
+    //   notFoundIgnoredClosureRunner.apply(() ->
+    // {pslAdminClient.deleteTopic(pslSourceTopicPath);});
     //   log.atInfo().log("Deleted PSL topics and subscriptions.");
     // }
     //
@@ -572,7 +569,8 @@ public class StandaloneIT extends Base {
     PublisherSettings publisherSettings =
         PublisherSettings.newBuilder().setTopicPath(pslSourceTopicPath).build();
 
-    com.google.cloud.pubsublite.cloudpubsub.Publisher publisher = com.google.cloud.pubsublite.cloudpubsub.Publisher.create(publisherSettings);
+    com.google.cloud.pubsublite.cloudpubsub.Publisher publisher =
+        com.google.cloud.pubsublite.cloudpubsub.Publisher.create(publisherSettings);
     publisher.startAsync().awaitRunning();
 
     PubsubMessage msg0 =
@@ -633,7 +631,7 @@ public class StandaloneIT extends Base {
     boolean messageReceived = false;
     try {
       while (Duration.between(startTime, LocalTime.now())
-          .compareTo(Duration.of(1, ChronoUnit.MINUTES))
+              .compareTo(Duration.of(1, ChronoUnit.MINUTES))
           < 0) {
         ConsumerRecords<String, String> records =
             kafkaConsumer.poll(Duration.of(1, ChronoUnit.SECONDS));
