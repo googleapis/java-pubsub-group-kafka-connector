@@ -141,7 +141,8 @@ public class Base {
     pslSinkConnectorPropertiesGCSName =
         pslSinkConnectorPropertiesName.replace(".properties", runId + ".properties");
     pslSourceConnectorPropertiesName = "pubsub-lite-source-connector-test.properties";
-    pslSourceConnectorPropertiesGCSName = pslSourceConnectorPropertiesName.replace(".properties", runId + ".properties");
+    pslSourceConnectorPropertiesGCSName =
+        pslSourceConnectorPropertiesName.replace(".properties", runId + ".properties");
 
     // TODO: Get Kafka and Scala versions programmatically: {major}.{minor}.{patch}.
     kafkaVersion = "3.2.0";
