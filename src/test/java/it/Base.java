@@ -1,3 +1,18 @@
+/*
+ * Copyright 2022 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package it;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -52,24 +67,29 @@ public class Base {
 
   private static final String bucketName = System.getenv("BUCKET_NAME");
   protected static final String runId = UUID.randomUUID().toString().substring(0, 8);
-  protected String mavenHome;
-  protected String workingDir;
-  protected String connectorVersion;
-  protected String startupScriptName;
-  protected String cpsConnectorJarName;
-  protected String cpsConnectorJarNameInGCS;
-  protected String cpsConnectorJarLoc;
-  protected String testResourcesDirLoc;
-  protected String cpsSinkConnectorPropertiesName;
-  protected String cpsSinkConnectorPropertiesGCSName;
-  protected String cpsSourceConnectorPropertiesName;
-  protected String cpsSourceConnectorPropertiesGCSName;
-  protected String pslSinkConnectorPropertiesName;
-  protected String pslSourceConnectorPropertiesName;
-  protected String kafkaVersion;
-  protected String scalaVersion;
+  protected static String mavenHome;
+  protected static String workingDir;
+  protected static String connectorVersion;
+  protected static String startupScriptName;
+  protected static String connectorJarName;
+  protected static String connectorJarNameInGCS;
+  protected static String cpsConnectorJarLoc;
+  protected static String testResourcesDirLoc;
+  protected static String cpsSinkConnectorPropertiesName;
+  protected static String cpsSinkConnectorPropertiesGCSName;
+  protected static String cpsSourceConnectorPropertiesName;
+  protected static String cpsSourceConnectorPropertiesGCSName;
+  protected static String pslSinkConnectorPropertiesName;
+  protected static String pslSinkConnectorPropertiesGCSName;
+  protected static String pslSourceConnectorPropertiesName;
+  protected static String pslSourceConnectorPropertiesGCSName;
+  protected static String kafkaVersion;
+  protected static String scalaVersion;
+  protected static final String region = "us-central1";
+  protected static final Character zone = 'b';
+  protected static final String location = region + "-" + String.valueOf(zone);
 
-  protected void findMavenHome() throws Exception {
+  protected static void findMavenHome() throws Exception {
     Process p = Runtime.getRuntime().exec("mvn --version");
     BufferedReader stdOut = new BufferedReader(new InputStreamReader(p.getInputStream()));
     assertThat(p.waitFor()).isEqualTo(0);
@@ -81,7 +101,7 @@ public class Base {
     }
   }
 
-  private void runMavenCommand(
+  private static void runMavenCommand(
       String workingDir, Optional<InvocationOutputHandler> outputHandler, String... goals)
       throws MavenInvocationException, CommandLineException {
     InvocationRequest request = new DefaultInvocationRequest();
@@ -97,12 +117,12 @@ public class Base {
     assertThat(result.getExitCode()).isEqualTo(0);
   }
 
-  protected void mavenPackage(String workingDir)
+  protected static void mavenPackage(String workingDir)
       throws MavenInvocationException, CommandLineException {
     runMavenCommand(workingDir, Optional.empty(), "clean", "package", "-DskipTests=true");
   }
 
-  private void getVersion(String workingDir, InvocationOutputHandler outputHandler)
+  private static void getVersion(String workingDir, InvocationOutputHandler outputHandler)
       throws MavenInvocationException, CommandLineException {
     runMavenCommand(
         workingDir,
@@ -114,16 +134,16 @@ public class Base {
         "exec:exec");
   }
 
-  protected void setupVersions() throws MavenInvocationException, CommandLineException {
+  protected static void setupVersions() throws MavenInvocationException, CommandLineException {
     workingDir = System.getProperty("user.dir");
     getVersion(workingDir, (l) -> connectorVersion = l);
     log.atInfo().log("Connector version is: %s", connectorVersion);
 
     startupScriptName = "kafka_vm_startup_script.sh";
-    cpsConnectorJarName = String.format("pubsub-group-kafka-connector-%s.jar", connectorVersion);
-    cpsConnectorJarNameInGCS =
+    connectorJarName = String.format("pubsub-group-kafka-connector-%s.jar", connectorVersion);
+    connectorJarNameInGCS =
         String.format("pubsub-group-kafka-connector-%s-%s.jar", connectorVersion, runId);
-    cpsConnectorJarLoc = String.format("%s/target/%s", workingDir, cpsConnectorJarName);
+    cpsConnectorJarLoc = String.format("%s/target/%s", workingDir, connectorJarName);
 
     testResourcesDirLoc = String.format("%s/src/test/resources/", workingDir);
     cpsSinkConnectorPropertiesName = "cps-sink-connector-test.properties";
@@ -133,20 +153,25 @@ public class Base {
     cpsSourceConnectorPropertiesGCSName =
         cpsSourceConnectorPropertiesName.replace(".properties", runId + ".properties");
     pslSinkConnectorPropertiesName = "pubsub-lite-sink-connector-test.properties";
+    pslSinkConnectorPropertiesGCSName =
+        pslSinkConnectorPropertiesName.replace(".properties", runId + ".properties");
     pslSourceConnectorPropertiesName = "pubsub-lite-source-connector-test.properties";
+    pslSourceConnectorPropertiesGCSName =
+        pslSourceConnectorPropertiesName.replace(".properties", runId + ".properties");
 
     // TODO: Get Kafka and Scala versions programmatically: {major}.{minor}.{patch}.
     kafkaVersion = "3.2.0";
     scalaVersion = "2.13";
   }
 
-  protected void uploadGCS(Storage storage, String fileNameInGCS, String fileLoc) throws Exception {
+  protected static void uploadGCS(Storage storage, String fileNameInGCS, String fileLoc)
+      throws Exception {
     BlobId blobId = BlobId.of(bucketName, fileNameInGCS);
     BlobInfo blobInfo = BlobInfo.newBuilder(blobId).build();
     storage.create(blobInfo, Files.readAllBytes(Paths.get(fileLoc)));
   }
 
-  protected void createInstanceTemplate(
+  protected static void createInstanceTemplate(
       String projectId, String projectNumber, String instanceTemplateName)
       throws IOException, ExecutionException, InterruptedException, TimeoutException {
     try (InstanceTemplatesClient instanceTemplatesClient = InstanceTemplatesClient.create()) {
@@ -205,7 +230,7 @@ public class Base {
               .addItems(
                   Items.newBuilder()
                       .setKey("cps_connector_jar_name")
-                      .setValue(cpsConnectorJarNameInGCS)
+                      .setValue(connectorJarNameInGCS)
                       .build())
               .addItems(
                   Items.newBuilder()
@@ -216,6 +241,17 @@ public class Base {
                   Items.newBuilder()
                       .setKey("cps_source_connector_properties_name")
                       .setValue(cpsSourceConnectorPropertiesGCSName)
+                      .build())
+              .addItems(Items.newBuilder().setKey("psl_zone").setValue(location).build())
+              .addItems(
+                  Items.newBuilder()
+                      .setKey("psl_sink_connector_properties_name")
+                      .setValue(pslSinkConnectorPropertiesGCSName)
+                      .build())
+              .addItems(
+                  Items.newBuilder()
+                      .setKey("psl_source_connector_properties_name")
+                      .setValue(pslSourceConnectorPropertiesGCSName)
                       .build())
               .build();
 
@@ -230,6 +266,7 @@ public class Base {
                           String.format("%s-compute@developer.gserviceaccount.com", projectNumber))
                       .addAllScopes(
                           Arrays.asList(
+                              "https://www.googleapis.com/auth/cloud-platform",
                               "https://www.googleapis.com/auth/pubsub",
                               "https://www.googleapis.com/auth/devstorage.read_write"))
                       .build())
@@ -264,7 +301,7 @@ public class Base {
     }
   }
 
-  protected void createInstanceFromTemplate(
+  protected static void createInstanceFromTemplate(
       String projectId, String zone, String instanceName, String instanceTemplateName)
       throws IOException, ExecutionException, InterruptedException, TimeoutException {
 
@@ -295,10 +332,9 @@ public class Base {
     }
   }
 
-  protected Instance getInstance(String projectId, String zone, String instanceName)
+  protected static Instance getInstance(String projectId, String zone, String instanceName)
       throws IOException {
     try (InstancesClient instancesClient = InstancesClient.create()) {
-
       GetInstanceRequest getInstanceRequest =
           GetInstanceRequest.newBuilder()
               .setProject(projectId)

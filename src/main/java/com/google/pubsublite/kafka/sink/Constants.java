@@ -24,4 +24,6 @@ public final class Constants {
   public static final String KAFKA_OFFSET_HEADER = "x-goog-pubsublite-source-kafka-offset";
   public static final String KAFKA_EVENT_TIME_TYPE_HEADER =
       "x-goog-pubsublite-source-kafka-event-time-type";
+  public static final String PUBSUBLITE_KAFKA_SINK_CONNECTOR_NAME =
+      "JAVA_PUBSUBLITE_KAFKA_SINK_CONNECTOR";
 }
