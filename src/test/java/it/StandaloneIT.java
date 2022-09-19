@@ -494,6 +494,7 @@ public class StandaloneIT extends Base {
     LocalTime startTime = LocalTime.now();
     boolean messageReceived = false;
     try {
+      // Poll for 2minutes to allow sufficient time for group rebalance and assignment.
       while (Duration.between(startTime, LocalTime.now())
               .compareTo(Duration.of(2, ChronoUnit.MINUTES))
           < 0) {
@@ -570,7 +571,7 @@ public class StandaloneIT extends Base {
       subscriber.startAsync().awaitRunning();
       subscriber.awaitTerminated(3, TimeUnit.MINUTES);
     } catch (TimeoutException timeoutException) {
-      // Shut down the subscriber after 30s. Stop receiving messages.
+      // Shut down the subscriber after 3 minutes. Stop receiving messages.
       subscriber.stopAsync();
     }
     assertThat(this.pslMessageReceived).isTrue();
