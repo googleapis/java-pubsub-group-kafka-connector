@@ -160,7 +160,7 @@ public class Base {
         pslSourceConnectorPropertiesName.replace(".properties", runId + ".properties");
 
     // TODO: Get Kafka and Scala versions programmatically: {major}.{minor}.{patch}.
-    kafkaVersion = "3.2.0";
+    kafkaVersion = "3.2.3";
     scalaVersion = "2.13";
   }
 
