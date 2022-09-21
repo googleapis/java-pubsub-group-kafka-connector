@@ -19,7 +19,7 @@ import subprocess
 
 KAFKA_RELEASE = "3.2.0"
 KAFKA_FOLDER = f"kafka-{KAFKA_RELEASE}-src"
-KAFKA_LINK = f"https://dlcdn.apache.org/kafka/{KAFKA_RELEASE}/{KAFKA_FOLDER}.tgz"
+KAFKA_LINK = f"https://archive.apache.org/dist/kafka/{KAFKA_RELEASE}/{KAFKA_FOLDER}.tgz"
 
 CONNECTOR_RELEASE = "v0.10-alpha"
 PUBSUB_CONNECTOR_LINK = f"https://github.com/GoogleCloudPlatform/pubsub/releases/download/{CONNECTOR_RELEASE}/pubsub-kafka-connector.jar"
