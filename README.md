@@ -7,13 +7,13 @@ data from [Kafka](http://kafka.apache.org) to
 [Pub/Sub Lite](https://cloud.google.com/pubsub/lite) and vice versa.
 
 * CloudPubSubSinkConnector provides a sink connector to copy messages from Kafka
-to Google Cloud Pub/Sub. 
-* CloudPubSubSourceConnector provides a source connector
-to copy messages from Google Cloud Pub/Sub to Kafka. 
-* PubSubLiteSinkConnector
-provides a sink connector to copy messages from Kafka to Pub/Sub Lite.
+  to Google Cloud Pub/Sub.
+* CloudPubSubSourceConnector provides a source connector to copy messages from
+  Google Cloud Pub/Sub to Kafka.
+* PubSubLiteSinkConnector provides a sink connector to copy messages from Kafka
+  to Pub/Sub Lite.
 * PubSubLiteSourceConnector provides a source connector to copy messages from
-Pub/Sub Lite to Kafka.
+  Pub/Sub Lite to Kafka.
 
 ### Pre-Running Steps
 
@@ -86,9 +86,9 @@ You can also build the connector from head, as described [below](#building).
    Kafka connector.
 
 2. Create a configuration file for the Pub/Sub connector and copy it to the
-   location where you will run Kafka connect. The configuration should specify the
-   intended Kafka topics, Pub/Sub topic, and Pub/Sub project. For Pub/Sub Lite,
-   this should also set the correct location (google cloud zone). Sample
+   location where you will run Kafka connect. The configuration should specify
+   the intended Kafka topics, Pub/Sub topic, and Pub/Sub project. For Pub/Sub
+   Lite, this should also set the correct location (google cloud zone). Sample
    configuration files for the source and sink connectors are provided at
    `configs/`.
 
@@ -146,7 +146,7 @@ Connector supports the following configs:
 | maxDelayThresholdMs                      | Integer | 100 | The maximum amount of time to wait to reach maxBufferSize or maxBufferBytes before publishing outstanding messages to Cloud Pub/Sub.                                                                                                                                                                                                |
 | maxRequestTimeoutMs                      | Integer | 10000 | The timeout for individual publish requests to Cloud Pub/Sub.                                                                                                                                                                                                                                                                       |
 | maxTotalTimeoutMs                        | Integer | 60000| The total timeout for a call to publish (including retries) to Cloud Pub/Sub.                                                                                                                                                                                                                                                       |
-| maxShutdownTimemaxShutdownTimeoutMsoutMs |Integer|60000| The maximum amount of time to wait for a publisher to shutdown when stopping task in Kafka Connect.                                                                                                                                                                                                                                 |
+| maxShutdownTimeoutMs |Integer|60000| The maximum amount of time to wait for a publisher to shutdown when stopping task in Kafka Connect.                                                                                                                                                                                                                                 |
 | gcp.credentials.file.path                | String | Optional | The file path, which stores GCP credentials. If not defined, GOOGLE_APPLICATION_CREDENTIALS env is used.                                                                                                                                                                                                                            |
 | gcp.credentials.json                     | String | Optional | GCP credentials JSON blob. If specified, use the explicitly handed credentials. Consider using the externalized secrets feature in Kafka Connect for passing the value.                                                                                                                                                             |
 | metadata.publish                         | Boolean | false | When true, include the Kafka topic, partition, offset, and timestamp as message attributes when a message is published to Cloud Pub/Sub.                                                                                                                                                                                            |
@@ -154,8 +154,8 @@ Connector supports the following configs:
 | orderingKeySource                        | String (none, key, partition) | none | When set to "none", do not set the ordering key. When set to "key", uses a message's key as the ordering key. If set to "partition", converts the partition number to a String and uses that as the ordering key. Note that using "partition" should only be used for low-throughput topics or topics with thousands of partitions. |
 | messageBodyName | String | "cps_message_body" | When using a struct or map value schema, this field or key name indicates that the corresponding value will go into the Pub/Sub message body.                                                                                                                                                                                       |
 
-
 #### Shared Miscellaneous Configs
+
 | Config | Value Range | Default  | Description                                                                                                                                                                                                                           |
 |------------------------|-------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 |gcp.credentials.file.path| String      | Not used | Path to a P#12/binary service account key file to use for authentication instead of application default credentials. See how to create an [SA key](https://cloud.google.com/iam/docs/creating-managing-service-account-keys#creating) |
