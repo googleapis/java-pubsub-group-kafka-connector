@@ -1,144 +1,134 @@
 ### Introduction
 
-The CloudPubSubConnector is a connector to be used with
+The Google Cloud Pub/Sub Group Connector is a GCP first-party supported
+connector that works with
 [Kafka Connect](http://kafka.apache.org/documentation.html#connect) to publish
-messages from [Kafka](http://kafka.apache.org) to
+data from [Kafka](http://kafka.apache.org) to
 [Google Cloud Pub/Sub](https://cloud.google.com/pubsub/) or
 [Pub/Sub Lite](https://cloud.google.com/pubsub/lite) and vice versa.
 
-CloudPubSubSinkConnector provides a sink connector to copy messages from Kafka
-to Google Cloud Pub/Sub.
-CloudPubSubSourceConnector provides a source connector to copy messages from
-Google Cloud Pub/Sub to Kafka.
-PubSubLiteSinkConnector provides a sink connector to copy messages from Kafka
-to Pub/Sub Lite.
-PubSubLiteSourceConnector provides a source connector to copy messages from
-Pub/Sub Lite to Kafka.
+- `CloudPubSubSinkConnector` is a sink connector that copies data
+from Kafka to Pub/Sub.
+- `CloudPubSubSourceConnector` is a source connector that copies
+messages from Pub/Sub to Kafka.
+- `PubSubLiteSinkConnector` is a sink connector that copies data
+from Kafka to Pub/Sub Lite.
+- `PubSubLiteSourceConnector` is a source connector that copies data
+from Pub/Sub Lite to Kafka.
 
-### Pre-Running Steps
+### Before you begin
 
-1.  Regardless of whether you are running on Google Cloud Platform or not, you
-    need to create a project and create service key that allows you access to
-    the Cloud Pub/Sub API's and default quotas.
+You must have a GCP project in order to use Pub/Sub or Pub/Sub Lite.
 
-2.  Create project on Google Cloud Platform. By default, this project will have
-    multiple service accounts associated with it (see "IAM & Admin" within GCP
-    console). Within this section, find the tab for "Service Accounts". Create a
-    new service account and make sure to select "Furnish a new private key".
-    Doing this will create the service account and download a private key file
-    to your local machine.
-
-3.  Go to the "IAM" tab, find the service account you just created and click on
-    the dropdown menu named "Role(s)". Under the "Pub/Sub" submenu, select
-    "Pub/Sub Admin". Finally, the key file that was downloaded to your machine
-    needs to be placed on the machine running the framework. An environment
-    variable named GOOGLE_APPLICATION_CREDENTIALS must point to this file. (Tip:
-    export this environment variable as part of your shell startup file).
-
-    `export GOOGLE_APPLICATION_CREDENTIALS=/path/to/key/file`
+Follow [these steps](https://cloud.google.com/pubsub/docs/publish-receive-messages-client-library#before-you-begin)
+for your setup.
     
-### Quickstart: copy_tool.py
+### Quickstart
 
-You can download `copy_tool.py`, a single-file python script which downloads,
-sets up and runs the kafka connector in a single-machine configuration. This
-script requires:
+In this quickstart, you will learn how to send data from a Kafka topic to
+a Pub/Sub and Pub/Sub Lite topic and vice versa from a Kafka cluster running
+locally.
 
-1. python >= 3.5
-1. [requests](https://requests.readthedocs.io/en/master/user/install/#python-m-pip-install-requests)
-   installed
-1. `JAVA_HOME` configured properly
-1. `GOOGLE_APPLICATION_CREDENTIALS` set
-1. A [properties file](#cloudpubsubconnector-configs) with connector.class and
-   other properties set
-   
-It can be invoked on mac/linux with:
+1. Follow the [Kafka quickstart](https://kafka.apache.org/quickstart) to
+download Kafka, start the Kafka environment, and create a Kafka topic on your
+local machine.
 
-```bash
-python3 path/to/copy_tool.py --bootstrap_servers=MY_KAFKA_SERVER,OTHER_SERVER --connector_properties_file=path/to/connector.properties
-```
+2. Create a pair of Pub/Sub [topic](https://cloud.google.com/pubsub/docs/admin#create_a_topic)
+and [subscription](https://cloud.google.com/pubsub/docs/create-subscription#pull_subscription)
+and a pair of Pub/Sub Lite [topic](https://cloud.google.com/pubsub/lite/docs/topics#create_a_lite_topic)
+and [subscription](https://cloud.google.com/pubsub/lite/docs/subscriptions#create_a_lite_subscription).
 
-or windows with:
+3. Update the configuration files for the connector at [/config](/config) with
+your information accordingly.
 
-```bash
-python3 path\to\copy_tool.py --bootstrap_servers=MY_KAFKA_SERVER,OTHER_SERVER --connector_properties_file=path\to\connector.properties
-```
+4. Update the configure
 
-### Acquiring the connector
 
-A pre-built uber-jar is available for download with the
-[latest release](https://github.com/GoogleCloudPlatform/pubsub/releases).
+### Acquire the connector
+
+A pre-built uber-jar is available for download on the
+[releases page](https://github.com/googleapis/java-pubsub-group-kafka-connector/releases).
 
 You can also build the connector from head, as described [below](#building).
 
-### Running a Connector
+### Run the connector
 
-1.  Copy the pubsub-kafka-connector.jar to the place where you will run your Kafka
-    connector.
+1. Copy the connector jar where you will run Kafka Connect.
 
-2.  Create a configuration file for the Pub/Sub connector and copy it to the
-    place where you will run Kafka connect. The configuration should set up the
-    proper Kafka topics, Pub/Sub topic, and Pub/Sub project. For Pub/Sub Lite,
-    this should also set the correct location (google cloud zone).
-    Sample configuration files for the source and sink connectors are provided
-    at configs/.
+2. Make a copy of a configuration file at [/config](/config) based on your use
+case. Update the configuration file with appropriate properties.
 
-3.  Create an appropriate configuration for your Kafka connect instance. More
-    information on the configuration for Kafka connect can be found in the
-    [Kafka Users Guide](http://kafka.apache.org/documentation.html#connect_running).
+3. Create a configuration file for your Kafka Connect instance. See
+information on Kafka Connect in [Kafka Users Guide](http://kafka.apache.org/documentation.html#connect_running).
     
-4.  If running the Kafka Connector behind a proxy, you need to export the
-    KAFKA_OPTS variable with options for connecting around the proxy. You can
-    export this variable as part of a shell script in order ot make it easier.
-    Here is an example:
- 
-   `export KAFKA_OPTS="-Dhttp.proxyHost=<host> -Dhttp.proxyPort=<port> -Dhttps.proxyHost=<host> -Dhttps.proxyPort=<port>"`
+4. If running the Kafka Connect behind a proxy, you need to export the
+`KAFKA_OPTS` variable with options for connecting around the proxy.
+   ```shell
+   export KAFKA_OPTS="-Dhttp.proxyHost=<host> -Dhttp.proxyPort=<port> -Dhttps.proxyHost=<host> -Dhttps.proxyPort=<port>"
+   ```
 
-### CloudPubSubConnector Configs
+### Pub/Sub connector configs
 
-In addition to the configs supplied by the Kafka Connect API, the Cloud Pub/Sub
-Connector supports the following configs:
+In addition to the configs supplied by the Kafka Connect API, the Pub/Sub
+connector supports the following configs:
 
 #### Source Connector
 
-| Config | Value Range | Default | Description |
-|------------------------|-----------------------------------|-----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| cps.subscription | String | REQUIRED (No default) | The name of the subscription to Cloud Pub/Sub, e.g. "sub" for subscription "/projects/bar/subscriptions/sub". |
-| cps.project | String | REQUIRED (No default) | The project containing the topic from which to pull messages, e.g. "bar" from above. |
-| cps.endpoint | String | "pubsub.googleapis.com:443" | The [Cloud Pub/Sub endpoint](https://cloud.google.com/pubsub/docs/reference/service_apis_overview#service_endpoints) to use. |
-| kafka.topic | String | REQUIRED (No default) | The topic in Kafka which will receive messages that were pulled from Cloud Pub/Sub. |
-| cps.maxBatchSize | Integer | 100 | The maximum number of messages to batch per pull request to Cloud Pub/Sub. |
-| cps.makeOrderingKeyAttribute | Boolean | false | When true, copy the ordering key to the set of attributes set in the Kafka message. |
-| kafka.key.attribute | String | null | The Cloud Pub/Sub message attribute to use as a key for messages published to Kafka. If set to "orderingKey", use the message's ordering key. |
-| kafka.partition.count | Integer | 1 | The number of Kafka partitions for the Kafka topic in which messages will be published to. NOTE: this parameter is ignored if partition scheme is "kafka_partitioner".|
-| kafka.partition.scheme | round_robin, hash_key, hash_value, kafka_partitioner, ordering_key | round_robin | The scheme for assigning a message to a partition in Kafka. The scheme "round_robin" assigns partitions in a round robin fashion, while the schemes "hash_key" and "hash_value" find the partition by hashing the message key and message value respectively. "kafka_partitioner" scheme delegates partitioning logic to kafka producer, which by default detects number of partitions automatically and performs either murmur hash based partition mapping or round robin depending on whether message key is provided or not. "ordering_key" uses the hash code of a message's ordering key. If no ordering key is present, uses "round_robin".|
-| gcp.credentials.file.path | String | Optional | The file path, which stores GCP credentials.| If not defined, GOOGLE_APPLICATION_CREDENTIALS env is used. |
-| gcp.credentials.json | String | Optional | GCP credentials JSON blob | If specified, use the explicitly handed credentials. Consider using the externalized secrets feature in Kafka Connect for passing the value. |
-| kafka.record.headers | Boolean | false | Use Kafka record headers to store Pub/Sub message attributes |
+| Config | Value Range                                                        | Default                      | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+|------------------------|--------------------------------------------------------------------|------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| cps.subscription | String                                                             | REQUIRED (No default)        | The name of the subscription to Cloud Pub/Sub, e.g. "sub" for subscription "/projects/bar/subscriptions/sub".                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| cps.project | String                                                             | REQUIRED (No default)        | The project containing the topic from which to pull messages, e.g. "bar" from above.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| cps.endpoint | String                                                             | "pubsub.googleapis.com:443"  | The [Cloud Pub/Sub endpoint](https://cloud.google.com/pubsub/docs/reference/service_apis_overview#service_endpoints) to use.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| kafka.topic | String                                                             | REQUIRED (No default)        | The topic in Kafka which will receive messages that were pulled from Cloud Pub/Sub.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| cps.maxBatchSize | Integer                                                            | 100                          | The maximum number of messages to batch per pull request to Cloud Pub/Sub.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| cps.makeOrderingKeyAttribute | Boolean                                                            | false                        | When true, copy the ordering key to the set of attributes set in the Kafka message.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| kafka.key.attribute | String                                                             | null                         | The Cloud Pub/Sub message attribute to use as a key for messages published to Kafka. If set to "orderingKey", use the message's ordering key.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| kafka.partition.count | Integer                                                            | 1                            | The number of Kafka partitions for the Kafka topic in which messages will be published to. NOTE: this parameter is ignored if partition scheme is "kafka_partitioner".                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| kafka.partition.scheme | round_robin, hash_key, hash_value, kafka_partitioner, ordering_key | round_robin                  | The scheme for assigning a message to a partition in Kafka. The scheme "round_robin" assigns partitions in a round robin fashion, while the schemes "hash_key" and "hash_value" find the partition by hashing the message key and message value respectively. "kafka_partitioner" scheme delegates partitioning logic to kafka producer, which by default detects number of partitions automatically and performs either murmur hash based partition mapping or round robin depending on whether message key is provided or not. "ordering_key" uses the hash code of a message's ordering key. If no ordering key is present, uses "round_robin". |
+| gcp.credentials.file.path | String                                                             | Optional                     | The file path, which stores GCP credentials.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | If not defined, GOOGLE_APPLICATION_CREDENTIALS env is used. |
+| gcp.credentials.json | String                                                             | Optional                     | GCP credentials JSON blob                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | If specified, use the explicitly handed credentials. Consider using the externalized secrets feature in Kafka Connect for passing the value. |
+| kafka.record.headers | Boolean                                                            | false                        | Use Kafka record headers to store Pub/Sub message attributes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+|cps.streamingPull.enabled| Boolean                                                            | false                        | Whether to use streaming pull for the connector to connect to Cloud Pub/Sub. If provided, cps.maxBatchSize is ignored.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+|cps.streamingPull.flowControlMessages| Long                                                               | 1000                         | The maximum number of outstanding messages per task when using streaming pull.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+|cps.streamingPull.flowControlBytes| Long                                                               | 100L * 1024 * 1024 (100 MiB) | The maximum number of outstanding message bytes per task when using streaming pull.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+|cps.streamingPull.parallelStreams| Integer                                                            | 1                            | The maximum number of outstanding message bytes per task when using streaming pull.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+|cps.streamingPull.maxAckExtensionMs| Long                                                               | 0                            | The maximum number of milliseconds the subscribe deadline will be extended to in milliseconds when using streaming pull. A value of `0` implies the java-pubsub library default value.                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+|cps.streamingPull.maxMsPerAckExtension| Long                                                               | 0                            | The maximum number of milliseconds to extend the subscribe deadline for at a time when using streaming pull. A value of `0` implies the java-pubsub library default value.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 
 #### Sink Connector
 
-| Config | Value Range | Default | Description |
-|---------------|-------------|-----------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| cps.topic | String | REQUIRED (No default) | The topic in Cloud Pub/Sub to publish to, e.g. "foo" for topic "/projects/bar/topics/foo". |
-| cps.project | String | REQUIRED (No default) | The project in Cloud Pub/Sub containing the topic, e.g. "bar" from above. |
-| cps.endpoint | String | "pubsub.googleapis.com:443" | The [Cloud Pub/Sub endpoint](https://cloud.google.com/pubsub/docs/reference/service_apis_overview#service_endpoints) to use. |
-| maxBufferSize | Integer | 100 | The maximum number of messages that can be received for the messages on a topic partition before publishing them to Cloud Pub/Sub. |
-| maxBufferBytes | Long | 10000000 | The maximum number of bytes that can be received for the messages on a topic partition before publishing them to Cloud Pub/Sub. |
-| maxOutstandingRequestBytes | Long | Long.MAX_VALUE | The maximum number of total bytes that can be outstanding (including incomplete and pending batches) before the publisher will block further publishing. |
-| maxOutstandingMessages | Long | Long.MAX_VALUE | The maximum number of messages that can be outstanding (including incomplete and pending batches) before the publisher will block further publishing. |
-| maxDelayThresholdMs | Integer | 100 | The maximum amount of time to wait to reach maxBufferSize or maxBufferBytes before publishing outstanding messages to Cloud Pub/Sub. |
-| maxRequestTimeoutMs | Integer | 10000 | The timeout for individual publish requests to Cloud Pub/Sub. |
-| maxTotalTimeoutMs | Integer | 60000| The total timeout for a call to publish (including retries) to Cloud Pub/Sub. |
-| gcp.credentials.file.path | String | Optional | The file path, which stores GCP credentials.| If not defined, GOOGLE_APPLICATION_CREDENTIALS env is used. |
-| gcp.credentials.json | String | Optional | GCP credentials JSON blob | If specified, use the explicitly handed credentials. Consider using the externalized secrets feature in Kafka Connect for passing the value. |
-| metadata.publish | Boolean | false | When true, include the Kafka topic, partition, offset, and timestamp as message attributes when a message is published to Cloud Pub/Sub. |
-| headers.publish | Boolean | false | When true, include any headers as attributes when a message is published to Cloud Pub/Sub. |
-| orderingKeySource | String (none, key, partition) | none | When set to "none", do not set the ordering key. When set to "key", uses a message's key as the ordering key. If set to "partition", converts the partition number to a String and uses that as the ordering key. Note that using "partition" should only be used for low-throughput topics or topics with thousands of partitions. |
+| Config                                   | Value Range | Default | Description                                                                                                                                                                                                                                                                                                                         |
+|------------------------------------------|-------------|-----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| cps.topic                                | String | REQUIRED (No default) | The topic in Cloud Pub/Sub to publish to, e.g. "foo" for topic "/projects/bar/topics/foo".                                                                                                                                                                                                                                          |
+| cps.project                              | String | REQUIRED (No default) | The project in Cloud Pub/Sub containing the topic, e.g. "bar" from above.                                                                                                                                                                                                                                                           |
+| cps.endpoint                             | String | "pubsub.googleapis.com:443" | The [Cloud Pub/Sub endpoint](https://cloud.google.com/pubsub/docs/reference/service_apis_overview#service_endpoints) to use.                                                                                                                                                                                                        |
+| maxBufferSize                            | Integer | 100 | The maximum number of messages that can be received for the messages on a topic partition before publishing them to Cloud Pub/Sub.                                                                                                                                                                                                  |
+| maxBufferBytes                           | Long | 10000000 | The maximum number of bytes that can be received for the messages on a topic partition before publishing them to Cloud Pub/Sub.                                                                                                                                                                                                     |
+| maxOutstandingRequestBytes               | Long | Long.MAX_VALUE | The maximum number of total bytes that can be outstanding (including incomplete and pending batches) before the publisher will block further publishing.                                                                                                                                                                            |
+| maxOutstandingMessages                   | Long | Long.MAX_VALUE | The maximum number of messages that can be outstanding (including incomplete and pending batches) before the publisher will block further publishing.                                                                                                                                                                               |
+| maxDelayThresholdMs                      | Integer | 100 | The maximum amount of time to wait to reach maxBufferSize or maxBufferBytes before publishing outstanding messages to Cloud Pub/Sub.                                                                                                                                                                                                |
+| maxRequestTimeoutMs                      | Integer | 10000 | The timeout for individual publish requests to Cloud Pub/Sub.                                                                                                                                                                                                                                                                       |
+| maxTotalTimeoutMs                        | Integer | 60000| The total timeout for a call to publish (including retries) to Cloud Pub/Sub.                                                                                                                                                                                                                                                       |
+| maxShutdownTimeoutMs |Integer|60000| The maximum amount of time to wait for a publisher to shutdown when stopping task in Kafka Connect.                                                                                                                                                                                                                                 |
+| gcp.credentials.file.path                | String | Optional | The file path, which stores GCP credentials. If not defined, GOOGLE_APPLICATION_CREDENTIALS env is used.                                                                                                                                                                                                                            |
+| gcp.credentials.json                     | String | Optional | GCP credentials JSON blob. If specified, use the explicitly handed credentials. Consider using the externalized secrets feature in Kafka Connect for passing the value.                                                                                                                                                             |
+| metadata.publish                         | Boolean | false | When true, include the Kafka topic, partition, offset, and timestamp as message attributes when a message is published to Cloud Pub/Sub.                                                                                                                                                                                            |
+| headers.publish                          | Boolean | false | When true, include any headers as attributes when a message is published to Cloud Pub/Sub.                                                                                                                                                                                                                                          |
+| orderingKeySource                        | String (none, key, partition) | none | When set to "none", do not set the ordering key. When set to "key", uses a message's key as the ordering key. If set to "partition", converts the partition number to a String and uses that as the ordering key. Note that using "partition" should only be used for low-throughput topics or topics with thousands of partitions. |
+| messageBodyName | String | "cps_message_body" | When using a struct or map value schema, this field or key name indicates that the corresponding value will go into the Pub/Sub message body.                                                                                                                                                                                       |
 
-### PubSubLiteConnector Configs
+
+#### Shared miscellaneous configs
+
+| Config | Value Range | Default  | Description                                                                                                                                                                                                                           |
+|------------------------|-------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|gcp.credentials.file.path| String      | Not used | Path to a P#12/binary service account key file to use for authentication instead of application default credentials. See how to create an [SA key](https://cloud.google.com/iam/docs/creating-managing-service-account-keys#creating) |
+|gcp.credentials.json| String      | Not used | Path to a JSON service account key file to use for authentication instead of application default credentials. See how to create an [SA key](https://cloud.google.com/iam/docs/creating-managing-service-account-keys#creating).       |
+
+### Pub/Sub Lite connector configs
 
 In addition to the configs supplied by the Kafka Connect API, the Pub/Sub Lite
-Connector supports the following configs:
+connector supports the following configs:
 
 #### Source Connector
 
@@ -163,9 +153,9 @@ Connector supports the following configs:
 
 #### Cloud Pub/Sub Connector
 
-A pubsub message has two main parts: the message body and attributes. The
+A Pub/Sub message has two parts: the message body and attributes. The
 message body is a [ByteString](https://developers.google.com/protocol-buffers/docs/reference/java/com/google/protobuf/ByteString)
-object that translates well to and from the byte[]
+object that translates well to and from the `byte[]`
 bodies of Kafka messages. For this reason, we recommend using a converter that
 produces primitive data types (i.e. integer, float, string, or bytes schema)
 where possible to prevent deserializing and reserializing the same message body.
@@ -291,25 +281,15 @@ routed to the same kafka partition.
 
 These instructions assume you are using [Maven](https://maven.apache.org/).
 
-1.  If you want to build the connector from head, clone the repository, ensuring
-    to do so recursively to pick up submodules:
+1.  If you want to build the connector from head, clone the repository:
 
-    `git clone --recursive https://github.com/GoogleCloudPlatform/pubsub`
+    `git clone https://github.com/googleapis/java-pubsub-group-kafka-connector`
 
-    If you wish to build from a released version of the connector, download it
-    from the [Releases section](https://github.com/GoogleCloudPlatform/pubsub/releases)
-    in GitHub.
+2.  Make the connector jar:
 
-2.  Unzip the source code if downloaded from the release version.
+    `mvn clean package -DskipTests=True`
 
-3.  Go into the kafka-connector directory in the cloned repo or downloaded
-    release.
-
-4.  Make the jar that contains the connector:
-
-    `mvn package`
-
-The resulting jar is at target/pubsub-kafka-connector.jar.
+    You should see this jar being created at `target/pubsub-group-kafka-connector-${VERSION}-SNAPSHOT.jar`.
 
 ## Versioning
 
