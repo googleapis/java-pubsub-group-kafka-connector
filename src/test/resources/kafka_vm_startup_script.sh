@@ -1,4 +1,18 @@
 #!/bin/bash
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 set -x
 sudo apt-get update
 sudo apt-get install -yq wget openjdk-11-jdk maven
@@ -33,7 +47,7 @@ sed -i "s/<pslZone>/$PSL_ZONE/g" $GCS_DIR/*.properties
 # Install and run Kafka brokers
 KAFKA_VERSION=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/kafka_version -H "Metadata-Flavor: Google")
 SCALA_VERSION=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/scala_version -H "Metadata-Flavor: Google")
-KAFKA_URL="https://dlcdn.apache.org/kafka/$KAFKA_VERSION/kafka_$SCALA_VERSION-$KAFKA_VERSION.tgz"
+KAFKA_URL="https://archive.apache.org/dist/kafka/$KAFKA_VERSION/kafka_$SCALA_VERSION-$KAFKA_VERSION.tgz"
 KAFKA_DIR="kafka_$SCALA_VERSION-$KAFKA_VERSION"
 EXTERNAL_IP=$(curl http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip -H "Metadata-Flavor: Google")
 

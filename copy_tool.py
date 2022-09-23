@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """Pub/Sub <-> Kafka Simple Copy Tool
 
@@ -17,9 +30,9 @@ import tarfile
 import tempfile
 import subprocess
 
-KAFKA_RELEASE = "3.2.0"
+KAFKA_RELEASE = "3.2.3"
 KAFKA_FOLDER = f"kafka-{KAFKA_RELEASE}-src"
-KAFKA_LINK = f"https://dlcdn.apache.org/kafka/{KAFKA_RELEASE}/{KAFKA_FOLDER}.tgz"
+KAFKA_LINK = f"https://archive.apache.org/dist/kafka/{KAFKA_RELEASE}/{KAFKA_FOLDER}.tgz"
 
 CONNECTOR_RELEASE = "v0.10-alpha"
 PUBSUB_CONNECTOR_LINK = f"https://github.com/GoogleCloudPlatform/pubsub/releases/download/{CONNECTOR_RELEASE}/pubsub-kafka-connector.jar"
@@ -42,6 +55,7 @@ def download(tempdir):
     kafka_path = os.path.join(tempdir, "kafka")
     os.mkdir(kafka_path)
     extract_kafka_to(kafka_path)
+    print(f"downloaded to {tempdir}")
     print("Downloading connector...")
     connector_path = os.path.join(tempdir, "connector")
     os.mkdir(connector_path)
