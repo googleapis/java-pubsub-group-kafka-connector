@@ -82,7 +82,7 @@
     <dependency>
       <groupId>com.google.api.grpc</groupId>
       <artifactId>proto-google-cloud-pubsub-v1</artifactId>
-      <version>${pubsub.version}</version>
+      <version>1.102.18</version>
     </dependency>
     <dependency>
       <groupId>com.google.api</groupId>
