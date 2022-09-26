@@ -1,20 +1,20 @@
 ### Introduction
 
-The Google Cloud Pub/Sub Group Kafka Connector is a Google Cloud Platform (GCP)
-first-party supported connector for
+The Google Cloud Pub/Sub Group Kafka Connector library provides Google Cloud
+Platform (GCP) first-party connectors for Pub/Sub products with
 [Kafka Connect](http://kafka.apache.org/documentation.html#connect).
-You can use it publish data from [Kafka](http://kafka.apache.org) to
+You can use the library transmit data from [Kafka](http://kafka.apache.org) to
 [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) or
 [Pub/Sub Lite](https://cloud.google.com/pubsub/lite/docs) and vice versa.
 
-- `CloudPubSubSinkConnector` is a sink connector that publishes data
-from Kafka to Pub/Sub.
-- `CloudPubSubSourceConnector` is a source connector that publishes
-data from Pub/Sub to Kafka.
-- `PubSubLiteSinkConnector` is a sink connector that publishes data
-from Kafka to Pub/Sub Lite.
-- `PubSubLiteSourceConnector` is a source connector that publishes data
-from Pub/Sub Lite to Kafka.
+- `CloudPubSubSinkConnector` is a sink connector that reads records from Kafka
+and publishes them to Cloud Pub/Sub.
+- `CloudPubSubSourceConnector` is a source connector that reads messages from
+Cloud Pub/Sub and writes them to Kafka.
+- `PubSubLiteSinkConnector` is a sink connector that reads records from Kafka
+and publishes them to Pub/Sub Lite.
+- `PubSubLiteSourceConnector` is a source connector that reads messages from
+Pub/Sub Lite and writes them to Kafka.
 
 ### Prerequisites
 
@@ -29,57 +29,85 @@ for Pub/Sub Lite before doing the [quickstart](#quickstart).
 ### Quickstart
 
 In this quickstart, you will learn how to send data from a Kafka topic to
-a Pub/Sub and Pub/Sub Lite topic and vice versa, from a Kafka cluster running
+a Pub/Sub or Pub/Sub Lite topic and vice versa, using a Kafka cluster running
 locally in standalone mode (single process).
 
 1. Follow the [Kafka quickstart](https://kafka.apache.org/quickstart) to
    download Kafka, start the Kafka environment, and create a Kafka topic.
-   > Note: Please use the same Kafka version as that used by the connector.
+   > Note: Please use the same Kafka major version as that used by the connector.
    > Otherwise, the connector may not work properly. Check the Kafka version
    > used by the connector in [pom.xml](pom.xml).
 2. [Acquire](#acquire-the-connector) the connector jar.
 3. Update your Kafka Connect configurations.
 
    Open `/config/connect-standalone.properties` in the Kafka download folder.
-   Use the filepath to the downloaded connector jar to populate `plugin.path`. 
-   In addition, because the connector is running in a Kafka cluster in
-   standalone mode, you need to include `offset.storage.file.filename` with a
-   valid file name to store offset data in.
-4. Create a pair of Pub/Sub [topic](https://cloud.google.com/pubsub/docs/admin#create_a_topic)
-   and [subscription](https://cloud.google.com/pubsub/docs/create-subscription#pull_subscription)
-   and a pair of Pub/Sub Lite [topic](https://cloud.google.com/pubsub/lite/docs/topics#create_a_lite_topic)
-   and [subscription](https://cloud.google.com/pubsub/lite/docs/subscriptions#create_a_lite_subscription).
+   Add the filepath of the downloaded connector jar to `plugin.path` and
+   uncomment the line if needed. In addition, because the connector is using
+   a Kafka cluster in standalone mode, include `offset.storage.file.filename`
+   with a valid filename to store offset data in.
+4. Create a pair of Pub/Sub or Pub/Sub Lite topic and subscription.
+
+   - `CloudPubSubSinkConnector` and `CloudPubSubSourceConnector`
+     - Create a pair of Pub/Sub [topic](https://cloud.google.com/pubsub/docs/admin#create_a_topic)
+     and [subscription](https://cloud.google.com/pubsub/docs/create-subscription#pull_subscription)
+   - `PubSubLiteSinkConnector` and `PubSubLiteSinkConnector`
+     - Craete a pair of Pub/Sub Lite [topic](https://cloud.google.com/pubsub/lite/docs/topics#create_a_lite_topic)
+     and [subscription](https://cloud.google.com/pubsub/lite/docs/subscriptions#create_a_lite_subscription).
+
 5. Update the connector configurations.
 
-   Open the connector configures files at [/config](/config). Update
-   variable labeled `TODO (developer)` with appropriate input.
+   Open the connector configuration files at [/config](/config). Update
+   variables labeled `TODO (developer)` with appropriate input.
+
+   - `CloudPubSubSinkConnector`
+       1. Open [`cps-sink-connector.properties`](/config/cps-sink-connector.properties).
+       2. Update `topics`, `cps.project`, and `cps.topic`.
+
+   - `CloudPubSubSourceConnector`
+       1. Open [`cps-source-connector.properties`](/config/cps-source-connector.properties).
+       2. Update `kafka.topic`, `cps.project`, and `cps.subscription`.
+
+   - `PubSubLiteSinkConnector`
+       1. Open [`pubsub-lite-sink-connector.properties`](/config/pubsub-lite-sink-connector.properties).
+       2. Update `topics`, `pubsublite.project`, `pubsublite.location` and `pubsublite.topic`.
+
+   - `PubSubLiteSinkConnector`
+       1. Open [`pubsub-lite-source-connector.properties`](/config/pubsub-lite-source-connector.properties).
+       2. Update `kafka.topic`, `pubsublite.project`, `pubsublite.location` and `pubsublite.subscription`.
+
 6. Run the following command to start the appropriate sink or source connector.
+   You can run multiple connector tasks at the same time.
    ```sh
    > bin/connect-standalone.sh \
      config/connect-standalone.properties \
      path/to/pubsub/sink/connector.properties [source.connector.properties ...]
    ```
+
 7. Test the connector.
-   1. `CloudPubSubSinkConnector`
-      1. Follow the instructions ihe [Kafka quickstart](https://kafka.apache.org/quickstart)
-         to publish a message to the Kafka topic.
-      2. [Pull](https://cloud.google.com/pubsub/docs/publish-receive-messages-console#pull_the_message_from_the_subscription)
-         the message from your Pub/Sub subscription. 
-   2. `CloudPubSubSourceConnector`
-      1. [Publish](https://cloud.google.com/pubsub/docs/publish-receive-messages-console#publish_a_message_to_the_topic)
-         a message to your Pub/Sub topic.
-      2. Follow the instructions ihe [Kafka quickstart](https://kafka.apache.org/quickstart)
-         to read the message from your Kafka topic.
-   3. `PubSubLiteSinkConnector`
-      1. Follow the instructions ihe [Kafka quickstart](https://kafka.apache.org/quickstart)
-        to publish a message to the Kafka topic.
-      2. [Pull](https://cloud.google.com/pubsub/docs/publish-receive-messages-console#pull_the_message_from_the_subscription)
-         the message from your Pub/Sub Lite subscription.
-   4. `PubSubLiteSinkConnector`
-      1. [Publish](https://cloud.google.com/pubsub/docs/publish-receive-messages-console#publish_a_message_to_the_topic)
-         a message to your Pub/Sub Lite topic.
-      2. Follow the instructions ihe [Kafka quickstart](https://kafka.apache.org/quickstart)
-         to read the message from your Kafka topic.
+
+   - `CloudPubSubSinkConnector`
+     1. Follow the instructions ihe [Kafka quickstart](https://kafka.apache.org/quickstart)
+     to publish a message to the Kafka topic.
+     2. [Pull](https://cloud.google.com/pubsub/docs/publish-receive-messages-console#pull_the_message_from_the_subscription)
+     the message from your Pub/Sub subscription. 
+
+   - `CloudPubSubSourceConnector`
+     1. [Publish](https://cloud.google.com/pubsub/docs/publish-receive-messages-console#publish_a_message_to_the_topic)
+     a message to your Pub/Sub topic.
+     2. Follow the instructions ihe [Kafka quickstart](https://kafka.apache.org/quickstart)
+     to read the message from your Kafka topic.
+
+   - `PubSubLiteSinkConnector`
+     1. Follow the instructions ihe [Kafka quickstart](https://kafka.apache.org/quickstart)
+     to publish a message to the Kafka topic.
+     2. [Pull](https://cloud.google.com/pubsub/docs/publish-receive-messages-console#pull_the_message_from_the_subscription)
+     the message from your Pub/Sub Lite subscription.
+
+   - `PubSubLiteSinkConnector`
+     1. [Publish](https://cloud.google.com/pubsub/docs/publish-receive-messages-console#publish_a_message_to_the_topic)
+     a message to your Pub/Sub Lite topic.
+     2. Follow the instructions ihe [Kafka quickstart](https://kafka.apache.org/quickstart)
+     to read the message from your Kafka topic.
 
 ### Acquire the connector
 
@@ -90,13 +118,12 @@ You can also [build](#build-the-connector) the connector from head.
 
 ### Run the connector
 
-To run the connector on a Kafka cluster in standalone mode, follow these
-general steps:
+To run this connector in standalone mode, follow these general steps:
 
 1. Copy the connector jar where you will run Kafka Connect. 
 
 2. Create a configuration file for your Kafka Connect instance. Make sure
-   to include the filepath to the connector jar in `plugin.path`. See
+   to include the filepath to the connector jar in `plugin.path`. See general
    information on Kafka Connect in [Kafka Users Guide](http://kafka.apache.org/documentation.html#connect_running).
 
 3. Make a copy of the connector configuration files at [/config](/config)
