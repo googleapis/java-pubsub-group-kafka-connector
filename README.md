@@ -1,7 +1,7 @@
-#Google Cloud Pub/Sub Group Kafka Connector
+# Google Cloud Pub/Sub Group Kafka Connector
 
 [![Maven][maven-version-image]][maven-version-link]
-[![preview][preview-stability]][preview-description]
+![preview][preview-stability]
 
 The Google Cloud Pub/Sub Group Kafka Connector library provides Google Cloud
 Platform (GCP) first-party connectors for Pub/Sub products with
@@ -58,7 +58,7 @@ locally in standalone mode (single process).
      - Create a pair of Pub/Sub [topic](https://cloud.google.com/pubsub/docs/admin#create_a_topic)
      and [subscription](https://cloud.google.com/pubsub/docs/create-subscription#pull_subscription)
    - `PubSubLiteSinkConnector` and `PubSubLiteSinkConnector`
-     - Craete a pair of Pub/Sub Lite [topic](https://cloud.google.com/pubsub/lite/docs/topics#create_a_lite_topic)
+     - Create a pair of Pub/Sub Lite [topic](https://cloud.google.com/pubsub/lite/docs/topics#create_a_lite_topic)
      and [subscription](https://cloud.google.com/pubsub/lite/docs/subscriptions#create_a_lite_subscription).
 
 5. Update the connector configurations.
@@ -93,7 +93,7 @@ locally in standalone mode (single process).
 7. Test the connector.
 
    - `CloudPubSubSinkConnector`
-     1. Follow the instructions ihe [Kafka quickstart](https://kafka.apache.org/quickstart)
+     1. Follow the instructions in the [Kafka quickstart](https://kafka.apache.org/quickstart)
      to publish a message to the Kafka topic.
      2. [Pull](https://cloud.google.com/pubsub/docs/publish-receive-messages-console#pull_the_message_from_the_subscription)
      the message from your Pub/Sub subscription. 
@@ -101,11 +101,11 @@ locally in standalone mode (single process).
    - `CloudPubSubSourceConnector`
      1. [Publish](https://cloud.google.com/pubsub/docs/publish-receive-messages-console#publish_a_message_to_the_topic)
      a message to your Pub/Sub topic.
-     2. Follow the instructions ihe [Kafka quickstart](https://kafka.apache.org/quickstart)
+     2. Follow the instructions in the [Kafka quickstart](https://kafka.apache.org/quickstart)
      to read the message from your Kafka topic.
 
    - `PubSubLiteSinkConnector`
-     1. Follow the instructions ihe [Kafka quickstart](https://kafka.apache.org/quickstart)
+     1. Follow the instructions in the [Kafka quickstart](https://kafka.apache.org/quickstart)
      to publish a message to the Kafka topic.
      2. [Pull](https://cloud.google.com/pubsub/docs/publish-receive-messages-console#pull_the_message_from_the_subscription)
      the message from your Pub/Sub Lite subscription.
@@ -113,7 +113,7 @@ locally in standalone mode (single process).
    - `PubSubLiteSinkConnector`
      1. [Publish](https://cloud.google.com/pubsub/docs/publish-receive-messages-console#publish_a_message_to_the_topic)
      a message to your Pub/Sub Lite topic.
-     2. Follow the instructions ihe [Kafka quickstart](https://kafka.apache.org/quickstart)
+     2. Follow the instructions in the [Kafka quickstart](https://kafka.apache.org/quickstart)
      to read the message from your Kafka topic.
 
 ### Acquire the connector
@@ -157,8 +157,9 @@ REST API described below to create, modify, and destroy connectors"
 
 ### Pub/Sub connector configs
 
-In addition to the configs supplied by the Kafka Connect API, the Pub/Sub
-connector supports the following configurations:
+In addition to the Kafka Connect [configurations](https://kafka.apache.org/documentation.html#connect_configuring)
+supplied by the Kafka Connect API, the Pub/Sub connector supports the following
+configurations:
 
 #### Source Connector
 
@@ -173,7 +174,7 @@ connector supports the following configurations:
 | kafka.key.attribute                    | String                                                             | null                         | The Pub/Sub message attribute to use as a key for messages published to Kafka. If set to "orderingKey", use the message's ordering key.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | kafka.partition.count                  | Integer                                                            | 1                            | The number of Kafka partitions for the Kafka topic in which messages will be published to. NOTE: this parameter is ignored if partition scheme is "kafka_partitioner".                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | kafka.partition.scheme                 | round_robin, hash_key, hash_value, kafka_partitioner, ordering_key | round_robin                  | The scheme for assigning a message to a partition in Kafka. The scheme "round_robin" assigns partitions in a round robin fashion, while the schemes "hash_key" and "hash_value" find the partition by hashing the message key and message value respectively. "kafka_partitioner" scheme delegates partitioning logic to Kafka producer, which by default detects number of partitions automatically and performs either murmur hash based partition mapping or round robin depending on whether message key is provided or not. "ordering_key" uses the hash code of a message's ordering key. If no ordering key is present, uses "round_robin". |
-| gcp.credentials.file.path              | String                                                             | Optional                     | The file path, which stores GCP credentials. If not defined, GOOGLE_APPLICATION_CREDENTIALS env is used.If specified, use the explicitly handed credentials. Consider using the externalized secrets feature in Kafka Connect for passing the value.                                                                                                                                                                                                                                                                                                                                                                                               | 
+| gcp.credentials.file.path              | String                                                             | Optional                     | The filepath, which stores GCP credentials. If not defined, GOOGLE_APPLICATION_CREDENTIALS env is used.If specified, use the explicitly handed credentials. Consider using the externalized secrets feature in Kafka Connect for passing the value.                                                                                                                                                                                                                                                                                                                                                                                                | 
 | gcp.credentials.json                   | String                                                             | Optional                     | GCP credentials JSON blob. If specified, use the explicitly handed credentials. Consider using the externalized secrets feature in Kafka Connect for passing the value.                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | 
 | kafka.record.headers                   | Boolean                                                            | false                        | Use Kafka record headers to store Pub/Sub message attributes.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | cps.streamingPull.enabled              | Boolean                                                            | false                        | Whether to use streaming pull for the connector to connect to Pub/Sub. If provided, cps.maxBatchSize is ignored.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -198,7 +199,7 @@ connector supports the following configurations:
 | maxRequestTimeoutMs        | Integer                       | 10,000                      | The timeout for individual publish requests to Pub/Sub.                                                                                                                                                                                                                                                                             |
 | maxTotalTimeoutMs          | Integer                       | 60,000                      | The total timeout for a call to publish (including retries) to Pub/Sub.                                                                                                                                                                                                                                                             |
 | maxShutdownTimeoutMs       | Integer                       | 60,000                      | The maximum amount of time to wait for a publisher to shutdown when stopping task in Kafka Connect.                                                                                                                                                                                                                                 |
-| gcp.credentials.file.path  | String                        | Optional                    | The file path, which stores GCP credentials. If not defined, GOOGLE_APPLICATION_CREDENTIALS env is used.                                                                                                                                                                                                                            |
+| gcp.credentials.file.path  | String                        | Optional                    | The filepath, which stores GCP credentials. If not defined, GOOGLE_APPLICATION_CREDENTIALS env is used.                                                                                                                                                                                                                             |
 | gcp.credentials.json       | String                        | Optional                    | GCP credentials JSON blob. If specified, use the explicitly handed credentials. Consider using the externalized secrets feature in Kafka Connect for passing the value.                                                                                                                                                             |
 | metadata.publish           | Boolean                       | false                       | When true, include the Kafka topic, partition, offset, and timestamp as message attributes when a message is published to Pub/Sub.                                                                                                                                                                                                  |
 | headers.publish            | Boolean                       | false                       | When true, include any headers as attributes when a message is published to Pub/Sub.                                                                                                                                                                                                                                                |
@@ -207,8 +208,9 @@ connector supports the following configurations:
 
 ### Pub/Sub Lite connector configs
 
-In addition to the configs supplied by the Kafka Connect API, the Pub/Sub Lite
-connector supports the following configurations:
+In addition to the Kafka Connect [configurations](https://kafka.apache.org/documentation.html#connect_configuring)
+supplied by the Kafka Connect API, the Pub/Sub Lite connector supports the
+following configurations:
 
 #### Source Connector
 
@@ -231,13 +233,13 @@ connector supports the following configurations:
 
 ### Shared miscellaneous configs
 
-These configurations are shared by both the Pub/Sub and Pub/Sub Lite Kafka
+These following configurations are shared by the Pub/Sub and Pub/Sub Lite
 connectors.
 
-| Config                    | Value Range | Default  | Description                                                                                                                                                                                                                                                                  |
-|---------------------------|-------------|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| gcp.credentials.file.path | String      | Optional | The file path, which stores GCP credentials. If not defined, the environment variable `GOOGLE_APPLICATION_CREDENTIALS` is used. If specified, use the explicitly handed credentials. Consider using the externalized secrets feature in Kafka Connect for passing the value. | 
-| gcp.credentials.json      | String      | Optional | GCP credentials JSON blob. If specified, use the explicitly handed credentials. Consider using the externalized secrets feature in Kafka Connect for passing the value.                                                                                                      | 
+| Config                    | Value Range | Default  | Description                                                                                                                                                                                                                                                                 |
+|---------------------------|-------------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| gcp.credentials.file.path | String      | Optional | The filepath, which stores GCP credentials. If not defined, the environment variable `GOOGLE_APPLICATION_CREDENTIALS` is used. If specified, use the explicitly handed credentials. Consider using the externalized secrets feature in Kafka Connect for passing the value. | 
+| gcp.credentials.json      | String      | Optional | GCP credentials JSON blob. If specified, use the explicitly handed credentials. Consider using the externalized secrets feature in Kafka Connect for passing the value.                                                                                                     | 
 
 ### Schema support and data model
 
@@ -405,6 +407,4 @@ Apache 2.0 - See [LICENSE](LICENSE) for more information.
 [maven-version-image]: https://img.shields.io/maven-central/v/com.google.cloud/pubsub-group-kafka-connector.svg
 [maven-version-link]: https://search.maven.org/search?q=g:com.google.cloud%20AND%20a:pubsub-group-kafka-connector&core=gav
 [stable-stability]: https://img.shields.io/badge/stability-stable-green
-[stable-description]: #stable
 [preview-stability]: https://img.shields.io/badge/stability-preview-yellow
-[preview-description]: #preview
