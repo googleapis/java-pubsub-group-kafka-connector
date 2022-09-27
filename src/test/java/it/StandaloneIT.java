@@ -79,7 +79,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
@@ -116,12 +115,14 @@ public class StandaloneIT extends Base {
       SubscriptionName.of(projectId, cpsSinkSubscriptionId);
   private static final TopicName cpsSinkTopicName = TopicName.of(projectId, cpsSinkTopicId);
 
-  private static final ReservationPath pslReservationPath = (pslReservationId == null)? null :
-          ReservationPath.newBuilder()
-            .setProject(ProjectNumber.of(Long.valueOf(projectNumber)))
-            .setLocation(CloudRegion.of(region))
-            .setName(ReservationName.of((pslReservationId)))
-            .build();
+  private static final ReservationPath pslReservationPath =
+      (pslReservationId == null)
+          ? null
+          : ReservationPath.newBuilder()
+              .setProject(ProjectNumber.of(Long.valueOf(projectNumber)))
+              .setLocation(CloudRegion.of(region))
+              .setName(ReservationName.of((pslReservationId)))
+              .build();
 
   private static final String kafkaPslSinkTestTopic = "psl-sink-test-topic";
   private static final String pslSinkTopicId = "psl-sink-topic-" + runId;
