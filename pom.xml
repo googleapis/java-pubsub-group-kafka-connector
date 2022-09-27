@@ -13,7 +13,7 @@
 
     <kafka.version>3.2.3</kafka.version>
     <pubsub.version>1.120.18</pubsub.version>
-    <pubsublite.version>1.6.3</pubsublite.version>
+    <pubsublite.version>1.7.0</pubsublite.version>
     <compute.version>1.12.1</compute.version>
   </properties>
 
