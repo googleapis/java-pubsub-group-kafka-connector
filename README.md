@@ -1,10 +1,13 @@
-### Introduction
+#Google Cloud Pub/Sub Group Kafka Connector
+
+[![Maven][maven-version-image]][maven-version-link]
+[![preview][preview-stability]][preview-description]
 
 The Google Cloud Pub/Sub Group Kafka Connector library provides Google Cloud
 Platform (GCP) first-party connectors for Pub/Sub products with
 [Kafka Connect](http://kafka.apache.org/documentation.html#connect).
-You can use the library transmit data from [Kafka](http://kafka.apache.org) to
-[Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) or
+You can use the library to transmit data from [Kafka](http://kafka.apache.org)
+to [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) or
 [Pub/Sub Lite](https://cloud.google.com/pubsub/lite/docs) and vice versa.
 
 - `CloudPubSubSinkConnector` is a sink connector that reads records from Kafka
@@ -29,22 +32,25 @@ for Pub/Sub Lite before doing the [quickstart](#quickstart).
 ### Quickstart
 
 In this quickstart, you will learn how to send data from a Kafka topic to
-a Pub/Sub or Pub/Sub Lite topic and vice versa, using a Kafka cluster running
+a Pub/Sub or Pub/Sub Lite topic and vice versa, using Kafka Connect running
 locally in standalone mode (single process).
 
 1. Follow the [Kafka quickstart](https://kafka.apache.org/quickstart) to
    download Kafka, start the Kafka environment, and create a Kafka topic.
-   > Note: Please use the same Kafka major version as that used by the connector.
-   > Otherwise, the connector may not work properly. Check the Kafka version
-   > used by the connector in [pom.xml](pom.xml).
+   > Note: Please use the same Kafka API major version as that used by the
+   > connector. Otherwise, the connector may not work properly. Check the Kafka
+   > version used by the connector in [pom.xml](pom.xml).
+
 2. [Acquire](#acquire-the-connector) the connector jar.
+
 3. Update your Kafka Connect configurations.
 
    Open `/config/connect-standalone.properties` in the Kafka download folder.
    Add the filepath of the downloaded connector jar to `plugin.path` and
    uncomment the line if needed. In addition, because the connector is using
-   a Kafka cluster in standalone mode, include `offset.storage.file.filename`
+   Kafka Connect in standalone mode, include `offset.storage.file.filename`
    with a valid filename to store offset data in.
+
 4. Create a pair of Pub/Sub or Pub/Sub Lite topic and subscription.
 
    - `CloudPubSubSinkConnector` and `CloudPubSubSourceConnector`
@@ -118,13 +124,16 @@ You can also [build](#build-the-connector) the connector from head.
 
 ### Run the connector
 
-To run this connector in standalone mode, follow these general steps:
+Please refer to [Kafka User Guide](http://kafka.apache.org/documentation.html#connect_running)
+for general information on running connectors using Kafka Connect.
+
+To run this connector using Kafka Connect in standalone mode, follow these
+steps:
 
 1. Copy the connector jar where you will run Kafka Connect. 
 
 2. Create a configuration file for your Kafka Connect instance. Make sure
-   to include the filepath to the connector jar in `plugin.path`. See general
-   information on Kafka Connect in [Kafka Users Guide](http://kafka.apache.org/documentation.html#connect_running).
+   to include the filepath to the connector jar in `plugin.path`.
 
 3. Make a copy of the connector configuration files at [/config](/config)
    and update the configuration options accordingly.
@@ -143,7 +152,7 @@ To run this connector in standalone mode, follow these general steps:
 When running the connector on a Kafka cluster in distributed mode, "the
 connector configurations are not passed on the command line. Instead, use the
 REST API described below to create, modify, and destroy connectors"
-([Kafka Users Guide](http://kafka.apache.org/documentation.html#connect_running)).
+([Kafka User Guide](http://kafka.apache.org/documentation.html#connect_running)).
 
 ### Pub/Sub connector configs
 
@@ -221,8 +230,8 @@ connector supports the following configurations:
 
 ### Shared miscellaneous configs
 
-These configuraions are shared between both the Pub/Sub and Pub/Sub Lite Kafka
-connector.
+These configurations are shared by both the Pub/Sub and Pub/Sub Lite Kafka
+connectors.
 
 | Config                    | Value Range | Default  | Description                                                                                                                                                                                                                                                                  |
 |---------------------------|-------------|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -391,3 +400,10 @@ See [Code of Conduct](CODE_OF_CONDUCT.md) for more information.
 ## License
 
 Apache 2.0 - See [LICENSE](LICENSE) for more information.
+
+[maven-version-image]: https://img.shields.io/maven-central/v/com.google.cloud/pubsub-group-kafka-connector.svg
+[maven-version-link]: https://search.maven.org/search?q=g:com.google.cloud%20AND%20a:pubsub-group-kafka-connector&core=gav
+[stable-stability]: https://img.shields.io/badge/stability-stable-green
+[stable-description]: #stable
+[preview-stability]: https://img.shields.io/badge/stability-preview-yellow
+[preview-description]: #preview
