@@ -6,7 +6,8 @@
 The Google Cloud Pub/Sub Group Kafka Connector library provides Google Cloud
 Platform (GCP) first-party connectors for Pub/Sub products with
 [Kafka Connect](http://kafka.apache.org/documentation.html#connect).
-You can use the library to transmit data from [Kafka](http://kafka.apache.org)
+You can use the library to transmit data from
+[Apache Kafka](http://kafka.apache.org)
 to [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) or
 [Pub/Sub Lite](https://cloud.google.com/pubsub/lite/docs) and vice versa.
 
