@@ -163,7 +163,7 @@
     <dependency>
       <groupId>com.google.api.grpc</groupId>
       <artifactId>proto-google-cloud-compute-v1</artifactId>
-      <version>1.12.0</version>
+      <version>1.12.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
