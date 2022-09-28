@@ -14,7 +14,7 @@
     <kafka.version>3.2.3</kafka.version>
     <pubsub.version>1.120.18</pubsub.version>
     <pubsublite.version>1.7.0</pubsublite.version>
-    <compute.version>1.12.1</compute.version>
+    <cloud-compute.version>1.12.1</cloud-compute.version>
     <protobuf-java.vesion>3.21.6</protobuf-java.vesion>
     <gax.version>2.19.1</gax.version>
     <slf4j.version>2.0.3</slf4j.version>
@@ -75,7 +75,7 @@
     <dependency>
       <groupId>com.google.api</groupId>
       <artifactId>gax-grpc</artifactId>
-      <version>2.19.1</version>
+      <version>${gax.version}</version>
     </dependency>
     <dependency>
       <groupId>com.google.auth</groupId>
@@ -166,13 +166,13 @@
     <dependency>
       <groupId>com.google.api.grpc</groupId>
       <artifactId>proto-google-cloud-compute-v1</artifactId>
-      <version>1.12.1</version>
+      <version>${cloud-compute.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.google.cloud</groupId>
       <artifactId>google-cloud-compute</artifactId>
-      <version>1.12.1</version>
+      <version>${cloud-compute.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
