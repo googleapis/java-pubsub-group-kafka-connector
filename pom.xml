@@ -216,7 +216,7 @@
                 org.apache.maven.shared:maven-invoker
               </ignoredUnusedDeclaredDependency>
               <ignoredUnusedDeclaredDependency>
-                org.slf4j:slf4j-log4j12:jar:2.0.0
+                org.slf4j:slf4j-log4j12:jar
               </ignoredUnusedDeclaredDependency>
             </ignoredUnusedDeclaredDependencies>
             <ignoredNonTestScopedDependencies>
