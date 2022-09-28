@@ -1,4 +1,3 @@
-package com.google.pubsublite.kafka.sink;
 /*
  * Copyright 2020 Google LLC
  *
@@ -14,6 +13,9 @@ package com.google.pubsublite.kafka.sink;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package com.google.pubsublite.kafka.sink;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.ListValue;
