@@ -464,7 +464,7 @@ public class StandaloneIT extends Base {
     assertThat(this.cpsMessageReceived).isTrue();
   }
 
-  @Test(timeout=5* 60 * 1000L)
+  @Test(timeout = 5 * 60 * 1000L)
   public void testCpsSourceConnector() throws Exception {
     // Publish to CPS topic
     ProjectTopicName sourceTopic = ProjectTopicName.of(projectId, cpsSourceTopicId);
@@ -610,7 +610,7 @@ public class StandaloneIT extends Base {
     assertThat(this.pslMessageReceived).isTrue();
   }
 
-  @Test(timeout=5* 60 * 1000L)
+  @Test(timeout = 5 * 60 * 1000L)
   public void testPslSourceConnector() throws Exception {
     // Publish to CPS topic
     PublisherSettings publisherSettings =
