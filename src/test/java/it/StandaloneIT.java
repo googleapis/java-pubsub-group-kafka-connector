@@ -39,6 +39,9 @@ import com.google.cloud.pubsublite.AdminClientSettings;
 import com.google.cloud.pubsublite.CloudRegion;
 import com.google.cloud.pubsublite.CloudZone;
 import com.google.cloud.pubsublite.ProjectId;
+import com.google.cloud.pubsublite.ProjectNumber;
+import com.google.cloud.pubsublite.ReservationName;
+import com.google.cloud.pubsublite.ReservationPath;
 import com.google.cloud.pubsublite.SubscriptionPath;
 import com.google.cloud.pubsublite.TopicPath;
 import com.google.cloud.pubsublite.cloudpubsub.FlowControlSettings;
@@ -49,6 +52,7 @@ import com.google.cloud.pubsublite.proto.Subscription.DeliveryConfig.DeliveryReq
 import com.google.cloud.pubsublite.proto.Topic;
 import com.google.cloud.pubsublite.proto.Topic.PartitionConfig;
 import com.google.cloud.pubsublite.proto.Topic.PartitionConfig.Capacity;
+import com.google.cloud.pubsublite.proto.Topic.ReservationConfig;
 import com.google.cloud.pubsublite.proto.Topic.RetentionConfig;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
@@ -76,7 +80,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
@@ -97,6 +100,7 @@ public class StandaloneIT extends Base {
   private static final GoogleLogger log = GoogleLogger.forEnclosingClass();
   private static final String projectId = System.getenv("GOOGLE_CLOUD_PROJECT");
   private static final String projectNumber = System.getenv("GOOGLE_CLOUD_PROJECT_NUMBER");
+  private static final String pslReservationId = System.getenv("PSL_RESERVATION_ID");
 
   private static final String cpsSourceTopicId = "cps-source-topic-" + runId;
   private static final String cpsSourceSubscriptionId = "cps-source-subscription-" + runId;
@@ -111,6 +115,15 @@ public class StandaloneIT extends Base {
   private static final SubscriptionName cpsSinkSubscriptionName =
       SubscriptionName.of(projectId, cpsSinkSubscriptionId);
   private static final TopicName cpsSinkTopicName = TopicName.of(projectId, cpsSinkTopicId);
+
+  private static final ReservationPath pslReservationPath =
+      (pslReservationId == null)
+          ? null
+          : ReservationPath.newBuilder()
+              .setProject(ProjectNumber.of(Long.valueOf(projectNumber)))
+              .setLocation(CloudRegion.of(region))
+              .setName(ReservationName.of((pslReservationId)))
+              .build();
 
   private static final String kafkaPslSinkTestTopic = "psl-sink-test-topic";
   private static final String pslSinkTopicId = "psl-sink-topic-" + runId;
@@ -147,7 +160,6 @@ public class StandaloneIT extends Base {
   private static final String instanceName = "kafka-it-" + runId;
   private static final String instanceTemplateName = "kafka-it-template-" + runId;
   private static AtomicBoolean initialized = new AtomicBoolean(false);
-  private static AtomicInteger testRunCount = new AtomicInteger(4);
   private static Boolean cpsMessageReceived = false;
   private static Boolean pslMessageReceived = false;
   private static Instance gceKafkaInstance;
@@ -168,9 +180,6 @@ public class StandaloneIT extends Base {
 
   @BeforeClass
   public static void setUp() throws Exception {
-    if (!initialized.compareAndSet(false, true)) {
-      return;
-    }
     findMavenHome();
     setupVersions();
     mavenPackage(workingDir);
@@ -240,7 +249,7 @@ public class StandaloneIT extends Base {
     try (AdminClient pslAdminClient =
         AdminClient.create(
             AdminClientSettings.newBuilder().setRegion(CloudRegion.of(region)).build())) {
-      Topic sinkTopic =
+      Topic.Builder sinkTopicBuilder =
           Topic.newBuilder()
               .setName(pslSinkTopicPath.toString())
               .setPartitionConfig(
@@ -254,9 +263,15 @@ public class StandaloneIT extends Base {
               .setRetentionConfig(
                   RetentionConfig.newBuilder()
                       .setPerPartitionBytes(30 * 1024 * 1024 * 1024L)
-                      .setPeriod(Durations.fromHours(1)))
-              .build();
-      sinkTopic = pslAdminClient.createTopic(sinkTopic).get();
+                      .setPeriod(Durations.fromHours(1)));
+      if (pslReservationId != null) {
+        sinkTopicBuilder.setReservationConfig(
+            ReservationConfig.newBuilder()
+                .setThroughputReservation(pslReservationPath.toString())
+                .build());
+      }
+
+      Topic sinkTopic = pslAdminClient.createTopic(sinkTopicBuilder.build()).get();
       log.atInfo().log("Created PSL sink topic: " + pslSinkTopicPath);
 
       com.google.cloud.pubsublite.proto.Subscription pslSinkSubscription =
@@ -270,7 +285,7 @@ public class StandaloneIT extends Base {
       pslSinkSubscription = pslAdminClient.createSubscription(pslSinkSubscription).get();
       log.atInfo().log("Created PSL sink subscription: " + pslSinkSubscriptionPath.toString());
 
-      Topic sourceTopic =
+      Topic.Builder sourceTopicBuilder =
           Topic.newBuilder()
               .setName(pslSourceTopicPath.toString())
               .setPartitionConfig(
@@ -284,9 +299,14 @@ public class StandaloneIT extends Base {
               .setRetentionConfig(
                   RetentionConfig.newBuilder()
                       .setPerPartitionBytes(30 * 1024 * 1024 * 1024L)
-                      .setPeriod(Durations.fromHours(1)))
-              .build();
-      sourceTopic = pslAdminClient.createTopic(sourceTopic).get();
+                      .setPeriod(Durations.fromHours(1)));
+      if (pslReservationId != null) {
+        sourceTopicBuilder.setReservationConfig(
+            ReservationConfig.newBuilder()
+                .setThroughputReservation(pslReservationPath.toString())
+                .build());
+      }
+      Topic sourceTopic = pslAdminClient.createTopic(sourceTopicBuilder.build()).get();
       log.atInfo().log("Created PSL source topic: " + pslSourceTopicPath);
 
       com.google.cloud.pubsublite.proto.Subscription pslSourceSubscription =
@@ -323,9 +343,6 @@ public class StandaloneIT extends Base {
 
   @AfterClass
   public static void tearDown() throws Exception {
-    if (testRunCount.decrementAndGet() > 0) {
-      return;
-    }
     log.atInfo().log("Attempting teardown!");
     Function<Runnable, Void> notFoundIgnoredClosureRunner =
         new Function<Runnable, Void>() {
@@ -447,7 +464,7 @@ public class StandaloneIT extends Base {
     assertThat(this.cpsMessageReceived).isTrue();
   }
 
-  @Test
+  @Test(timeout = 5 * 60 * 1000L)
   public void testCpsSourceConnector() throws Exception {
     // Publish to CPS topic
     ProjectTopicName sourceTopic = ProjectTopicName.of(projectId, cpsSourceTopicId);
@@ -593,7 +610,7 @@ public class StandaloneIT extends Base {
     assertThat(this.pslMessageReceived).isTrue();
   }
 
-  @Test
+  @Test(timeout = 5 * 60 * 1000L)
   public void testPslSourceConnector() throws Exception {
     // Publish to CPS topic
     PublisherSettings publisherSettings =
@@ -687,6 +704,5 @@ public class StandaloneIT extends Base {
       kafkaConsumer.close();
     }
     assertThat(messageReceived).isTrue();
-    publisher.stopAsync().awaitTerminated();
   }
 }
