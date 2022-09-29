@@ -118,8 +118,9 @@ locally in standalone mode (single process).
 
 ### Acquire the connector
 
-A pre-built uber-jar is available for download on the
-[releases page](https://github.com/googleapis/java-pubsub-group-kafka-connector/releases).
+The connector is available from [Maven Central repository](https://search.maven.org/artifact/com.google.cloud/pubsub-group-kafka-connector).
+Select the latest version of the connector, then download "jar" from the
+**Downloads** dropdown menu.
 
 You can also [build](#build-the-connector) the connector from head.
 
