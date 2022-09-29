@@ -15,7 +15,7 @@
     <pubsub.version>1.120.18</pubsub.version>
     <pubsublite.version>1.7.0</pubsublite.version>
     <cloud-compute.version>1.12.1</cloud-compute.version>
-    <protobuf-java.vesion>3.21.6</protobuf-java.vesion>
+    <protobuf-java.vesion>3.21.7</protobuf-java.vesion>
     <gax.version>2.19.1</gax.version>
     <slf4j.version>2.0.3</slf4j.version>
   </properties>
