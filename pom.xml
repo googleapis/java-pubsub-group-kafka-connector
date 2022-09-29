@@ -12,6 +12,13 @@
     This library provides Google Cloud Platform (GCP) first-party connectors for
     Pub/Sub products with Kafka Connect.
   </description>
+
+  <parent>
+    <groupId>com.google.cloud</groupId>
+    <artifactId>google-cloud-shared-config</artifactId>
+    <version>1.5.3</version>
+  </parent>
+
   <properties>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
