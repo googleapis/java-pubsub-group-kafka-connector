@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/googleapis/java-pubsub-group-kafka-connector/compare/v0.1.1...v0.1.2) (2022-09-29)
+
+
+### Bug Fixes
+
+* Update version in pom and readme ([#140](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/140)) ([8e748f4](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/8e748f4f488219e88a397f6c20901f6ad5117168))
+
 ## [0.1.1](https://github.com/googleapis/java-pubsub-group-kafka-connector/compare/v0.1.0...v0.1.1) (2022-09-29)
 
 
