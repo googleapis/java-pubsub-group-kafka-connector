@@ -29,6 +29,10 @@ for Pub/Sub before doing the [quickstart](#quickstart).
 
 Follow these [setup steps](https://cloud.google.com/pubsub/lite/docs/publish-receive-messages-console#before-you-begin)
 for Pub/Sub Lite before doing the [quickstart](#quickstart).
+
+For general information on how to authenticate with GCP when using the Google
+Cloud Pub/Sub Group Kafka Connector library, please visit [Provide credentials
+for Application Default Credentials](https://cloud.google.com/docs/authentication/provide-credentials-adc).
     
 ### Quickstart
 
@@ -395,7 +399,7 @@ This library follows [Semantic Versioning](http://semver.org/).
 
 Contributions to this library are always welcome and highly encouraged.
 
-See [CONTRIBUTING(CONTRIBUTING.md) for more information how to get started.
+See [CONTRIBUTING](CONTRIBUTING.md) for more information how to get started.
 
 Please note that this project is released with a Contributor Code of Conduct. By
 participating in this project you agree to abide by its terms.
