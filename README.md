@@ -399,7 +399,7 @@ This library follows [Semantic Versioning](http://semver.org/).
 
 Contributions to this library are always welcome and highly encouraged.
 
-See [CONTRIBUTING(CONTRIBUTING.md) for more information how to get started.
+See [CONTRIBUTING](CONTRIBUTING.md) for more information how to get started.
 
 Please note that this project is released with a Contributor Code of Conduct. By
 participating in this project you agree to abide by its terms.
