@@ -362,6 +362,10 @@ public class StandaloneIT extends Base {
           () -> {
             subscriptionAdminClient.deleteSubscription(cpsSinkSubscriptionName);
           });
+      notFoundIgnoredClosureRunner.apply(
+          () -> {
+            subscriptionAdminClient.deleteSubscription(cpsSourceSubscriptionName);
+          });
       log.atInfo().log("Deleted CPS subscriptions.");
     }
 
