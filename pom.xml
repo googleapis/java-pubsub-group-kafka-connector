@@ -24,7 +24,7 @@
 
     <kafka.version>3.3.1</kafka.version>
     <pubsub.version>1.120.24</pubsub.version>
-    <pubsublite.version>1.7.0</pubsublite.version>
+    <pubsublite.version>1.8.0</pubsublite.version>
     <cloud-compute.version>1.15.0</cloud-compute.version>
     <protobuf-java.vesion>3.21.9</protobuf-java.vesion>
     <gax.version>2.19.4</gax.version>
