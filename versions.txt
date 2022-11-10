@@ -1,4 +1,4 @@
 # Format:
 # module:released-version:current-version
 
-pubsub-group-kafka-connector:0.1.4:0.1.4
+pubsub-group-kafka-connector:0.1.4:0.1.5-SNAPSHOT
