@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/googleapis/java-pubsub-group-kafka-connector/compare/v0.1.3...v0.1.4) (2022-11-10)
+
+
+### Dependencies
+
+* Update dependency com.google.cloud:google-cloud-core to v2.8.28 ([#179](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/179)) ([e48d1e1](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/e48d1e118f03ef364db77c6c52a762ba8f455de9))
+
 ## [0.1.3](https://github.com/googleapis/java-pubsub-group-kafka-connector/compare/v0.1.2...v0.1.3) (2022-11-09)
 
 
