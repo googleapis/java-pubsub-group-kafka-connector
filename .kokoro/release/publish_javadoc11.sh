@@ -31,7 +31,7 @@ pushd $(dirname "$0")/../../
 python3 -m pip install --require-hashes -r .kokoro/requirements.txt
 
 # compile all packages
-mvn clean install -B -q -DskipTests=true
+mvn clean install -B -q -DskipTests=true -Dclirr.skip=true
 
 export NAME=pubsub-group-kafka-connector
 export VERSION=$(grep ${NAME}: versions.txt | cut -d: -f3)
