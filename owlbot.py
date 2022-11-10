@@ -48,6 +48,8 @@ java.common_templates(excludes=[
     ".kokoro/presubmit/lint.cfg",
     ".kokoro/presubmit/samples.cfg",
     ".kokoro/readme.sh",
+    ".kokoro/release/publish_javadoc.sh",
+    ".kokoro/release/publish_javadoc11.sh",
     # Exclude owlbot from README.
     "README.md",
     # Exclude owlbot from adding samples dir.
