@@ -96,7 +96,7 @@
     <dependency>
       <groupId>com.google.api.grpc</groupId>
       <artifactId>proto-google-cloud-pubsub-v1</artifactId>
-      <version>1.102.24</version>
+      <version>1.102.25</version>
     </dependency>
     <dependency>
       <groupId>com.google.api</groupId>
