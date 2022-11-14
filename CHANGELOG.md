@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5](https://github.com/googleapis/java-pubsub-group-kafka-connector/compare/v0.1.4...v0.1.5) (2022-11-14)
+
+
+### Dependencies
+
+* Update dependency com.google.api.grpc:proto-google-cloud-pubsub-v1 to v1.102.25 ([#184](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/184)) ([36814e1](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/36814e12b4f96a0edfff117fc065bdc75c59b1e2))
+
 ## [0.1.4](https://github.com/googleapis/java-pubsub-group-kafka-connector/compare/v0.1.3...v0.1.4) (2022-11-10)
 
 
