@@ -59,6 +59,7 @@ public class CloudPubSubSinkConnector extends SinkConnector {
   public static final String DEFAULT_MESSAGE_BODY_NAME = "cps_message_body";
   public static final String PUBLISH_KAFKA_METADATA = "metadata.publish";
   public static final String PUBLISH_KAFKA_HEADERS = "headers.publish";
+  public static final String REQUEST_BODY_FORMAT = "request.body.format";
   public static final String ORDERING_KEY_SOURCE = "orderingKeySource";
   public static final String DEFAULT_ORDERING_KEY_SOURCE = "none";
 
@@ -255,7 +256,13 @@ public class CloudPubSubSinkConnector extends SinkConnector {
             Type.STRING,
             ConnectorUtils.CPS_DEFAULT_ENDPOINT,
             Importance.LOW,
-            "The Pub/Sub endpoint to use.");
+            "The Pub/Sub endpoint to use.")
+        .define(
+            REQUEST_BODY_FORMAT,
+            Type.STRING,
+            ConnectorUtils.CPS_DEFAULT_REQUEST_BODY_FORMAT,
+            Importance.LOW,
+            "Used to produce request body in either JSON or String(default) format, when schema is not used.");
   }
 
   @Override

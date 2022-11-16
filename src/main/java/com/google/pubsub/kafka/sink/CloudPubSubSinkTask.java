@@ -17,6 +17,7 @@ package com.google.pubsub.kafka.sink;
 
 import static com.google.pubsub.kafka.common.ConnectorUtils.getSystemExecutor;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.core.ApiFuture;
 import com.google.api.core.ApiFutures;
 import com.google.api.core.SettableApiFuture;
@@ -71,6 +72,7 @@ public class CloudPubSubSinkTask extends SinkTask {
   private String cpsTopic;
   private String cpsEndpoint;
   private String messageBodyName;
+  private String requestBodyFormat;
   private long maxBufferSize;
   private long maxBufferBytes;
   private long maxOutstandingRequestBytes;
@@ -131,6 +133,7 @@ public class CloudPubSubSinkTask extends SinkTask {
     maxShutdownTimeoutMs =
         (Integer) validatedProps.get(CloudPubSubSinkConnector.MAX_SHUTDOWN_TIMEOUT_MS);
     messageBodyName = (String) validatedProps.get(CloudPubSubSinkConnector.CPS_MESSAGE_BODY_NAME);
+    requestBodyFormat = (String) validatedProps.get(CloudPubSubSinkConnector.REQUEST_BODY_FORMAT);
     includeMetadata = (Boolean) validatedProps.get(CloudPubSubSinkConnector.PUBLISH_KAFKA_METADATA);
     includeHeaders = (Boolean) validatedProps.get(CloudPubSubSinkConnector.PUBLISH_KAFKA_HEADERS);
     orderingKeySource =
@@ -233,7 +236,18 @@ public class CloudPubSubSinkTask extends SinkTask {
       return null;
     }
     if (schema == null) {
-      String str = value.toString();
+      String str;
+      if(requestBodyFormat.equalsIgnoreCase("json")) {
+        Object json = null;
+        try {
+          json = new ObjectMapper().writeValueAsString(value);
+        } catch (Exception e) {
+          json = value;
+        }
+        str = json.toString();
+      } else {
+        str = value.toString();
+      }
       return ByteString.copyFromUtf8(str);
     }
     Schema.Type t = schema.type();
