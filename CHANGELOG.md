@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.0.0](https://github.com/googleapis/java-pubsub-group-kafka-connector/compare/v0.1.5...v1.0.0) (2022-11-18)
+
+
+### Features
+
+* Mark stable to prepare for 1.0.0 release ([#198](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/198)) ([4f8a702](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/4f8a702863aa11d9a685286b601ad07df48ed785))
+
+
+### Dependencies
+
+* Update cloud-compute.version to v1.16.0 ([#191](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/191)) ([980ba98](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/980ba98724f771ae190ac3a984c8207a2c9214d8))
+* Update dependency com.google.auth:google-auth-library-credentials to v1.13.0 ([#189](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/189)) ([4367fcd](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/4367fcd88d38cfdca9893518ea795a00437f7fc2))
+
 ## [0.1.5](https://github.com/googleapis/java-pubsub-group-kafka-connector/compare/v0.1.4...v0.1.5) (2022-11-14)
 
 
