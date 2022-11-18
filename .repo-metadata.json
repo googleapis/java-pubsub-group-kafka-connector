@@ -5,7 +5,7 @@
   "product_documentation": "https://cloud.google.com/pubsub/docs/",
   "client_documentation": "https://cloud.google.com/java/docs/reference/pubsub-group-kafka-connector/latest/history",
   "api_description": "The Pub/Sub Group Kafka Connector is developed to work with Kafka Connect to publish messages from Kafka to Google Cloud Pub/Sub or Pub/Sub Lite and vice versa.",
-  "release_level": "preview",
+  "release_level": "stable",
   "language": "java",
   "min_java_version": 8,
   "repo": "googleapis/java-pubsub-group-kafka-connector",
