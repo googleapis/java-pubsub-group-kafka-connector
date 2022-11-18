@@ -1,7 +1,7 @@
 # Google Cloud Pub/Sub Group Kafka Connector
 
 [![Maven][maven-version-image]][maven-version-link]
-![preview][preview-stability]
+![Stability][stable-stability]
 
 The Google Cloud Pub/Sub Group Kafka Connector library provides Google Cloud
 Platform (GCP) first-party connectors for Pub/Sub products with
@@ -412,4 +412,3 @@ Apache 2.0 - See [LICENSE](LICENSE) for more information.
 [maven-version-image]: https://img.shields.io/maven-central/v/com.google.cloud/pubsub-group-kafka-connector.svg
 [maven-version-link]: https://search.maven.org/search?q=g:com.google.cloud%20AND%20a:pubsub-group-kafka-connector&core=gav
 [stable-stability]: https://img.shields.io/badge/stability-stable-green
-[preview-stability]: https://img.shields.io/badge/stability-preview-yellow
