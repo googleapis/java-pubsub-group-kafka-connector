@@ -3,7 +3,7 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <artifactId>pubsub-group-kafka-connector</artifactId>
-  <version>0.1.6-SNAPSHOT</version><!-- {x-version-update:pubsub-group-kafka-connector:current} -->
+  <version>1.0.1-SNAPSHOT</version><!-- {x-version-update:pubsub-group-kafka-connector:current} -->
   <packaging>jar</packaging>
   <name>Pub/Sub Group Kafka Connector</name>
   <url>https://github.com/googleapis/java-pubsub-group-kafka-connector</url>
@@ -25,7 +25,7 @@
     <kafka.version>3.3.1</kafka.version>
     <pubsub.version>1.120.25</pubsub.version>
     <pubsublite.version>1.8.0</pubsublite.version>
-    <cloud-compute.version>1.15.0</cloud-compute.version>
+    <cloud-compute.version>1.16.0</cloud-compute.version>
     <protobuf-java.vesion>3.21.9</protobuf-java.vesion>
     <gax.version>2.19.4</gax.version>
     <slf4j.version>2.0.3</slf4j.version>
@@ -96,7 +96,7 @@
     <dependency>
       <groupId>com.google.auth</groupId>
       <artifactId>google-auth-library-credentials</artifactId>
-      <version>1.12.1</version>
+      <version>1.13.0</version>
     </dependency>
     <dependency>
       <groupId>com.google.api.grpc</groupId>
