@@ -82,7 +82,7 @@ locally in standalone mode (single process).
        1. Open [`pubsub-lite-sink-connector.properties`](/config/pubsub-lite-sink-connector.properties).
        2. Update `topics`, `pubsublite.project`, `pubsublite.location` and `pubsublite.topic`.
 
-   - `PubSubLiteSinkConnector`
+   - `PubSubLiteSourceConnector`
        1. Open [`pubsub-lite-source-connector.properties`](/config/pubsub-lite-source-connector.properties).
        2. Update `kafka.topic`, `pubsublite.project`, `pubsublite.location` and `pubsublite.subscription`.
 
@@ -109,16 +109,16 @@ locally in standalone mode (single process).
      to read the message from your Kafka topic.
 
    - `PubSubLiteSinkConnector`
-     1. Follow the instructions in the [Kafka quickstart](https://kafka.apache.org/quickstart)
-     to publish a message to the Kafka topic.
-     2. [Pull](https://cloud.google.com/pubsub/docs/publish-receive-messages-console#pull_the_message_from_the_subscription)
-     the message from your Pub/Sub Lite subscription.
-
-   - `PubSubLiteSinkConnector`
      1. [Publish](https://cloud.google.com/pubsub/docs/publish-receive-messages-console#publish_a_message_to_the_topic)
      a message to your Pub/Sub Lite topic.
      2. Follow the instructions in the [Kafka quickstart](https://kafka.apache.org/quickstart)
      to read the message from your Kafka topic.
+    
+   - `PubSubLiteSourceConnector`
+     1. Follow the instructions in the [Kafka quickstart](https://kafka.apache.org/quickstart)
+     to publish a message to the Kafka topic.
+     2. [Pull](https://cloud.google.com/pubsub/docs/publish-receive-messages-console#pull_the_message_from_the_subscription)
+     the message from your Pub/Sub Lite subscription.
 
 ### Acquire the connector
 
