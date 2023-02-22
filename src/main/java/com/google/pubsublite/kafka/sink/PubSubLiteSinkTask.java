@@ -18,9 +18,10 @@ package com.google.pubsublite.kafka.sink;
 import static com.google.pubsublite.kafka.sink.Schemas.encodeToBytes;
 
 import com.google.api.core.ApiService.State;
-import com.google.cloud.pubsublite.Message;
 import com.google.cloud.pubsublite.MessageMetadata;
 import com.google.cloud.pubsublite.internal.Publisher;
+import com.google.cloud.pubsublite.proto.AttributeValues;
+import com.google.cloud.pubsublite.proto.PubSubMessage;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.protobuf.ByteString;
@@ -75,7 +76,7 @@ public class PubSubLiteSinkTask extends SinkTask {
       }
     }
     for (SinkRecord record : collection) {
-      Message.Builder message = Message.builder();
+      PubSubMessage.Builder message = PubSubMessage.newBuilder();
       if (record.key() != null) {
         message.setKey(encodeToBytes(record.keySchema(), record.key()));
       }
@@ -89,6 +90,7 @@ public class PubSubLiteSinkTask extends SinkTask {
               header ->
                   attributes.put(
                       header.key(), Schemas.encodeToBytes(header.schema(), header.value())));
+
       if (record.topic() != null) {
         attributes.put(Constants.KAFKA_TOPIC_HEADER, ByteString.copyFromUtf8(record.topic()));
       }
@@ -106,7 +108,13 @@ public class PubSubLiteSinkTask extends SinkTask {
             ByteString.copyFromUtf8(record.timestampType().name));
         message.setEventTime(Timestamps.fromMillis(record.timestamp()));
       }
-      message.setAttributes(attributes.build());
+      attributes
+          .build()
+          .asMap()
+          .forEach(
+              (key, values) ->
+                  message.putAttributes(
+                      key, AttributeValues.newBuilder().addAllValues(values).build()));
       publisher.publish(message.build());
     }
   }
