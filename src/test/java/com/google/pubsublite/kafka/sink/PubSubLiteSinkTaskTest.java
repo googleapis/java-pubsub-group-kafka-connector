@@ -23,12 +23,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-import com.google.cloud.pubsublite.Message;
 import com.google.cloud.pubsublite.MessageMetadata;
 import com.google.cloud.pubsublite.internal.Publisher;
 import com.google.cloud.pubsublite.internal.testing.FakeApiService;
+import com.google.cloud.pubsublite.proto.AttributeValues;
+import com.google.cloud.pubsublite.proto.PubSubMessage;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Timestamps;
@@ -74,31 +74,21 @@ public class PubSubLiteSinkTaskTest {
           Schema.BYTES_SCHEMA,
           KAFKA_MESSAGE2.toByteArray(),
           -1);
-  private static final Message SAMPLE_MESSAGE_1 =
-      Message.builder()
+  private static final PubSubMessage SAMPLE_MESSAGE_1 =
+      PubSubMessage.newBuilder()
           .setKey(ByteString.copyFromUtf8(KAFKA_MESSAGE_KEY1))
           .setData(KAFKA_MESSAGE1)
-          .setAttributes(
-              ImmutableListMultimap.<String, ByteString>builder()
-                  .put(Constants.KAFKA_TOPIC_HEADER, ByteString.copyFromUtf8(KAFKA_TOPIC))
-                  .put(
-                      Constants.KAFKA_PARTITION_HEADER,
-                      ByteString.copyFromUtf8(Integer.toString(0)))
-                  .put(Constants.KAFKA_OFFSET_HEADER, ByteString.copyFromUtf8(Integer.toString(-1)))
-                  .build())
+          .putAttributes(Constants.KAFKA_TOPIC_HEADER, single(KAFKA_TOPIC))
+          .putAttributes(Constants.KAFKA_PARTITION_HEADER, single("0"))
+          .putAttributes(Constants.KAFKA_OFFSET_HEADER, single("-1"))
           .build();
-  private static final Message SAMPLE_MESSAGE_2 =
-      Message.builder()
+  private static final PubSubMessage SAMPLE_MESSAGE_2 =
+      PubSubMessage.newBuilder()
           .setKey(ByteString.copyFromUtf8(KAFKA_MESSAGE_KEY2))
           .setData(KAFKA_MESSAGE2)
-          .setAttributes(
-              ImmutableListMultimap.<String, ByteString>builder()
-                  .put(Constants.KAFKA_TOPIC_HEADER, ByteString.copyFromUtf8(KAFKA_TOPIC))
-                  .put(
-                      Constants.KAFKA_PARTITION_HEADER,
-                      ByteString.copyFromUtf8(Integer.toString(0)))
-                  .put(Constants.KAFKA_OFFSET_HEADER, ByteString.copyFromUtf8(Integer.toString(-1)))
-                  .build())
+          .putAttributes(Constants.KAFKA_TOPIC_HEADER, single(KAFKA_TOPIC))
+          .putAttributes(Constants.KAFKA_PARTITION_HEADER, single("0"))
+          .putAttributes(Constants.KAFKA_OFFSET_HEADER, single("-1"))
           .build();
 
   private PubSubLiteSinkTask task;
@@ -107,6 +97,10 @@ public class PubSubLiteSinkTaskTest {
       implements Publisher<MessageMetadata> {}
 
   private @Spy FakePublisher publisher;
+
+  private static AttributeValues single(String value) {
+    return AttributeValues.newBuilder().addValues(ByteString.copyFromUtf8(value)).build();
+  }
 
   @Before
   public void setup() {
@@ -174,7 +168,7 @@ public class PubSubLiteSinkTaskTest {
             null,
             -1));
     task.put(records);
-    Message expectedResult = SAMPLE_MESSAGE_1.toBuilder().setData(ByteString.EMPTY).build();
+    PubSubMessage expectedResult = SAMPLE_MESSAGE_1.toBuilder().setData(ByteString.EMPTY).build();
     verify(publisher).publish(expectedResult);
   }
 
@@ -185,7 +179,7 @@ public class PubSubLiteSinkTaskTest {
     records.add(
         new SinkRecord(KAFKA_TOPIC, 0, Schema.STRING_SCHEMA, null, Schema.BYTES_SCHEMA, null, -1));
     task.put(records);
-    Message expectedResult =
+    PubSubMessage expectedResult =
         SAMPLE_MESSAGE_1.toBuilder().setKey(ByteString.EMPTY).setData(ByteString.EMPTY).build();
     verify(publisher).publish(expectedResult);
   }
@@ -259,48 +253,35 @@ public class PubSubLiteSinkTaskTest {
             null,
             TimestampType.CREATE_TIME);
     task.put(ImmutableList.of(record1, record2, record3));
-    ImmutableListMultimap<String, ByteString> attributesBase =
-        ImmutableListMultimap.<String, ByteString>builder()
-            .put(Constants.KAFKA_TOPIC_HEADER, ByteString.copyFromUtf8(KAFKA_TOPIC))
-            .put(Constants.KAFKA_PARTITION_HEADER, ByteString.copyFromUtf8(Integer.toString(4)))
+    ImmutableMap<String, AttributeValues> attributesBase =
+        ImmutableMap.<String, AttributeValues>builder()
+            .put(Constants.KAFKA_TOPIC_HEADER, single(KAFKA_TOPIC))
+            .put(Constants.KAFKA_PARTITION_HEADER, single(Integer.toString(4)))
             .build();
-    Message message1 =
-        Message.builder()
+    PubSubMessage message1 =
+        PubSubMessage.newBuilder()
             .setKey(ByteString.copyFromUtf8(KAFKA_MESSAGE_KEY1))
             .setData(KAFKA_MESSAGE1)
             .setEventTime(Timestamps.fromMillis(50000))
-            .setAttributes(
-                ImmutableListMultimap.<String, ByteString>builder()
-                    .putAll(attributesBase)
-                    .put(Constants.KAFKA_OFFSET_HEADER, ByteString.copyFromUtf8("1000"))
-                    .put(
-                        Constants.KAFKA_EVENT_TIME_TYPE_HEADER,
-                        ByteString.copyFromUtf8("CreateTime"))
-                    .build())
+            .putAllAttributes(attributesBase)
+            .putAttributes(Constants.KAFKA_OFFSET_HEADER, single("1000"))
+            .putAttributes(Constants.KAFKA_EVENT_TIME_TYPE_HEADER, single("CreateTime"))
             .build();
-    Message message2 =
-        Message.builder()
+    PubSubMessage message2 =
+        PubSubMessage.newBuilder()
             .setKey(ByteString.copyFromUtf8(KAFKA_MESSAGE_KEY1))
             .setData(KAFKA_MESSAGE1)
             .setEventTime(Timestamps.fromMillis(50001))
-            .setAttributes(
-                ImmutableListMultimap.<String, ByteString>builder()
-                    .putAll(attributesBase)
-                    .put(Constants.KAFKA_OFFSET_HEADER, ByteString.copyFromUtf8("1001"))
-                    .put(
-                        Constants.KAFKA_EVENT_TIME_TYPE_HEADER,
-                        ByteString.copyFromUtf8("LogAppendTime"))
-                    .build())
+            .putAllAttributes(attributesBase)
+            .putAttributes(Constants.KAFKA_OFFSET_HEADER, single("1001"))
+            .putAttributes(Constants.KAFKA_EVENT_TIME_TYPE_HEADER, single("LogAppendTime"))
             .build();
-    Message message3 =
-        Message.builder()
+    PubSubMessage message3 =
+        PubSubMessage.newBuilder()
             .setKey(ByteString.copyFromUtf8(KAFKA_MESSAGE_KEY1))
             .setData(KAFKA_MESSAGE1)
-            .setAttributes(
-                ImmutableListMultimap.<String, ByteString>builder()
-                    .putAll(attributesBase)
-                    .put(Constants.KAFKA_OFFSET_HEADER, ByteString.copyFromUtf8("1002"))
-                    .build())
+            .putAllAttributes(attributesBase)
+            .putAttributes(Constants.KAFKA_OFFSET_HEADER, single("1002"))
             .build();
     InOrder order = inOrder(publisher);
     order.verify(publisher).publish(message1);
@@ -336,40 +317,30 @@ public class PubSubLiteSinkTaskTest {
             TimestampType.LOG_APPEND_TIME);
     record2.headers().addString("yourHeader", "yourValue");
     task.put(ImmutableList.of(record1, record2));
-    ImmutableListMultimap<String, ByteString> attributesBase =
-        ImmutableListMultimap.<String, ByteString>builder()
-            .put(Constants.KAFKA_TOPIC_HEADER, ByteString.copyFromUtf8(KAFKA_TOPIC))
-            .put(Constants.KAFKA_PARTITION_HEADER, ByteString.copyFromUtf8(Integer.toString(4)))
+    ImmutableMap<String, AttributeValues> attributesBase =
+        ImmutableMap.<String, AttributeValues>builder()
+            .put(Constants.KAFKA_TOPIC_HEADER, single(KAFKA_TOPIC))
+            .put(Constants.KAFKA_PARTITION_HEADER, single(Integer.toString(4)))
             .build();
-    Message message1 =
-        Message.builder()
+    PubSubMessage message1 =
+        PubSubMessage.newBuilder()
             .setKey(ByteString.copyFromUtf8(KAFKA_MESSAGE_KEY1))
             .setData(KAFKA_MESSAGE1)
             .setEventTime(Timestamps.fromMillis(50000))
-            .setAttributes(
-                ImmutableListMultimap.<String, ByteString>builder()
-                    .putAll(attributesBase)
-                    .put(Constants.KAFKA_OFFSET_HEADER, ByteString.copyFromUtf8("1000"))
-                    .put(
-                        Constants.KAFKA_EVENT_TIME_TYPE_HEADER,
-                        ByteString.copyFromUtf8("CreateTime"))
-                    .put("myHeader", ByteString.copyFromUtf8("myValue"))
-                    .build())
+            .putAllAttributes(attributesBase)
+            .putAttributes(Constants.KAFKA_OFFSET_HEADER, single("1000"))
+            .putAttributes(Constants.KAFKA_EVENT_TIME_TYPE_HEADER, single("CreateTime"))
+            .putAttributes("myHeader", single("myValue"))
             .build();
-    Message message2 =
-        Message.builder()
+    PubSubMessage message2 =
+        PubSubMessage.newBuilder()
             .setKey(ByteString.copyFromUtf8(KAFKA_MESSAGE_KEY1))
             .setData(KAFKA_MESSAGE1)
             .setEventTime(Timestamps.fromMillis(50001))
-            .setAttributes(
-                ImmutableListMultimap.<String, ByteString>builder()
-                    .putAll(attributesBase)
-                    .put(Constants.KAFKA_OFFSET_HEADER, ByteString.copyFromUtf8("1001"))
-                    .put(
-                        Constants.KAFKA_EVENT_TIME_TYPE_HEADER,
-                        ByteString.copyFromUtf8("LogAppendTime"))
-                    .put("yourHeader", ByteString.copyFromUtf8("yourValue"))
-                    .build())
+            .putAllAttributes(attributesBase)
+            .putAttributes(Constants.KAFKA_OFFSET_HEADER, single("1001"))
+            .putAttributes(Constants.KAFKA_EVENT_TIME_TYPE_HEADER, single("LogAppendTime"))
+            .putAttributes("yourHeader", single("yourValue"))
             .build();
     InOrder order = inOrder(publisher);
     order.verify(publisher).publish(message1);
