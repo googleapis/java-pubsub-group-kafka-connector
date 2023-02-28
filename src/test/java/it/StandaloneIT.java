@@ -17,6 +17,7 @@
 package it;
 
 import static com.google.common.truth.Truth.assertThat;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static junit.framework.TestCase.assertNotNull;
 
 import com.google.api.core.ApiFuture;
@@ -403,12 +404,12 @@ public class StandaloneIT extends Base {
     }
 
     try (InstancesClient instancesClient = InstancesClient.create()) {
-      instancesClient.deleteAsync(projectId, location, instanceName).get(3, TimeUnit.MINUTES);
+      instancesClient.deleteAsync(projectId, location, instanceName).get(3, MINUTES);
     }
     log.atInfo().log("Deleted Compute Engine instance.");
 
     try (InstanceTemplatesClient instanceTemplatesClient = InstanceTemplatesClient.create()) {
-      instanceTemplatesClient.deleteAsync(projectId, instanceTemplateName).get(3, TimeUnit.MINUTES);
+      instanceTemplatesClient.deleteAsync(projectId, instanceTemplateName).get(3, MINUTES);
     }
     log.atInfo().log("Deleted Compute Engine instance template.");
   }
@@ -604,7 +605,7 @@ public class StandaloneIT extends Base {
                 .build());
     try {
       subscriber.startAsync().awaitRunning();
-      subscriber.awaitTerminated(3, TimeUnit.MINUTES);
+      subscriber.awaitTerminated(3, MINUTES);
     } catch (TimeoutException timeoutException) {
       // Shut down the subscriber after 3 minutes. Stop receiving messages.
       subscriber.stopAsync();
@@ -632,30 +633,8 @@ public class StandaloneIT extends Base {
     PubsubMessage msg0 =
         PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("msg0")).build();
     ApiFuture<String> publishFuture = publisher.publish(msg0);
-    ApiFutures.addCallback(
-        publishFuture,
-        new ApiFutureCallback<String>() {
-
-          @Override
-          public void onFailure(Throwable throwable) {
-            if (throwable instanceof ApiException) {
-              ApiException apiException = ((ApiException) throwable);
-              // details on the API exception
-              log.atInfo().log(apiException.fillInStackTrace().toString());
-            }
-            Assert.fail("Error publishing message : " + msg0);
-          }
-
-          @Override
-          public void onSuccess(String messageId) {
-            // Once published, returns server-assigned message ids (unique within the topic)
-            log.atInfo().log("Published message ID: " + messageId);
-          }
-        },
-        MoreExecutors.directExecutor());
-
-    // Sleep for 1min.
-    Thread.sleep(60 * 1000);
+    log.atInfo().log("Published message ID: " + publishFuture.get(1, MINUTES));
+    publisher.stopAsync().awaitTerminated();
 
     // Consume from Kafka connect.
     Properties consumer_props = new Properties();
