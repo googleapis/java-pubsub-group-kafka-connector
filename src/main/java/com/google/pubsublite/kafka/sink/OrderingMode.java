@@ -16,6 +16,8 @@
 package com.google.pubsublite.kafka.sink;
 
 public enum OrderingMode {
+  /* Order based on the standard Pub/Sub Lite logic. */
   DEFAULT,
+  /* Send messages to the same partition index they were from in Kafka. */
   KAFKA
 }

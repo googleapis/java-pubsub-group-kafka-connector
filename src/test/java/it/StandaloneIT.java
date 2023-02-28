@@ -159,9 +159,8 @@ public class StandaloneIT extends Base {
 
   private static final String instanceName = "kafka-it-" + runId;
   private static final String instanceTemplateName = "kafka-it-template-" + runId;
-  private static AtomicBoolean initialized = new AtomicBoolean(false);
-  private static Boolean cpsMessageReceived = false;
-  private static Boolean pslMessageReceived = false;
+  private static AtomicBoolean cpsMessageReceived = new AtomicBoolean(false);
+  private static AtomicBoolean pslMessageReceived = new AtomicBoolean(false);
   private static Instance gceKafkaInstance;
   private static String kafkaInstanceIpAddress;
 
@@ -283,7 +282,7 @@ public class StandaloneIT extends Base {
               .setTopic(pslSinkTopicPath.toString())
               .build();
       pslSinkSubscription = pslAdminClient.createSubscription(pslSinkSubscription).get();
-      log.atInfo().log("Created PSL sink subscription: " + pslSinkSubscriptionPath.toString());
+      log.atInfo().log("Created PSL sink subscription: " + pslSinkSubscriptionPath);
 
       Topic.Builder sourceTopicBuilder =
           Topic.newBuilder()
@@ -318,7 +317,7 @@ public class StandaloneIT extends Base {
               .setTopic(pslSourceTopicPath.toString())
               .build();
       pslSourceSubscription = pslAdminClient.createSubscription(pslSourceSubscription).get();
-      log.atInfo().log("Created PSL source subscription:  " + pslSinkSubscriptionPath.toString());
+      log.atInfo().log("Created PSL source subscription:  " + pslSinkSubscriptionPath);
     }
   }
 
@@ -434,7 +433,7 @@ public class StandaloneIT extends Base {
         .forEach(
             (metricName, metric) -> {
               if (metricName.name() == "record-send-total") {
-                log.atInfo().log("record-send-total: " + metric.metricValue().toString());
+                log.atInfo().log("record-send-total: " + metric.metricValue());
               }
             });
     kafkaProducer.close();
@@ -452,7 +451,7 @@ public class StandaloneIT extends Base {
           assertThat(message.getData().toStringUtf8()).isEqualTo("value0");
           assertThat(message.getAttributesMap().get(ConnectorUtils.CPS_MESSAGE_KEY_ATTRIBUTE))
               .isEqualTo("key0");
-          this.cpsMessageReceived = true;
+          this.cpsMessageReceived.set(true);
           consumer.ack();
         };
 
@@ -465,7 +464,7 @@ public class StandaloneIT extends Base {
       // Shut down the subscriber after 30s. Stop receiving messages.
       subscriber.stopAsync();
     }
-    assertThat(this.cpsMessageReceived).isTrue();
+    assertThat(this.cpsMessageReceived.get()).isTrue();
   }
 
   @Test(timeout = 5 * 60 * 1000L)
@@ -573,7 +572,7 @@ public class StandaloneIT extends Base {
         .forEach(
             (metricName, metric) -> {
               if (metricName.name() == "record-send-total") {
-                log.atInfo().log("record-send-total: " + metric.metricValue().toString());
+                log.atInfo().log("record-send-total: " + metric.metricValue());
               }
             });
     kafkaProducer.close();
@@ -588,8 +587,7 @@ public class StandaloneIT extends Base {
           log.atInfo().log("Received message: " + message);
           assertThat(message.getData().toStringUtf8()).isEqualTo("value0");
           assertThat(message.getOrderingKey()).isEqualTo("key0");
-          this.pslMessageReceived = true;
-          log.atInfo().log("this.pslMessageReceived: " + this.pslMessageReceived);
+          this.pslMessageReceived.set(true);
           consumer.ack();
         };
 
@@ -611,7 +609,7 @@ public class StandaloneIT extends Base {
       // Shut down the subscriber after 3 minutes. Stop receiving messages.
       subscriber.stopAsync();
     }
-    assertThat(this.pslMessageReceived).isTrue();
+    assertThat(this.pslMessageReceived.get()).isTrue();
   }
 
   @Test(timeout = 5 * 60 * 1000L)
