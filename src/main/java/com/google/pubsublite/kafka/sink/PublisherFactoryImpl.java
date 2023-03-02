@@ -18,11 +18,12 @@ package com.google.pubsublite.kafka.sink;
 import static com.google.cloud.pubsublite.internal.ExtractStatus.toCanonical;
 import static com.google.cloud.pubsublite.internal.wire.ServiceClients.addDefaultSettings;
 import static com.google.cloud.pubsublite.internal.wire.ServiceClients.getCallContext;
-import static com.google.pubsublite.kafka.sink.Constants.PUBSUBLITE_KAFKA_SINK_CONNECTOR_NAME;
 
 import com.google.api.gax.rpc.ApiCallContext;
 import com.google.api.gax.rpc.ApiException;
-import com.google.cloud.pubsublite.CloudZone;
+import com.google.cloud.pubsublite.AdminClient;
+import com.google.cloud.pubsublite.AdminClientSettings;
+import com.google.cloud.pubsublite.CloudRegionOrZone;
 import com.google.cloud.pubsublite.MessageMetadata;
 import com.google.cloud.pubsublite.Partition;
 import com.google.cloud.pubsublite.ProjectPath;
@@ -30,11 +31,11 @@ import com.google.cloud.pubsublite.TopicName;
 import com.google.cloud.pubsublite.TopicPath;
 import com.google.cloud.pubsublite.cloudpubsub.PublisherSettings;
 import com.google.cloud.pubsublite.internal.Publisher;
+import com.google.cloud.pubsublite.internal.wire.PartitionCountWatchingPublisherSettings;
 import com.google.cloud.pubsublite.internal.wire.PartitionPublisherFactory;
 import com.google.cloud.pubsublite.internal.wire.PubsubContext;
 import com.google.cloud.pubsublite.internal.wire.PubsubContext.Framework;
 import com.google.cloud.pubsublite.internal.wire.RoutingMetadata;
-import com.google.cloud.pubsublite.internal.wire.RoutingPublisherBuilder;
 import com.google.cloud.pubsublite.internal.wire.SinglePartitionPublisherBuilder;
 import com.google.cloud.pubsublite.v1.PublisherServiceClient;
 import com.google.cloud.pubsublite.v1.PublisherServiceSettings;
@@ -49,8 +50,7 @@ class PublisherFactoryImpl implements PublisherFactory {
   private PartitionPublisherFactory getPartitionPublisherFactory(TopicPath topic) {
 
     return new PartitionPublisherFactory() {
-
-      protected Optional<PublisherServiceClient> publisherServiceClient = Optional.empty();
+      private Optional<PublisherServiceClient> publisherServiceClient = Optional.empty();
 
       private synchronized PublisherServiceClient getServiceClient() throws ApiException {
         if (publisherServiceClient.isPresent()) return publisherServiceClient.get();
@@ -82,8 +82,7 @@ class PublisherFactoryImpl implements PublisherFactory {
                     responseStream -> {
                       ApiCallContext context =
                           getCallContext(
-                              PubsubContext.of(Framework.of(PUBSUBLITE_KAFKA_SINK_CONNECTOR_NAME)),
-                              RoutingMetadata.of(topic, partition));
+                              PubsubContext.of(FRAMEWORK), RoutingMetadata.of(topic, partition));
                       return client.publishCallable().splitCall(responseStream, context);
                     });
         return singlePartitionBuilder.build();
@@ -97,17 +96,27 @@ class PublisherFactoryImpl implements PublisherFactory {
   @Override
   public Publisher<MessageMetadata> newPublisher(Map<String, String> params) {
     Map<String, ConfigValue> config = ConfigDefs.config().validateAll(params);
-    RoutingPublisherBuilder.Builder builder = RoutingPublisherBuilder.newBuilder();
+    CloudRegionOrZone location =
+        CloudRegionOrZone.parse(config.get(ConfigDefs.LOCATION_FLAG).value().toString());
+    PartitionCountWatchingPublisherSettings.Builder builder =
+        PartitionCountWatchingPublisherSettings.newBuilder();
     TopicPath topic =
         TopicPath.newBuilder()
             .setProject(
                 ProjectPath.parse("projects/" + config.get(ConfigDefs.PROJECT_FLAG).value())
                     .project())
-            .setLocation(CloudZone.parse(config.get(ConfigDefs.LOCATION_FLAG).value().toString()))
+            .setLocation(location)
             .setName(TopicName.of(config.get(ConfigDefs.TOPIC_NAME_FLAG).value().toString()))
             .build();
     builder.setTopic(topic);
     builder.setPublisherFactory(getPartitionPublisherFactory(topic));
-    return builder.build();
+    builder.setAdminClient(
+        AdminClient.create(
+            AdminClientSettings.newBuilder().setRegion(location.extractRegion()).build()));
+    if (OrderingMode.valueOf(config.get(ConfigDefs.ORDERING_MODE_FLAG).value().toString())
+        == OrderingMode.KAFKA) {
+      builder.setRoutingPolicyFactory(KafkaPartitionRoutingPolicy::new);
+    }
+    return builder.build().instantiate();
   }
 }

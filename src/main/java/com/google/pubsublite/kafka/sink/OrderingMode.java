@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google LLC
+ * Copyright 2023 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,9 @@
  */
 package com.google.pubsublite.kafka.sink;
 
-public final class Constants {
-
-  private Constants() {}
-
-  public static final String KAFKA_TOPIC_HEADER = "x-goog-pubsublite-source-kafka-topic";
-  public static final String KAFKA_PARTITION_HEADER = "x-goog-pubsublite-source-kafka-partition";
-  public static final String KAFKA_OFFSET_HEADER = "x-goog-pubsublite-source-kafka-offset";
-  public static final String KAFKA_EVENT_TIME_TYPE_HEADER =
-      "x-goog-pubsublite-source-kafka-event-time-type";
+public enum OrderingMode {
+  /* Order based on the standard Pub/Sub Lite logic. */
+  DEFAULT,
+  /* Send messages to the same partition index they were from in Kafka. */
+  KAFKA
 }

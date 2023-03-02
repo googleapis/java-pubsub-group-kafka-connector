@@ -25,6 +25,7 @@ final class ConfigDefs {
   static final String PROJECT_FLAG = "pubsublite.project";
   static final String LOCATION_FLAG = "pubsublite.location";
   static final String TOPIC_NAME_FLAG = "pubsublite.topic";
+  static final String ORDERING_MODE_FLAG = "pubsublite.ordering.mode";
 
   static ConfigDef config() {
     return new ConfigDef()
@@ -42,6 +43,12 @@ final class ConfigDefs {
             TOPIC_NAME_FLAG,
             ConfigDef.Type.STRING,
             Importance.HIGH,
-            "The name of the topic to which to publish.");
+            "The name of the topic to which to publish.")
+        .define(
+            ORDERING_MODE_FLAG,
+            ConfigDef.Type.STRING,
+            OrderingMode.DEFAULT.name(),
+            Importance.HIGH,
+            "The ordering mode to use for publishing to Pub/Sub Lite. If set to `KAFKA`, messages will be republished to the same partition index they were read from on the source topic. Note that this means the Pub/Sub Lite topic *must* have the same number of partitions as the source Kafka topic.");
   }
 }
