@@ -21,7 +21,9 @@ import static com.google.cloud.pubsublite.internal.wire.ServiceClients.getCallCo
 
 import com.google.api.gax.rpc.ApiCallContext;
 import com.google.api.gax.rpc.ApiException;
-import com.google.cloud.pubsublite.CloudZone;
+import com.google.cloud.pubsublite.AdminClient;
+import com.google.cloud.pubsublite.AdminClientSettings;
+import com.google.cloud.pubsublite.CloudRegionOrZone;
 import com.google.cloud.pubsublite.MessageMetadata;
 import com.google.cloud.pubsublite.Partition;
 import com.google.cloud.pubsublite.ProjectPath;
@@ -94,6 +96,8 @@ class PublisherFactoryImpl implements PublisherFactory {
   @Override
   public Publisher<MessageMetadata> newPublisher(Map<String, String> params) {
     Map<String, ConfigValue> config = ConfigDefs.config().validateAll(params);
+    CloudRegionOrZone location =
+        CloudRegionOrZone.parse(config.get(ConfigDefs.LOCATION_FLAG).value().toString());
     PartitionCountWatchingPublisherSettings.Builder builder =
         PartitionCountWatchingPublisherSettings.newBuilder();
     TopicPath topic =
@@ -101,11 +105,14 @@ class PublisherFactoryImpl implements PublisherFactory {
             .setProject(
                 ProjectPath.parse("projects/" + config.get(ConfigDefs.PROJECT_FLAG).value())
                     .project())
-            .setLocation(CloudZone.parse(config.get(ConfigDefs.LOCATION_FLAG).value().toString()))
+            .setLocation(location)
             .setName(TopicName.of(config.get(ConfigDefs.TOPIC_NAME_FLAG).value().toString()))
             .build();
     builder.setTopic(topic);
     builder.setPublisherFactory(getPartitionPublisherFactory(topic));
+    builder.setAdminClient(
+        AdminClient.create(
+            AdminClientSettings.newBuilder().setRegion(location.extractRegion()).build()));
     if (OrderingMode.valueOf(config.get(ConfigDefs.ORDERING_MODE_FLAG).value().toString())
         == OrderingMode.KAFKA) {
       builder.setRoutingPolicyFactory(KafkaPartitionRoutingPolicy::new);
