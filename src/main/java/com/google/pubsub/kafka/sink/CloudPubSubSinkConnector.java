@@ -233,13 +233,13 @@ public class CloudPubSubSinkConnector extends SinkConnector {
         .define(
             ConnectorUtils.GCP_CREDENTIALS_FILE_PATH_CONFIG,
             Type.STRING,
-            null,
+            "",
             Importance.HIGH,
             "The path to the GCP credentials file")
         .define(
             ConnectorUtils.GCP_CREDENTIALS_JSON_CONFIG,
             Type.STRING,
-            null,
+            "",
             Importance.HIGH,
             "GCP JSON credentials")
         .define(

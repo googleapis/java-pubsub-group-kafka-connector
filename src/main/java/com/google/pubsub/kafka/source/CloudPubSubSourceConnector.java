@@ -22,7 +22,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.pubsub.kafka.common.ConnectorCredentialsProvider;
 import com.google.pubsub.kafka.common.ConnectorUtils;
 import com.google.pubsub.v1.GetSubscriptionRequest;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -138,25 +137,11 @@ public class CloudPubSubSourceConnector extends SourceConnector {
   public void start(Map<String, String> props) {
     // Do a validation of configs here too so that we do not pass null objects to
     // verifySubscription().
-    config().parse(props);
-    String cpsProject = props.get(ConnectorUtils.CPS_PROJECT_CONFIG);
-    String cpsSubscription = props.get(CPS_SUBSCRIPTION_CONFIG);
-    String credentialsPath = props.get(ConnectorUtils.GCP_CREDENTIALS_FILE_PATH_CONFIG);
-    String credentialsJson = props.get(ConnectorUtils.GCP_CREDENTIALS_JSON_CONFIG);
-    ConnectorCredentialsProvider credentialsProvider = new ConnectorCredentialsProvider();
-    if (credentialsPath != null) {
-      try {
-        credentialsProvider.loadFromFile(credentialsPath);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    } else if (credentialsJson != null) {
-      try {
-        credentialsProvider.loadJson(credentialsJson);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
+    Map<String, Object> validated = config().parse(props);
+    String cpsProject = validated.get(ConnectorUtils.CPS_PROJECT_CONFIG).toString();
+    String cpsSubscription = validated.get(CPS_SUBSCRIPTION_CONFIG).toString();
+    ConnectorCredentialsProvider credentialsProvider =
+        ConnectorCredentialsProvider.fromConfig(validated);
 
     verifySubscription(cpsProject, cpsSubscription, credentialsProvider);
     this.props = props;
@@ -271,13 +256,13 @@ public class CloudPubSubSourceConnector extends SourceConnector {
         .define(
             ConnectorUtils.GCP_CREDENTIALS_FILE_PATH_CONFIG,
             Type.STRING,
-            null,
+            "",
             Importance.HIGH,
             "The path to the GCP credentials file")
         .define(
             ConnectorUtils.GCP_CREDENTIALS_JSON_CONFIG,
             Type.STRING,
-            null,
+            "",
             Importance.HIGH,
             "GCP JSON credentials")
         .define(

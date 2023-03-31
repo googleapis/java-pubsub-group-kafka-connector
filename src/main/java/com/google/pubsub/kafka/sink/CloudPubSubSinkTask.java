@@ -33,7 +33,6 @@ import com.google.pubsub.kafka.common.ConnectorUtils;
 import com.google.pubsub.kafka.sink.CloudPubSubSinkConnector.OrderingKeySource;
 import com.google.pubsub.v1.ProjectTopicName;
 import com.google.pubsub.v1.PubsubMessage;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -136,24 +135,7 @@ public class CloudPubSubSinkTask extends SinkTask {
     orderingKeySource =
         OrderingKeySource.getEnum(
             (String) validatedProps.get(CloudPubSubSinkConnector.ORDERING_KEY_SOURCE));
-    gcpCredentialsProvider = new ConnectorCredentialsProvider();
-    String credentialsPath =
-        (String) validatedProps.get(ConnectorUtils.GCP_CREDENTIALS_FILE_PATH_CONFIG);
-    String credentialsJson =
-        (String) validatedProps.get(ConnectorUtils.GCP_CREDENTIALS_JSON_CONFIG);
-    if (credentialsPath != null) {
-      try {
-        gcpCredentialsProvider.loadFromFile(credentialsPath);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    } else if (credentialsJson != null) {
-      try {
-        gcpCredentialsProvider.loadJson(credentialsJson);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
+    gcpCredentialsProvider = ConnectorCredentialsProvider.fromConfig(validatedProps);
     if (publisher == null) {
       // Only do this if we did not use the constructor.
       createPublisher();
