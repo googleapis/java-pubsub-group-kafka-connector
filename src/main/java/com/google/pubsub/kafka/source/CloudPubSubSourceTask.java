@@ -130,25 +130,9 @@ public class CloudPubSubSourceTask extends SourceTask {
         (Long)
             validatedProps.get(
                 CloudPubSubSourceConnector.CPS_STREAMING_PULL_MAX_MS_PER_ACK_EXTENSION);
-    String credentialsPath =
-        (String) validatedProps.get(ConnectorUtils.GCP_CREDENTIALS_FILE_PATH_CONFIG);
-    String credentialsJson =
-        (String) validatedProps.get(ConnectorUtils.GCP_CREDENTIALS_JSON_CONFIG);
-    ConnectorCredentialsProvider gcpCredentialsProvider;
-    if (credentialsPath != null) {
-      if (credentialsJson != null) {
-        throw new IllegalArgumentException(
-            "May not set both "
-                + ConnectorUtils.GCP_CREDENTIALS_FILE_PATH_CONFIG
-                + " and "
-                + ConnectorUtils.GCP_CREDENTIALS_JSON_CONFIG);
-      }
-      gcpCredentialsProvider = ConnectorCredentialsProvider.fromFile(credentialsPath);
-    } else if (credentialsJson != null) {
-      gcpCredentialsProvider = ConnectorCredentialsProvider.fromJson(credentialsJson);
-    } else {
-      gcpCredentialsProvider = ConnectorCredentialsProvider.fromDefault();
-    }
+    ConnectorCredentialsProvider gcpCredentialsProvider =
+        ConnectorCredentialsProvider.fromConfig(validatedProps);
+
     // Only do this if we did not set it through the constructor.
     if (subscriber == null) {
       if (useStreamingPull) {
