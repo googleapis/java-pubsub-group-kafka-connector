@@ -37,17 +37,21 @@ import com.google.cloud.pubsublite.internal.wire.PubsubContext;
 import com.google.cloud.pubsublite.internal.wire.PubsubContext.Framework;
 import com.google.cloud.pubsublite.internal.wire.RoutingMetadata;
 import com.google.cloud.pubsublite.internal.wire.SinglePartitionPublisherBuilder;
+import com.google.cloud.pubsublite.v1.AdminServiceClient;
+import com.google.cloud.pubsublite.v1.AdminServiceSettings;
 import com.google.cloud.pubsublite.v1.PublisherServiceClient;
 import com.google.cloud.pubsublite.v1.PublisherServiceSettings;
+import com.google.pubsub.kafka.common.ConnectorCredentialsProvider;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
-import org.apache.kafka.common.config.ConfigValue;
 
 class PublisherFactoryImpl implements PublisherFactory {
 
   private static final Framework FRAMEWORK = Framework.of("KAFKA_CONNECT");
 
-  private PartitionPublisherFactory getPartitionPublisherFactory(TopicPath topic) {
+  private PartitionPublisherFactory getPartitionPublisherFactory(
+      TopicPath topic, ConnectorCredentialsProvider credentialsProvider) {
 
     return new PartitionPublisherFactory() {
       private Optional<PublisherServiceClient> publisherServiceClient = Optional.empty();
@@ -61,9 +65,7 @@ class PublisherFactoryImpl implements PublisherFactory {
                       addDefaultSettings(
                           topic.location().extractRegion(),
                           PublisherServiceSettings.newBuilder()
-                              .setCredentialsProvider(
-                                  PublisherServiceSettings.defaultCredentialsProviderBuilder()
-                                      .build()))));
+                              .setCredentialsProvider(credentialsProvider))));
           return publisherServiceClient.get();
         } catch (Throwable t) {
           throw toCanonical(t).underlying;
@@ -95,25 +97,38 @@ class PublisherFactoryImpl implements PublisherFactory {
 
   @Override
   public Publisher<MessageMetadata> newPublisher(Map<String, String> params) {
-    Map<String, ConfigValue> config = ConfigDefs.config().validateAll(params);
+    Map<String, Object> config = ConfigDefs.config().parse(params);
+    ConnectorCredentialsProvider credentialsProvider =
+        ConnectorCredentialsProvider.fromConfig(config);
     CloudRegionOrZone location =
-        CloudRegionOrZone.parse(config.get(ConfigDefs.LOCATION_FLAG).value().toString());
+        CloudRegionOrZone.parse(config.get(ConfigDefs.LOCATION_FLAG).toString());
     PartitionCountWatchingPublisherSettings.Builder builder =
         PartitionCountWatchingPublisherSettings.newBuilder();
     TopicPath topic =
         TopicPath.newBuilder()
             .setProject(
-                ProjectPath.parse("projects/" + config.get(ConfigDefs.PROJECT_FLAG).value())
-                    .project())
+                ProjectPath.parse("projects/" + config.get(ConfigDefs.PROJECT_FLAG)).project())
             .setLocation(location)
-            .setName(TopicName.of(config.get(ConfigDefs.TOPIC_NAME_FLAG).value().toString()))
+            .setName(TopicName.of(config.get(ConfigDefs.TOPIC_NAME_FLAG).toString()))
             .build();
     builder.setTopic(topic);
-    builder.setPublisherFactory(getPartitionPublisherFactory(topic));
-    builder.setAdminClient(
-        AdminClient.create(
-            AdminClientSettings.newBuilder().setRegion(location.extractRegion()).build()));
-    if (OrderingMode.valueOf(config.get(ConfigDefs.ORDERING_MODE_FLAG).value().toString())
+    builder.setPublisherFactory(getPartitionPublisherFactory(topic, credentialsProvider));
+    try {
+      builder.setAdminClient(
+          AdminClient.create(
+              AdminClientSettings.newBuilder()
+                  .setRegion(location.extractRegion())
+                  .setServiceClient(
+                      AdminServiceClient.create(
+                          addDefaultSettings(
+                              location.extractRegion(),
+                              AdminServiceSettings.newBuilder()
+                                  .setCredentialsProvider(credentialsProvider))))
+                  .build()));
+    } catch (IOException e) {
+      throw new IllegalStateException(e);
+    }
+    if (OrderingMode.valueOf(config.get(ConfigDefs.ORDERING_MODE_FLAG).toString())
         == OrderingMode.KAFKA) {
       builder.setRoutingPolicyFactory(KafkaPartitionRoutingPolicy::new);
     }

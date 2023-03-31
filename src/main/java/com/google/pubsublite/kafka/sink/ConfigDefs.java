@@ -15,6 +15,7 @@
  */
 package com.google.pubsublite.kafka.sink;
 
+import com.google.pubsub.kafka.common.ConnectorUtils;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigDef.Importance;
 
@@ -49,6 +50,18 @@ final class ConfigDefs {
             ConfigDef.Type.STRING,
             OrderingMode.DEFAULT.name(),
             Importance.HIGH,
-            "The ordering mode to use for publishing to Pub/Sub Lite. If set to `KAFKA`, messages will be republished to the same partition index they were read from on the source topic. Note that this means the Pub/Sub Lite topic *must* have the same number of partitions as the source Kafka topic.");
+            "The ordering mode to use for publishing to Pub/Sub Lite. If set to `KAFKA`, messages will be republished to the same partition index they were read from on the source topic. Note that this means the Pub/Sub Lite topic *must* have the same number of partitions as the source Kafka topic.")
+        .define(
+            ConnectorUtils.GCP_CREDENTIALS_FILE_PATH_CONFIG,
+            ConfigDef.Type.STRING,
+            "",
+            Importance.HIGH,
+            "The path to the GCP credentials file")
+        .define(
+            ConnectorUtils.GCP_CREDENTIALS_JSON_CONFIG,
+            ConfigDef.Type.STRING,
+            "",
+            Importance.HIGH,
+            "GCP JSON credentials");
   }
 }

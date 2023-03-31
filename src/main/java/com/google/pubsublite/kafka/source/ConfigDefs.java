@@ -15,6 +15,7 @@
  */
 package com.google.pubsublite.kafka.source;
 
+import com.google.pubsub.kafka.common.ConnectorUtils;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigDef.Importance;
 
@@ -63,6 +64,18 @@ final class ConfigDefs {
             ConfigDef.Type.LONG,
             20_000_000,
             Importance.MEDIUM,
-            "The number of outstanding bytes per-partition allowed. Set to 20MB by default.");
+            "The number of outstanding bytes per-partition allowed. Set to 20MB by default.")
+        .define(
+            ConnectorUtils.GCP_CREDENTIALS_FILE_PATH_CONFIG,
+            ConfigDef.Type.STRING,
+            "",
+            Importance.HIGH,
+            "The path to the GCP credentials file")
+        .define(
+            ConnectorUtils.GCP_CREDENTIALS_JSON_CONFIG,
+            ConfigDef.Type.STRING,
+            "",
+            Importance.HIGH,
+            "GCP JSON credentials");
   }
 }

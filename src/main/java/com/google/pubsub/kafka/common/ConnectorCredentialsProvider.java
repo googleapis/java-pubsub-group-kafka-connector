@@ -23,29 +23,58 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 public class ConnectorCredentialsProvider implements CredentialsProvider {
+  private static final List<String> GCP_SCOPE =
+      Arrays.asList("https://www.googleapis.com/auth/cloud-platform");
 
-  private static final List<String> CPS_SCOPE =
-      Arrays.asList("https://www.googleapis.com/auth/pubsub");
+  CredentialsProvider impl;
 
-  GoogleCredentials credentials;
-
-  public void loadFromFile(String credentialPath) throws IOException {
-    this.credentials = GoogleCredentials.fromStream(new FileInputStream(credentialPath));
+  private ConnectorCredentialsProvider(CredentialsProvider impl) {
+    this.impl = impl;
   }
 
-  public void loadJson(String credentialsJson) throws IOException {
-    ByteArrayInputStream bs = new ByteArrayInputStream(credentialsJson.getBytes());
-    this.credentials = credentials = GoogleCredentials.fromStream(bs);
+  public static ConnectorCredentialsProvider fromConfig(Map<String, Object> config) {
+    String credentialsPath = config.get(ConnectorUtils.GCP_CREDENTIALS_FILE_PATH_CONFIG).toString();
+    String credentialsJson = config.get(ConnectorUtils.GCP_CREDENTIALS_JSON_CONFIG).toString();
+    if (!credentialsPath.isEmpty()) {
+      if (!credentialsJson.isEmpty()) {
+        throw new IllegalArgumentException(
+            "May not set both "
+                + ConnectorUtils.GCP_CREDENTIALS_FILE_PATH_CONFIG
+                + " and "
+                + ConnectorUtils.GCP_CREDENTIALS_JSON_CONFIG);
+      }
+      return ConnectorCredentialsProvider.fromFile(credentialsPath);
+    } else if (!credentialsJson.isEmpty()) {
+      return ConnectorCredentialsProvider.fromJson(credentialsJson);
+    } else {
+      return ConnectorCredentialsProvider.fromDefault();
+    }
+  }
+
+  public static ConnectorCredentialsProvider fromFile(String credentialPath) {
+    return new ConnectorCredentialsProvider(
+        () ->
+            GoogleCredentials.fromStream(new FileInputStream(credentialPath))
+                .createScoped(GCP_SCOPE));
+  }
+
+  public static ConnectorCredentialsProvider fromJson(String credentialsJson) {
+    return new ConnectorCredentialsProvider(
+        () ->
+            GoogleCredentials.fromStream(new ByteArrayInputStream(credentialsJson.getBytes()))
+                .createScoped(GCP_SCOPE));
+  }
+
+  public static ConnectorCredentialsProvider fromDefault() {
+    return new ConnectorCredentialsProvider(
+        () -> GoogleCredentials.getApplicationDefault().createScoped(GCP_SCOPE));
   }
 
   @Override
   public Credentials getCredentials() throws IOException {
-    if (this.credentials == null) {
-      return GoogleCredentials.getApplicationDefault().createScoped(this.CPS_SCOPE);
-    } else {
-      return this.credentials.createScoped(this.CPS_SCOPE);
-    }
+    return impl.getCredentials();
   }
 }

@@ -34,7 +34,6 @@ import com.google.pubsub.kafka.source.CloudPubSubSourceConnector.PartitionScheme
 import com.google.pubsub.v1.ProjectSubscriptionName;
 import com.google.pubsub.v1.PubsubMessage;
 import com.google.pubsub.v1.ReceivedMessage;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -114,11 +113,6 @@ public class CloudPubSubSourceTask extends SourceTask {
     useKafkaHeaders = (Boolean) validatedProps.get(CloudPubSubSourceConnector.USE_KAFKA_HEADERS);
     makeOrderingKeyAttribute =
         (Boolean) validatedProps.get(CloudPubSubSourceConnector.CPS_MAKE_ORDERING_KEY_ATTRIBUTE);
-    ConnectorCredentialsProvider gcpCredentialsProvider = new ConnectorCredentialsProvider();
-    String gcpCredentialsFilePath =
-        (String) validatedProps.get(ConnectorUtils.GCP_CREDENTIALS_FILE_PATH_CONFIG);
-    String credentialsJson =
-        (String) validatedProps.get(ConnectorUtils.GCP_CREDENTIALS_JSON_CONFIG);
     boolean useStreamingPull =
         (Boolean) validatedProps.get(CloudPubSubSourceConnector.CPS_STREAMING_PULL_ENABLED);
     long streamingPullBytes =
@@ -136,19 +130,9 @@ public class CloudPubSubSourceTask extends SourceTask {
         (Long)
             validatedProps.get(
                 CloudPubSubSourceConnector.CPS_STREAMING_PULL_MAX_MS_PER_ACK_EXTENSION);
-    if (gcpCredentialsFilePath != null) {
-      try {
-        gcpCredentialsProvider.loadFromFile(gcpCredentialsFilePath);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    } else if (credentialsJson != null) {
-      try {
-        gcpCredentialsProvider.loadJson(credentialsJson);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
+    ConnectorCredentialsProvider gcpCredentialsProvider =
+        ConnectorCredentialsProvider.fromConfig(validatedProps);
+
     // Only do this if we did not set it through the constructor.
     if (subscriber == null) {
       if (useStreamingPull) {
