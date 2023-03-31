@@ -47,7 +47,7 @@ public class ConnectorCredentialsProvider implements CredentialsProvider {
                 + ConnectorUtils.GCP_CREDENTIALS_JSON_CONFIG);
       }
       return ConnectorCredentialsProvider.fromFile(credentialsPath);
-    } else if (credentialsJson != null) {
+    } else if (!credentialsJson.isEmpty()) {
       return ConnectorCredentialsProvider.fromJson(credentialsJson);
     } else {
       return ConnectorCredentialsProvider.fromDefault();
