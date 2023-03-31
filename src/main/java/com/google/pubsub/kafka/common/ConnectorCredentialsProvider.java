@@ -29,10 +29,10 @@ public class ConnectorCredentialsProvider implements CredentialsProvider {
   private static final List<String> GCP_SCOPE =
       Arrays.asList("https://www.googleapis.com/auth/cloud-platform");
 
-  GoogleCredentials credentials;
+  CredentialsProvider impl;
 
-  private ConnectorCredentialsProvider(GoogleCredentials credentials) {
-    this.credentials = credentials.createScoped(GCP_SCOPE);
+  private ConnectorCredentialsProvider(CredentialsProvider impl) {
+    this.impl = impl;
   }
 
   public static ConnectorCredentialsProvider fromConfig(Map<String, Object> config) {
@@ -55,33 +55,26 @@ public class ConnectorCredentialsProvider implements CredentialsProvider {
   }
 
   public static ConnectorCredentialsProvider fromFile(String credentialPath) {
-    try {
-      return new ConnectorCredentialsProvider(
-          GoogleCredentials.fromStream(new FileInputStream(credentialPath)));
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Failed to load credentials.", e);
-    }
+    return new ConnectorCredentialsProvider(
+        () ->
+            GoogleCredentials.fromStream(new FileInputStream(credentialPath))
+                .createScoped(GCP_SCOPE));
   }
 
   public static ConnectorCredentialsProvider fromJson(String credentialsJson) {
-    try {
-      return new ConnectorCredentialsProvider(
-          GoogleCredentials.fromStream(new ByteArrayInputStream(credentialsJson.getBytes())));
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Failed to load credentials.", e);
-    }
+    return new ConnectorCredentialsProvider(
+        () ->
+            GoogleCredentials.fromStream(new ByteArrayInputStream(credentialsJson.getBytes()))
+                .createScoped(GCP_SCOPE));
   }
 
   public static ConnectorCredentialsProvider fromDefault() {
-    try {
-      return new ConnectorCredentialsProvider(GoogleCredentials.getApplicationDefault());
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Failed to load credentials.", e);
-    }
+    return new ConnectorCredentialsProvider(
+        () -> GoogleCredentials.getApplicationDefault().createScoped(GCP_SCOPE));
   }
 
   @Override
-  public Credentials getCredentials() {
-    return credentials;
+  public Credentials getCredentials() throws IOException {
+    return impl.getCredentials();
   }
 }
