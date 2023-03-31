@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.1.0](https://github.com/googleapis/java-pubsub-group-kafka-connector/compare/v1.0.0...v1.1.0) (2023-03-31)
+
+
+### Features
+
+* Add pubsublite sink support for credentials settings ([#251](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/251)) ([7290786](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/7290786e82db354f1d310c599f84150a7ec0ef8b))
+* Add pubsublite.ordering.mode to kafka connector ([#228](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/228)) ([c499c39](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/c499c395cef38f9bb4b52d157bc336bff0644b94))
+
+
+### Bug Fixes
+
+* **main:** Typo in README.md for PubSubLiteSourceConnector ([#242](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/242)) ([d881eaf](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/d881eafef9bf5ece2391a75bc3d2cb6208a20ba9))
+
+
+### Dependencies
+
+* Update dependency com.google.cloud:google-cloud-shared-dependencies to v3.4.0 ([#232](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/232)) ([f10f9a6](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/f10f9a6546eb6ea65b61fbbe4538edae81b524ab))
+* Update dependency com.google.cloud:google-cloud-shared-dependencies to v3.5.0 ([#244](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/244)) ([435cd98](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/435cd98e3ae81f3d698e174782ac81199bdf756f))
+* Update dependency com.google.cloud:google-cloud-shared-dependencies to v3.6.0 ([#250](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/250)) ([888d3d9](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/888d3d95ea01ae1535e6aba47fa71c6cb0f0e7e1))
+* Update dependency org.slf4j:slf4j-api to v2.0.6 ([#230](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/230)) ([9dec71b](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/9dec71b8df9acdd738b4738ee060b13ff602e86b))
+* Update dependency org.slf4j:slf4j-api to v2.0.7 ([#243](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/243)) ([1e1c336](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/1e1c33666ee1e0ef3fd45684054dcf25216004f8))
+
 ## [1.0.0](https://github.com/googleapis/java-pubsub-group-kafka-connector/compare/v0.1.5...v1.0.0) (2022-11-18)
 
 
