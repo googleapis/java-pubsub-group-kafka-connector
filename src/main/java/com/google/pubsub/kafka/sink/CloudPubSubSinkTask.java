@@ -81,6 +81,8 @@ public class CloudPubSubSinkTask extends SinkTask {
   private boolean includeMetadata;
   private boolean includeHeaders;
   private OrderingKeySource orderingKeySource;
+  private boolean enableCompression;
+  private long compressionBytesThreshold;
   private ConnectorCredentialsProvider gcpCredentialsProvider;
   private com.google.cloud.pubsub.v1.Publisher publisher;
 
@@ -135,6 +137,9 @@ public class CloudPubSubSinkTask extends SinkTask {
     orderingKeySource =
         OrderingKeySource.getEnum(
             (String) validatedProps.get(CloudPubSubSinkConnector.ORDERING_KEY_SOURCE));
+    enableCompression = (Boolean) validatedProps.get(CloudPubSubSinkConnector.ENABLE_COMPRESSION);
+    compressionBytesThreshold =
+        (Long) validatedProps.get(CloudPubSubSinkConnector.COMPRESSION_BYTES_THRESHOLD);
     gcpCredentialsProvider = ConnectorCredentialsProvider.fromConfig(validatedProps);
     if (publisher == null) {
       // Only do this if we did not use the constructor.
@@ -412,6 +417,10 @@ public class CloudPubSubSinkTask extends SinkTask {
             .setEndpoint(cpsEndpoint);
     if (orderingKeySource != OrderingKeySource.NONE) {
       builder.setEnableMessageOrdering(true);
+    }
+    if (enableCompression) {
+      builder.setEnableCompression(true);
+      builder.setCompressionBytesThreshold(compressionBytesThreshold);
     }
     try {
       publisher = builder.build();
