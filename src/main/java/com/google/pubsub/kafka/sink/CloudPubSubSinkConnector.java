@@ -47,6 +47,8 @@ public class CloudPubSubSinkConnector extends SinkConnector {
   public static final String MAX_REQUEST_TIMEOUT_MS = "maxRequestTimeoutMs";
   public static final String MAX_TOTAL_TIMEOUT_MS = "maxTotalTimeoutMs";
   public static final String MAX_SHUTDOWN_TIMEOUT_MS = "maxShutdownTimeoutMs";
+  public static final String ENABLE_COMPRESSION = "enableCompression";
+  public static final String COMPRESSION_BYTES_THRESHOLD = "compressionBytesThreshold";
   public static final int DEFAULT_MAX_BUFFER_SIZE = 100;
   public static final long DEFAULT_MAX_BUFFER_BYTES = 9500000L;
   public static final int DEFAULT_DELAY_THRESHOLD_MS = 100;
@@ -61,6 +63,8 @@ public class CloudPubSubSinkConnector extends SinkConnector {
   public static final String PUBLISH_KAFKA_HEADERS = "headers.publish";
   public static final String ORDERING_KEY_SOURCE = "orderingKeySource";
   public static final String DEFAULT_ORDERING_KEY_SOURCE = "none";
+  public static final boolean DEFAULT_ENABLE_COMPRESSION = false;
+  public static final long DEFAULT_COMPRESSION_BYTES_THRESHOLD = 240L;
 
   /** Defines the accepted values for the {@link #ORDERING_KEY_SOURCE}. */
   public enum OrderingKeySource {
@@ -250,6 +254,20 @@ public class CloudPubSubSinkConnector extends SinkConnector {
             Importance.MEDIUM,
             "What to use to populate the Pub/Sub message ordering key. Possible values are "
                 + "\"none\", \"key\", or \"partition\".")
+        .define(
+            ENABLE_COMPRESSION,
+            Type.BOOLEAN,
+            DEFAULT_ENABLE_COMPRESSION,
+            Importance.MEDIUM,
+            "When \"true\", use gRPC Gzip compression on publish requests before sending them "
+                + "to Cloud Pub/Sub.")
+        .define(
+            COMPRESSION_BYTES_THRESHOLD,
+            Type.LONG,
+            DEFAULT_COMPRESSION_BYTES_THRESHOLD,
+            Importance.MEDIUM,
+            "The number of bytes at which to compress a request when publishing to  "
+                + "Cloud Pub/Sub. Only takes effect if \"enableCompression\" is \"true\".")
         .define(
             ConnectorUtils.CPS_ENDPOINT,
             Type.STRING,
