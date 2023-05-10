@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/googleapis/java-pubsub-group-kafka-connector/compare/v1.1.0...v1.2.0) (2023-05-10)
+
+
+### Features
+
+* Add the ability to set gRPC compression in the CPS sink connector. ([#259](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/259)) ([ad1e72b](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/ad1e72b7a09d6034c5ec0009131f39aaef236a50))
+
 ## [1.1.0](https://github.com/googleapis/java-pubsub-group-kafka-connector/compare/v1.0.0...v1.1.0) (2023-03-31)
 
 
