@@ -21,6 +21,7 @@ import com.google.cloud.pubsub.v1.stub.SubscriberStubSettings;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.pubsub.kafka.common.ConnectorCredentialsProvider;
 import com.google.pubsub.kafka.common.ConnectorUtils;
+import com.google.pubsub.kafka.common.Version;
 import com.google.pubsub.v1.GetSubscriptionRequest;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,7 +32,6 @@ import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigDef.Importance;
 import org.apache.kafka.common.config.ConfigDef.Type;
 import org.apache.kafka.common.config.ConfigException;
-import org.apache.kafka.common.utils.AppInfoParser;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.source.SourceConnector;
@@ -130,7 +130,7 @@ public class CloudPubSubSourceConnector extends SourceConnector {
 
   @Override
   public String version() {
-    return AppInfoParser.getVersion();
+    return Version.version();
   }
 
   @Override
