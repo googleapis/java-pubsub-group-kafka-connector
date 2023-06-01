@@ -16,16 +16,16 @@
 package com.google.pubsublite.kafka.common;
 
 public class Version {
-    private static String version = "unknown";
+  private static String version = "unknown";
 
-    static {
-        String implementationVersion = Version.class.getPackage().getImplementationVersion();
-        if (implementationVersion != null) {
-            version = implementationVersion;
-        }
+  static {
+    String implementationVersion = Version.class.getPackage().getImplementationVersion();
+    if (implementationVersion != null) {
+      version = implementationVersion;
     }
+  }
 
-    public static String version() {
-        return version;
-    }
+  public static String version() {
+    return version;
+  }
 }

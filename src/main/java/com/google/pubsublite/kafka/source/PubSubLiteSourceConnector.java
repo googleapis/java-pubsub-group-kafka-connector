@@ -15,11 +15,10 @@
  */
 package com.google.pubsublite.kafka.source;
 
+import com.google.pubsublite.kafka.common.Version;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import com.google.pubsublite.kafka.common.Version;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.source.SourceConnector;
