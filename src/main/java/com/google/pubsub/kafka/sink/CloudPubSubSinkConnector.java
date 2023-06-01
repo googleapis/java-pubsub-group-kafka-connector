@@ -16,6 +16,7 @@
 package com.google.pubsub.kafka.sink;
 
 import com.google.pubsub.kafka.common.ConnectorUtils;
+import com.google.pubsub.kafka.common.Version;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -25,7 +26,6 @@ import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigDef.Importance;
 import org.apache.kafka.common.config.ConfigDef.Type;
 import org.apache.kafka.common.config.ConfigException;
-import org.apache.kafka.common.utils.AppInfoParser;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.sink.SinkConnector;
 import org.slf4j.Logger;
@@ -117,7 +117,7 @@ public class CloudPubSubSinkConnector extends SinkConnector {
 
   @Override
   public String version() {
-    return AppInfoParser.getVersion();
+    return Version.version();
   }
 
   @Override
