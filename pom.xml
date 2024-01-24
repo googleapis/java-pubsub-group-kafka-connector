@@ -156,7 +156,7 @@
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
       <scope>test</scope>
-      <version>4.11.0</version>
+      <version>5.10.0</version>
     </dependency>
     <dependency>
       <groupId>com.google.truth</groupId>
