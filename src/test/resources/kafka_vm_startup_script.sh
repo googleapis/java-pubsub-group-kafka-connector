@@ -70,7 +70,7 @@ $KAFKA_DIR/bin/kafka-topics.sh --create --topic 'cps-source-test-kafka-topic' --
 $KAFKA_DIR/bin/kafka-topics.sh --create --topic 'psl-sink-test-topic' --bootstrap-server localhost:9092
 $KAFKA_DIR/bin/kafka-topics.sh --create --topic 'psl-source-test-topic' --bootstrap-server localhost:9092
 ## Start connectors
-$KAFKA_CONNECT_DIR/bin/connect-standalone.sh $KAFKA_DIR/config/connect-standalone.properties \
+$KAFKA_CONNECT_DIR/bin/connect-standalone.sh $KAFKA_CONNECT_DIR/config/connect-standalone.properties \
  $GCS_DIR/$CPS_SINK_CONNECTOR_PROPERTIES \
  $GCS_DIR/$CPS_SOURCE_CONNECTOR_PROPERTIES \
  $GCS_DIR/$PSL_SINK_CONNECTOR_PROPERTIES \
