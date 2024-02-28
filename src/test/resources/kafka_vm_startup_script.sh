@@ -48,7 +48,9 @@ sed -i "s/<pslZone>/$PSL_ZONE/g" $GCS_DIR/*.properties
 KAFKA_VERSION=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/kafka_version -H "Metadata-Flavor: Google")
 SCALA_VERSION=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/scala_version -H "Metadata-Flavor: Google")
 KAFKA_URL="https://archive.apache.org/dist/kafka/$KAFKA_VERSION/kafka_$SCALA_VERSION-$KAFKA_VERSION.tgz"
+KAFKA_CONNECT_URL="https://archive.apache.org/dist/kafka/3.2.3/kafka_2.13-3.2.3.tgz"
 KAFKA_DIR="kafka_$SCALA_VERSION-$KAFKA_VERSION"
+KAFKA_CONNECT_DIR="kafka_2.13-3.2.3"
 EXTERNAL_IP=$(curl http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip -H "Metadata-Flavor: Google")
 
 wget $KAFKA_URL
@@ -59,14 +61,16 @@ $KAFKA_DIR/bin/zookeeper-server-start.sh $KAFKA_DIR/config/zookeeper.properties 
 $KAFKA_DIR/bin/kafka-server-start.sh $KAFKA_DIR/config/server.properties &
 
 # Run connectors
-sed -i "s@#plugin.path=@plugin.path=$(pwd)\/$GCS_DIR@g" $KAFKA_DIR/config/connect-standalone.properties
+wget $KAFKA_CONNECT_URL
+tar -xzf "$KAFKA_CONNECT_DIR.tgz"
+sed -i "s@#plugin.path=@plugin.path=$(pwd)\/$GCS_DIR@g" $KAFKA_CONNECT_DIR/config/connect-standalone.properties
 ## Create kafka topics for connectors
 $KAFKA_DIR/bin/kafka-topics.sh --create --topic 'cps-sink-test-kafka-topic' --bootstrap-server localhost:9092
 $KAFKA_DIR/bin/kafka-topics.sh --create --topic 'cps-source-test-kafka-topic' --bootstrap-server localhost:9092
 $KAFKA_DIR/bin/kafka-topics.sh --create --topic 'psl-sink-test-topic' --bootstrap-server localhost:9092
 $KAFKA_DIR/bin/kafka-topics.sh --create --topic 'psl-source-test-topic' --bootstrap-server localhost:9092
 ## Start connectors
-$KAFKA_DIR/bin/connect-standalone.sh $KAFKA_DIR/config/connect-standalone.properties \
+$KAFKA_CONNECT_DIR/bin/connect-standalone.sh $KAFKA_DIR/config/connect-standalone.properties \
  $GCS_DIR/$CPS_SINK_CONNECTOR_PROPERTIES \
  $GCS_DIR/$CPS_SOURCE_CONNECTOR_PROPERTIES \
  $GCS_DIR/$PSL_SINK_CONNECTOR_PROPERTIES \

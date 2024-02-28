@@ -161,8 +161,8 @@ public class Base {
         pslSourceConnectorPropertiesName.replace(".properties", runId + ".properties");
 
     // TODO: Get Kafka and Scala versions programmatically: {major}.{minor}.{patch}.
-    kafkaVersion = "3.2.3";
-    scalaVersion = "2.13";
+    kafkaVersion = "0.8.2.0";
+    scalaVersion = "2.10";
   }
 
   protected static void uploadGCS(Storage storage, String fileNameInGCS, String fileLoc)
