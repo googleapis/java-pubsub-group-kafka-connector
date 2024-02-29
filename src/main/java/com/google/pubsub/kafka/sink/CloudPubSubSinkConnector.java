@@ -65,6 +65,7 @@ public class CloudPubSubSinkConnector extends SinkConnector {
   public static final String DEFAULT_ORDERING_KEY_SOURCE = "none";
   public static final boolean DEFAULT_ENABLE_COMPRESSION = false;
   public static final long DEFAULT_COMPRESSION_BYTES_THRESHOLD = 240L;
+  public static final String WRITE_MESSAGE_IN_JSON_FORMAT = "messageToJson";
 
   /** Defines the accepted values for the {@link #ORDERING_KEY_SOURCE}. */
   public enum OrderingKeySource {
@@ -273,7 +274,13 @@ public class CloudPubSubSinkConnector extends SinkConnector {
             Type.STRING,
             ConnectorUtils.CPS_DEFAULT_ENDPOINT,
             Importance.LOW,
-            "The Pub/Sub endpoint to use.");
+            "The Pub/Sub endpoint to use.")
+            .define(WRITE_MESSAGE_IN_JSON_FORMAT,
+                    Type.BOOLEAN,
+                    false,
+                    Importance.MEDIUM,
+                    "Convert messages to valid Json. Use if messages are in Json format "
+                            + "without a Json schema");
   }
 
   @Override

@@ -27,6 +27,7 @@ import com.google.api.gax.core.FixedExecutorProvider;
 import com.google.api.gax.retrying.RetrySettings;
 import com.google.cloud.pubsub.v1.Publisher;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.gson.Gson;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.kafka.common.ConnectorCredentialsProvider;
 import com.google.pubsub.kafka.common.ConnectorUtils;
@@ -85,6 +86,8 @@ public class CloudPubSubSinkTask extends SinkTask {
   private long compressionBytesThreshold;
   private ConnectorCredentialsProvider gcpCredentialsProvider;
   private com.google.cloud.pubsub.v1.Publisher publisher;
+  private boolean toJson;
+  private Gson gson;
 
   /** Holds a list of the publishing futures that have not been processed for a single partition. */
   private class OutstandingFuturesForPartition {
@@ -137,6 +140,7 @@ public class CloudPubSubSinkTask extends SinkTask {
     orderingKeySource =
         OrderingKeySource.getEnum(
             (String) validatedProps.get(CloudPubSubSinkConnector.ORDERING_KEY_SOURCE));
+    toJson = (Boolean) validatedProps.get(CloudPubSubSinkConnector.WRITE_MESSAGE_IN_JSON_FORMAT);
     enableCompression = (Boolean) validatedProps.get(CloudPubSubSinkConnector.ENABLE_COMPRESSION);
     compressionBytesThreshold =
         (Long) validatedProps.get(CloudPubSubSinkConnector.COMPRESSION_BYTES_THRESHOLD);
@@ -144,6 +148,9 @@ public class CloudPubSubSinkTask extends SinkTask {
     if (publisher == null) {
       // Only do this if we did not use the constructor.
       createPublisher();
+    }
+    if (toJson) {
+      this.gson = new Gson();
     }
     log.info("Start CloudPubSubSinkTask");
   }
@@ -220,7 +227,12 @@ public class CloudPubSubSinkTask extends SinkTask {
       return null;
     }
     if (schema == null) {
-      String str = value.toString();
+      String str;
+      if (toJson) {
+        str = gson.toJson(value);
+      } else {
+        str = value.toString();
+      }
       return ByteString.copyFromUtf8(str);
     }
     Schema.Type t = schema.type();
