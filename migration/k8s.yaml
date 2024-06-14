@@ -1,0 +1,44 @@
+---
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: "<workflow_name>"
+  namespace: "default"
+  labels:
+    app: "<workflow_name>"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: "<workflow_name>"
+  template:
+    metadata:
+      labels:
+        app: "<workflow_name>"
+    spec:
+      serviceAccountName: <gke_service_account>
+      containers:
+      - name: "psl-to-gmk-1"
+        image: "gcr.io/<gcp_project>/psl-to-gmk:latest"
+---
+apiVersion: "autoscaling/v2"
+kind: "HorizontalPodAutoscaler"
+metadata:
+  name: "<workflow_name>-hpa-iwbr"
+  namespace: "default"
+  labels:
+    app: "<workflow_name>"
+spec:
+  scaleTargetRef:
+    kind: "Deployment"
+    name: "<workflow_name>"
+    apiVersion: "apps/v1"
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+  - type: "Resource"
+    resource:
+      name: "cpu"
+      target:
+        type: "Utilization"
+        averageUtilization: 80
