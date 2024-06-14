@@ -14,7 +14,7 @@
 # Dockerfile for building Kafka Connect image
 DOCKER_IMAGE_NAME="psl-to-gmk"
 DOCKER_IMAGE_TAG=latest
-GCP_PROJECT="dataflow-testing-311516"
+GCP_PROJECT="<GCP Project>"
 DOCKER_REPOSTORY=gcr.io/${GCP_PROJECT}
 docker tag ${DOCKER_IMAGE_NAME} \
 ${DOCKER_REPOSTORY}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
