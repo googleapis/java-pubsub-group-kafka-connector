@@ -1,0 +1,1 @@
+<kafka connect group id(unique per worker group) for the kafka connect workers in distributed mode>

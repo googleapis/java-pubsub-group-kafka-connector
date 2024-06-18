@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+${PSL_JOB_STARTUP_SCRIPT} &
+
+START_SCRIPT="${KAFKA_HOME}/bin/connect-distributed.sh"
+KAFKA_REST_ADVERTISED_HOST_NAME="$(/sbin/ip -o -4 addr list eth0 | awk '{print $4}' | cut -d/ -f1)"
+KAFKA_CONNECT_WORKER_CLIENT_ID="$(hostname --fqdn)"
+sed -i -e "s#__KAFKA_REST_ADVERTISED_HOST_NAME__#${KAFKA_REST_ADVERTISED_HOST_NAME}#g; s#__KAFKA_CONNECT_WORKER_CLIENT_ID__#${KAFKA_CONNECT_WORKER_CLIENT_ID}#g" \
+    "${KAFKA_CONNECT_CONFIG_FILE}"
+${START_SCRIPT} ${KAFKA_CONNECT_CONFIG_FILE}

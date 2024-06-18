@@ -1,0 +1,11 @@
+{
+    "name": "__PUBSUB_LITE_JOB_NAME__",
+    "config": {
+        "connector.class": "com.google.pubsublite.kafka.source.PubSubLiteSourceConnector",
+        "tasks.max": "10",
+        "kafka.topic": "__KAFKA_SINK_TOPIC__",
+        "pubsublite.project": "__PUBSUB_LITE_GCP_PROJECT__",
+        "pubsublite.location": "__PUBSUB_LITE_GCP_LOCATION__",
+        "pubsublite.subscription": "__PUBSUB_LITE_GCP_SUBSCRIPTION__"
+        }
+}

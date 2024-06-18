@@ -1,0 +1,1 @@
+<GCP project that hosts the pubsub lite source subscription to be used for migrating the pubsub lite topic to sink kafka topic> 
