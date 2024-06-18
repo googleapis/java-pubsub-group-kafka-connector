@@ -15,11 +15,11 @@
  */
 package com.google.pubsublite.kafka.source;
 
+import com.google.pubsublite.kafka.common.Version;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.kafka.common.config.ConfigDef;
-import org.apache.kafka.common.utils.AppInfoParser;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.source.SourceConnector;
 
@@ -29,7 +29,7 @@ public class PubSubLiteSourceConnector extends SourceConnector {
 
   @Override
   public String version() {
-    return AppInfoParser.getVersion();
+    return Version.version();
   }
 
   @Override
