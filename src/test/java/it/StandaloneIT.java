@@ -127,7 +127,7 @@ public class StandaloneIT extends Base {
               .build();
 
   private static final String kafkaPslSinkZonalTestTopic = "psl-sink-test-topic-zonal";
- // private static final String kafkaPslSinkRegionalTestTopic = "psl-sink-test-topic-regional";
+  private static final String kafkaPslSinkRegionalTestTopic = "psl-sink-test-topic-regional";
   private static final String pslSinkTopicId = "psl-sink-topic-" + runId;
   private static final TopicPath pslSinkZonalTopicPath =
       TopicPath.newBuilder()
@@ -155,7 +155,7 @@ public class StandaloneIT extends Base {
               .setLocation(CloudRegion.of(region))
               .build();
   
-//   private static final String kafkaPslSourceZonalTestTopic = "psl-source-test-topic-zonal";
+  private static final String kafkaPslSourceZonalTestTopic = "psl-source-test-topic-zonal";
   private static final String kafkaPslSourceRegionalTestTopic = "psl-source-test-topic-regional";
   private static final String pslSourceTopicId = "psl-source-topic-" + runId;
   private static final TopicPath pslSourceZonalTopicPath =
@@ -213,7 +213,7 @@ public class StandaloneIT extends Base {
     uploadGCSResources();
     setupCpsResources();
     setupPslZonalResources();
-    // setupPslRegionalResources();
+    setupPslRegionalResources();
     setupGceInstance();
   }
 
@@ -658,10 +658,10 @@ public class StandaloneIT extends Base {
     assertThat(this.pslMessageReceived.get()).isTrue();
   }
 
-  //@Test(timeout = 5 * 60 * 1000L)
- // public void testPslZonalSourceConnector() throws Exception {
- //   testPslSourceConnector(pslSinkZonalTopicPath, kafkaPslSourceZonalTestTopic);
- // }
+  @Test(timeout = 5 * 60 * 1000L)
+  public void testPslZonalSourceConnector() throws Exception {
+    testPslSourceConnector(pslSinkZonalTopicPath, kafkaPslSourceZonalTestTopic);
+  }
  
   @Test(timeout = 5 * 60 * 1000L)
   public void testPslRegionalSourceConnector() throws Exception {
