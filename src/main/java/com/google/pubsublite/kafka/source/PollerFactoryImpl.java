@@ -35,7 +35,8 @@ class PollerFactoryImpl implements PollerFactory {
             .setProject(
                 ProjectPath.parse("projects/" + config.get(ConfigDefs.PROJECT_FLAG).value())
                     .project())
-            .setLocation(CloudRegionOrZone.parse(config.get(ConfigDefs.LOCATION_FLAG).value().toString()))
+            .setLocation(
+                CloudRegionOrZone.parse(config.get(ConfigDefs.LOCATION_FLAG).value().toString()))
             .setName(
                 SubscriptionName.of(
                     config.get(ConfigDefs.SUBSCRIPTION_NAME_FLAG).value().toString()))
