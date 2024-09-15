@@ -30,14 +30,14 @@
       <dependency>
         <groupId>com.google.cloud</groupId>
         <artifactId>google-cloud-shared-dependencies</artifactId>
-        <version>3.6.0</version>
+        <version>3.34.0</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>com.google.cloud</groupId>
         <artifactId>libraries-bom</artifactId>
-        <version>26.11.0</version>
+        <version>26.44.0</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -45,7 +45,17 @@
       <dependency>
         <groupId>com.google.api.grpc</groupId>
         <artifactId>grpc-google-cloud-pubsublite-v1</artifactId>
-        <version>1.11.1</version>
+        <version>1.14.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.auto.value</groupId>
+        <artifactId>auto-value-annotations</artifactId>
+        <version>1.11.0</version>
+      </dependency>
+      <dependency>
+        <groupId>org.xerial.snappy</groupId>
+        <artifactId>snappy-java</artifactId>
+        <version>1.1.10.6</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -55,13 +65,13 @@
       <groupId>com.google.api.grpc</groupId>
       <artifactId>proto-google-cloud-pubsublite-v1</artifactId>
       <!--TODO(dpcollins-google): remove explicit version !-->
-      <version>1.11.1</version>
+      <version>1.14.0</version>
     </dependency>
     <dependency>
       <groupId>com.google.cloud</groupId>
       <artifactId>google-cloud-pubsublite</artifactId>
       <!--TODO(dpcollins-google): remove explicit version !-->
-      <version>1.11.1</version>
+      <version>1.14.0</version>
     </dependency>
     <dependency>
       <groupId>com.google.cloud</groupId>
@@ -85,7 +95,7 @@
     <dependency>
       <groupId>com.google.flogger</groupId>
       <artifactId>google-extensions</artifactId>
-      <version>0.7.4</version>
+      <version>0.8</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
