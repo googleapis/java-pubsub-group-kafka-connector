@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.3.0](https://github.com/googleapis/java-pubsub-group-kafka-connector/compare/v1.2.0...v1.3.0) (2024-10-07)
+
+
+### Features
+
+* Add kafka migration ([#330](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/330)) ([58e7555](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/58e7555831e63264d0b7fda19291629105a085ff))
+
+
+### Bug Fixes
+
+* Report connector package version instead of kafka connect version ([#266](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/266)) ([33f2761](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/33f2761b303f267b4fa6af9e2acf88a71b210f4b))
+
+
+### Dependencies
+
+* Update dependency org.apache.commons:commons-lang3 to v3.14.0 ([#302](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/302)) ([d5cad34](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/d5cad346dfd68c5c86186bbc44a5acf2174760cb))
+* Update dependency org.slf4j:slf4j-api to v2.0.13 ([#299](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/299)) ([bc00e06](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/bc00e06b260de129dc6c0e5e2d36c6fa0e393ffa))
+* Update kafka-clients and pubsublite-kafka and pubsublite clients ([#353](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/353)) ([773f67b](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/773f67b2bd8c20c9620b05c0c09a334ceac22567))
+
 ## [1.2.0](https://github.com/googleapis/java-pubsub-group-kafka-connector/compare/v1.1.0...v1.2.0) (2023-05-10)
 
 
