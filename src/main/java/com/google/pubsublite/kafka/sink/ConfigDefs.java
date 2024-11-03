@@ -62,6 +62,12 @@ final class ConfigDefs {
             ConfigDef.Type.STRING,
             "",
             Importance.HIGH,
-            "GCP JSON credentials");
+            "GCP JSON credentials")
+        .define(
+            ConnectorUtils.GCP_CREDENTIALS_CLASS_CONFIG,
+            Type.STRING,
+            "",
+            Importance.HIGH,
+            "Name of the class for custom credentials provider");
   }
 }
