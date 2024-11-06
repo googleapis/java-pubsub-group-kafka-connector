@@ -15,7 +15,7 @@
   <parent>
     <groupId>com.google.cloud</groupId>
     <artifactId>google-cloud-shared-config</artifactId>
-    <version>1.8.0</version>
+    <version>1.11.3</version>
   </parent>
 
   <properties>
@@ -30,22 +30,16 @@
       <dependency>
         <groupId>com.google.cloud</groupId>
         <artifactId>google-cloud-shared-dependencies</artifactId>
-        <version>3.20.0</version>
+        <version>3.39.0</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>com.google.cloud</groupId>
-        <artifactId>libraries-bom</artifactId>
-        <version>26.11.0</version>
+        <artifactId>google-cloud-bom</artifactId>
+        <version>0.231.0</version>
         <type>pom</type>
         <scope>import</scope>
-      </dependency>
-      <!--TODO(dpcollins-google): remove this !-->
-      <dependency>
-        <groupId>com.google.api.grpc</groupId>
-        <artifactId>grpc-google-cloud-pubsublite-v1</artifactId>
-        <version>1.12.1</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -54,25 +48,20 @@
     <dependency>
       <groupId>com.google.api.grpc</groupId>
       <artifactId>proto-google-cloud-pubsublite-v1</artifactId>
-      <!--TODO(dpcollins-google): remove explicit version !-->
-      <version>1.12.1</version>
     </dependency>
     <dependency>
       <groupId>com.google.cloud</groupId>
       <artifactId>google-cloud-pubsublite</artifactId>
-      <!--TODO(dpcollins-google): remove explicit version !-->
-      <version>1.12.1</version>
     </dependency>
     <dependency>
       <groupId>com.google.cloud</groupId>
       <artifactId>pubsublite-kafka</artifactId>
-      <version>1.2.1</version>
+      <version>1.2.2</version>
     </dependency>
     <dependency>
       <groupId>com.google.cloud</groupId>
       <artifactId>google-cloud-pubsub</artifactId>
     </dependency>
-    <!-- https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java -->
     <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
@@ -85,7 +74,7 @@
     <dependency>
       <groupId>com.google.flogger</groupId>
       <artifactId>google-extensions</artifactId>
-      <version>0.7.4</version>
+      <version>0.8</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
