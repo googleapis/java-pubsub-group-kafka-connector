@@ -336,6 +336,7 @@ public class CloudPubSubSinkTaskTest {
     partitionOffsets.put(new TopicPartition(KAFKA_TOPIC, 0), null);
     List<SinkRecord> records = getSampleRecords();
     ApiFuture<String> goodFuture = getSuccessfulPublishFuture();
+    when(goodFuture.isDone()).thenReturn(false);
     when(publisher.publish(any(PubsubMessage.class))).thenReturn(goodFuture);
     task.put(records);
     task.flush(partitionOffsets);
@@ -578,7 +579,9 @@ public class CloudPubSubSinkTaskTest {
     partitionOffsets.put(new TopicPartition(KAFKA_TOPIC, 0), null);
     List<SinkRecord> records = getSampleRecords();
     ApiFuture<String> badFuture = getFailedPublishFuture();
+    when(badFuture.isDone()).thenReturn(false);
     ApiFuture<String> goodFuture = getSuccessfulPublishFuture();
+    when(goodFuture.isDone()).thenReturn(false);
     when(publisher.publish(any(PubsubMessage.class)))
         .thenReturn(badFuture)
         .thenReturn(badFuture)
