@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.3.1](https://github.com/googleapis/java-pubsub-group-kafka-connector/compare/v1.3.0...v1.3.1) (2024-11-06)
+
+
+### Bug Fixes
+
+* An optimization in guava 33.3.0 broke our tests by not calling `addListener()` on futures which are already `isDone()`. Add mock call to make our futures not `isDone()` in some tests. ([0907353](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/0907353b27144e7bd2a57439efbb9ce2da304ab3))
+* MaxOutstandingMessages should be defined without maxOutstandingRequestBytes ([#349](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/349)) ([4c107d8](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/4c107d896930492a0794d0c133104d5574f92efc))
+
+
+### Dependencies
+
+* Depend on pubsublite libraries from google-cloud-bom ([0907353](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/0907353b27144e7bd2a57439efbb9ce2da304ab3))
+* Update flogger to 0.8 ([0907353](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/0907353b27144e7bd2a57439efbb9ce2da304ab3))
+* Update google-cloud-shared-config to 1.11.3 ([#357](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/357)) ([0907353](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/0907353b27144e7bd2a57439efbb9ce2da304ab3))
+* Update google-cloud-shared-dependencies to 3.39.0 ([0907353](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/0907353b27144e7bd2a57439efbb9ce2da304ab3))
+* Update pubsublite-kafka to 1.2.2 ([0907353](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/0907353b27144e7bd2a57439efbb9ce2da304ab3))
+* Use google-cloud-bom 0.231.0 instead of libraries-bom ([0907353](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/0907353b27144e7bd2a57439efbb9ce2da304ab3))
+
 ## [1.3.0](https://github.com/googleapis/java-pubsub-group-kafka-connector/compare/v1.2.0...v1.3.0) (2024-10-07)
 
 
