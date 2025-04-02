@@ -42,6 +42,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.connect.data.Field;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
@@ -364,5 +366,10 @@ public class CloudPubSubSourceTask extends SourceTask {
         },
         MoreExecutors.directExecutor());
     log.trace("Committed {}", ackId);
+  }
+
+  @Override
+  public void commitRecord(SourceRecord record, RecordMetadata metadata) {
+    this.commitRecord(record);
   }
 }
