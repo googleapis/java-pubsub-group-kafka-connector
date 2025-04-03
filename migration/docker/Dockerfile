@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 eclipse-temurin:21
+FROM --platform=linux/amd64 eclipse-temurin:24
 ARG KAFKA_VERSION="3.4.0"
 ARG KAFKA_CONNECT_VERSION="${KAFKA_VERSION}"
 ARG KAFKA_SCALA_VERSION="2.13"
