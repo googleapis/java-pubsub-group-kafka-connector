@@ -42,7 +42,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.connect.data.Field;
 import org.apache.kafka.connect.data.Schema;
