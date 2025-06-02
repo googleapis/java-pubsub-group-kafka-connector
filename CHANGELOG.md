@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.3.2](https://github.com/googleapis/java-pubsub-group-kafka-connector/compare/v1.3.1...v1.3.2) (2025-06-02)
+
+
+### Bug Fixes
+
+* CloudPubSubSourceTask fails to ACK messages in Kafka 4.0 due to deprecated commitRecord method ([#371](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/371)) ([e0f7744](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/e0f7744869e2881f42ed28e2dc64cd1fe01de53b))
+* Typo in comment ([#377](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/377)) ([1f2cfe5](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/1f2cfe5ecdab6b5405dd77755bdb9eb7761b5ff0))
+
+
+### Dependencies
+
+* Update dependency com.google.cloud:google-cloud-shared-dependencies to v3.45.1 ([#365](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/365)) ([abfb043](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/abfb043086886f0466d65fdee243aa6a7744881a))
+* Update dependency com.google.cloud:google-cloud-shared-dependencies to v3.46.2 ([#376](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/376)) ([63189e8](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/63189e81188733cf421354b053b64212d5453e9d))
+* Update dependency com.google.cloud:google-cloud-shared-dependencies to v3.47.0 ([#379](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/379)) ([4749491](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/4749491ea90a57a8cad10c4a2f2f73e9445b57dc))
+* Update dependency org.slf4j:slf4j-api to v2.0.17 ([#354](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/354)) ([e2e2049](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/e2e204961c429f3f359dbcfc38f097829a5948e6))
+* Update Kafka dependency version to v3.9.0 ([#378](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/378)) ([3847757](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/3847757fa25409fc185106c90f02920e00ff371f))
+
 ## [1.3.1](https://github.com/googleapis/java-pubsub-group-kafka-connector/compare/v1.3.0...v1.3.1) (2024-11-06)
 
 
