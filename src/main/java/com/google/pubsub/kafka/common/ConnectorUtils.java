@@ -39,6 +39,14 @@ public class ConnectorUtils {
   public static final String KAFKA_OFFSET_ATTRIBUTE = "kafka.offset";
   public static final String KAFKA_TIMESTAMP_ATTRIBUTE = "kafka.timestamp";
 
+  public static final String MICROMETER_ENABLED = "micrometer.enabled";
+  public static final String STATSD_HOST = "statsd.host";
+  public static final String STATSD_PORT = "statsd.port";
+  public static final String STATSD_STEP = "statsd.step";
+  public static final String DATADOG_SERVICE = "dd.service";
+  public static final String DATADOG_ENV = "dd.env";
+  public static final String DATADOG_TAGS = "dd.tags";
+
   private static ScheduledExecutorService newDaemonExecutor(String prefix) {
     return Executors.newScheduledThreadPool(
         Math.max(4, Runtime.getRuntime().availableProcessors() * 5),
