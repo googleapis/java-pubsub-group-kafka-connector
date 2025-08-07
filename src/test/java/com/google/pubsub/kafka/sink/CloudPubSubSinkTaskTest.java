@@ -754,6 +754,24 @@ public class CloudPubSubSinkTaskTest {
     assertEquals(expectedMessages, requestArgs);
   }
 
+  @Test
+  public void testCreatePublisherWithCustomHost() {
+    props.put(ConnectorUtils.CPS_HOST, "emulator");
+    props.put(ConnectorUtils.CPS_ENDPOINT, "custom-endpoint:443");
+    CloudPubSubSinkTask task = new CloudPubSubSinkTask(null);
+    task.start(props);
+    assertEquals(CloudPubSubSinkTask.class, task.getClass());
+  }
+
+  @Test
+  public void testCreatePublisherWithDefaultHost() {
+    props.remove(ConnectorUtils.CPS_HOST);
+    props.put(ConnectorUtils.CPS_ENDPOINT, "default-endpoint:443");
+    CloudPubSubSinkTask task = new CloudPubSubSinkTask(null);
+    task.start(props);
+    assertEquals(CloudPubSubSinkTask.class, task.getClass());
+  }
+
   /**
    * Get some PubsubMessage's which correspond to the SinkRecord's created in {@link
    * #getSampleRecords()}.
