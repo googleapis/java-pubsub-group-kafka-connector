@@ -247,6 +247,12 @@ public class CloudPubSubSinkConnector extends SinkConnector {
             Importance.HIGH,
             "GCP JSON credentials")
         .define(
+            ConnectorUtils.GCP_CREDENTIALS_CLASS_CONFIG,
+            Type.STRING,
+            "",
+            Importance.HIGH,
+            "Name of the class for custom credentials provider")
+        .define(
             ORDERING_KEY_SOURCE,
             Type.STRING,
             DEFAULT_ORDERING_KEY_SOURCE,
