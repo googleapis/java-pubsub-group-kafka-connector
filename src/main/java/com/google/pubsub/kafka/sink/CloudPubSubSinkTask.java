@@ -15,15 +15,14 @@
  */
 package com.google.pubsub.kafka.sink;
 
-import static com.google.pubsub.kafka.common.ConnectorUtils.getSystemExecutor;
-
 import com.google.api.core.ApiFuture;
 import com.google.api.core.ApiFutures;
 import com.google.api.core.SettableApiFuture;
 import com.google.api.gax.batching.BatchingSettings;
 import com.google.api.gax.batching.FlowControlSettings;
 import com.google.api.gax.batching.FlowController;
-import com.google.api.gax.core.FixedExecutorProvider;
+import com.google.api.gax.core.NoCredentialsProvider;
+import com.google.api.gax.grpc.InstantiatingGrpcChannelProvider;
 import com.google.api.gax.retrying.RetrySettings;
 import com.google.cloud.pubsub.v1.Publisher;
 import com.google.common.annotations.VisibleForTesting;
@@ -69,6 +68,7 @@ public class CloudPubSubSinkTask extends SinkTask {
   private String cpsProject;
   private String cpsTopic;
   private String cpsEndpoint;
+  private String cpsHost;
   private String messageBodyName;
   private long maxBufferSize;
   private long maxBufferBytes;
@@ -118,6 +118,7 @@ public class CloudPubSubSinkTask extends SinkTask {
     cpsProject = validatedProps.get(ConnectorUtils.CPS_PROJECT_CONFIG).toString();
     cpsTopic = validatedProps.get(ConnectorUtils.CPS_TOPIC_CONFIG).toString();
     cpsEndpoint = validatedProps.get(ConnectorUtils.CPS_ENDPOINT).toString();
+    cpsHost = validatedProps.get(ConnectorUtils.CPS_HOST).toString();
     maxBufferSize = (Integer) validatedProps.get(CloudPubSubSinkConnector.MAX_BUFFER_SIZE_CONFIG);
     maxBufferBytes = (Long) validatedProps.get(CloudPubSubSinkConnector.MAX_BUFFER_BYTES_CONFIG);
     maxOutstandingRequestBytes =
@@ -399,7 +400,6 @@ public class CloudPubSubSinkTask extends SinkTask {
 
     com.google.cloud.pubsub.v1.Publisher.Builder builder =
         com.google.cloud.pubsub.v1.Publisher.newBuilder(fullTopic)
-            .setCredentialsProvider(gcpCredentialsProvider)
             .setBatchingSettings(batchingSettings.build())
             .setRetrySettings(
                 RetrySettings.newBuilder()
@@ -412,9 +412,26 @@ public class CloudPubSubSinkTask extends SinkTask {
                     .setMaxRetryDelay(Duration.ofMillis(Long.MAX_VALUE))
                     .setInitialRpcTimeout(Duration.ofSeconds(10))
                     .setRpcTimeoutMultiplier(2)
-                    .build())
-            .setExecutorProvider(FixedExecutorProvider.create(getSystemExecutor()))
-            .setEndpoint(cpsEndpoint);
+                    .build());
+
+    log.info("CPS host value: {}", cpsHost);
+
+    if ("emulator".equals(cpsHost)) {
+      log.info("Using custom CPS host: {}", cpsHost);
+      builder.setCredentialsProvider(NoCredentialsProvider.create());
+      builder.setChannelProvider(
+          InstantiatingGrpcChannelProvider.newBuilder()
+              .setEndpoint(cpsEndpoint)
+              .setChannelConfigurator(channel -> channel.usePlaintext())
+              .build());
+    } else {
+      builder.setCredentialsProvider(gcpCredentialsProvider);
+      builder.setChannelProvider(
+          InstantiatingGrpcChannelProvider.newBuilder().setEndpoint(cpsEndpoint).build());
+    }
+
+    log.info("Final CPS endpoint = {}", cpsEndpoint);
+
     if (orderingKeySource != OrderingKeySource.NONE) {
       builder.setEnableMessageOrdering(true);
     }
