@@ -33,6 +33,7 @@ public class ConnectorUtils {
   public static final String CPS_ORDERING_KEY_ATTRIBUTE = "orderingKey";
   public static final String GCP_CREDENTIALS_FILE_PATH_CONFIG = "gcp.credentials.file.path";
   public static final String GCP_CREDENTIALS_JSON_CONFIG = "gcp.credentials.json";
+  public static final String GCP_CREDENTIALS_CLASS_CONFIG = "gcp.credentials.class";
   public static final String KAFKA_MESSAGE_CPS_BODY_FIELD = "message";
   public static final String KAFKA_TOPIC_ATTRIBUTE = "kafka.topic";
   public static final String KAFKA_PARTITION_ATTRIBUTE = "kafka.partition";
