@@ -273,7 +273,13 @@ public class CloudPubSubSinkConnector extends SinkConnector {
             Type.STRING,
             ConnectorUtils.CPS_DEFAULT_ENDPOINT,
             Importance.LOW,
-            "The Pub/Sub endpoint to use.");
+            "The Pub/Sub endpoint to use.")
+        .define(
+            ConnectorUtils.CPS_USE_EMULATOR,
+            Type.BOOLEAN,
+            false,
+            Importance.LOW,
+            "When true, use the Pub/Sub emulator instead of the production service.");
   }
 
   @Override
