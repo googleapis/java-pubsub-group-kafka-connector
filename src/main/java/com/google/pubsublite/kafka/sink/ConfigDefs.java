@@ -56,9 +56,21 @@ final class ConfigDefs {
             ConfigDef.Type.STRING,
             "",
             Importance.HIGH,
-            "The path to the GCP credentials file")
+            "Due to a potential security vulnerability, prefer " + ConnectorUtils.GCP_SA_CREDENTIALS_FILE_PATH_CONFIG)
         .define(
             ConnectorUtils.GCP_CREDENTIALS_JSON_CONFIG,
+            ConfigDef.Type.STRING,
+            "",
+            Importance.HIGH,
+            "Due to a potential security vulnerability, prefer " + ConnectorUtils.GCP_SA_CREDENTIALS_JSON_CONFIG)
+        .define(
+            ConnectorUtils.GCP_SA_CREDENTIALS_FILE_PATH_CONFIG,
+            ConfigDef.Type.STRING,
+            "",
+            Importance.HIGH,
+            "The path to the GCP credentials file")
+        .define(
+            ConnectorUtils.GCP_SA_CREDENTIALS_JSON_CONFIG,
             ConfigDef.Type.STRING,
             "",
             Importance.HIGH,
