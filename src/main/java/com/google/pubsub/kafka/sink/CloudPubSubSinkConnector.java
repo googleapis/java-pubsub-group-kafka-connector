@@ -239,13 +239,15 @@ public class CloudPubSubSinkConnector extends SinkConnector {
             Type.STRING,
             "",
             Importance.HIGH,
-            "Due to a potential security vulnerability, prefer " + ConnectorUtils.GCP_SA_CREDENTIALS_FILE_PATH_CONFIG)
+            "Due to a potential security vulnerability, prefer "
+                + ConnectorUtils.GCP_SA_CREDENTIALS_FILE_PATH_CONFIG)
         .define(
             ConnectorUtils.GCP_CREDENTIALS_JSON_CONFIG,
             Type.STRING,
             "",
             Importance.HIGH,
-            "Due to a potential security vulnerability, prefer " + ConnectorUtils.GCP_SA_CREDENTIALS_JSON_CONFIG)
+            "Due to a potential security vulnerability, prefer "
+                + ConnectorUtils.GCP_SA_CREDENTIALS_JSON_CONFIG)
         .define(
             ORDERING_KEY_SOURCE,
             Type.STRING,

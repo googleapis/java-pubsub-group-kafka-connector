@@ -56,13 +56,15 @@ final class ConfigDefs {
             ConfigDef.Type.STRING,
             "",
             Importance.HIGH,
-            "Due to a potential security vulnerability, prefer " + ConnectorUtils.GCP_SA_CREDENTIALS_FILE_PATH_CONFIG)
+            "Due to a potential security vulnerability, prefer "
+                + ConnectorUtils.GCP_SA_CREDENTIALS_FILE_PATH_CONFIG)
         .define(
             ConnectorUtils.GCP_CREDENTIALS_JSON_CONFIG,
             ConfigDef.Type.STRING,
             "",
             Importance.HIGH,
-            "Due to a potential security vulnerability, prefer " + ConnectorUtils.GCP_SA_CREDENTIALS_JSON_CONFIG)
+            "Due to a potential security vulnerability, prefer "
+                + ConnectorUtils.GCP_SA_CREDENTIALS_JSON_CONFIG)
         .define(
             ConnectorUtils.GCP_SA_CREDENTIALS_FILE_PATH_CONFIG,
             ConfigDef.Type.STRING,
