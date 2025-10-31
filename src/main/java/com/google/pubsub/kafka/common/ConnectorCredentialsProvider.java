@@ -37,6 +37,8 @@ public class ConnectorCredentialsProvider implements CredentialsProvider {
   }
 
   public static ConnectorCredentialsProvider fromConfig(Map<String, Object> config) {
+    // If both the `GCP_SA_CREDENTIALS_*` and `GCP_CREDENTIALS_FILE_*` properties are set,
+    // give preference to the `GCP_SA_CREDENTIALS_*` variants.
     String credentialsSAPath =
         config.get(ConnectorUtils.GCP_SA_CREDENTIALS_FILE_PATH_CONFIG).toString();
     String credentialsSAJson = config.get(ConnectorUtils.GCP_SA_CREDENTIALS_JSON_CONFIG).toString();
