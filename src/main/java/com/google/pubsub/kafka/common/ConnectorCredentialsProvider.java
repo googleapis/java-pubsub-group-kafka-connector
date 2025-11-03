@@ -44,13 +44,6 @@ public class ConnectorCredentialsProvider implements CredentialsProvider {
     String credentialsSAJson = config.get(ConnectorUtils.GCP_SA_CREDENTIALS_JSON_CONFIG).toString();
 
     if (!credentialsSAPath.isEmpty()) {
-      if (!credentialsSAJson.isEmpty()) {
-        throw new IllegalArgumentException(
-            "May not set both "
-                + ConnectorUtils.GCP_SA_CREDENTIALS_FILE_PATH_CONFIG
-                + " and "
-                + ConnectorUtils.GCP_SA_CREDENTIALS_JSON_CONFIG);
-      }
       return ConnectorCredentialsProvider.getServiceAccountFromFile(credentialsSAPath);
     } else if (!credentialsSAJson.isEmpty()) {
       return ConnectorCredentialsProvider.getServiceAccountFromJson(credentialsSAJson);
