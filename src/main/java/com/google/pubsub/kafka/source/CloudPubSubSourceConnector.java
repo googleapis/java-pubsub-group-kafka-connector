@@ -265,7 +265,7 @@ public class CloudPubSubSourceConnector extends SourceConnector {
             Type.STRING,
             "",
             Importance.HIGH,
-            "GCP JSON credentials")
+            "Path to the GCP Service Account (SA) JSON key file.")
         .define(
             ConnectorUtils.GCP_CREDENTIALS_JSON_CONFIG,
             Type.STRING,
@@ -278,7 +278,7 @@ public class CloudPubSubSourceConnector extends SourceConnector {
             Type.STRING,
             "",
             Importance.HIGH,
-            "GCP JSON credentials")
+            "The literal JSON content of the GCP Service Account (SA) key, passed as a string.")
         .define(
             USE_KAFKA_HEADERS,
             Type.BOOLEAN,

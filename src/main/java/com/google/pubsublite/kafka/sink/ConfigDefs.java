@@ -70,12 +70,12 @@ final class ConfigDefs {
             ConfigDef.Type.STRING,
             "",
             Importance.HIGH,
-            "The path to the GCP credentials file")
+            "Path to the GCP Service Account (SA) JSON key file.")
         .define(
             ConnectorUtils.GCP_SA_CREDENTIALS_JSON_CONFIG,
             ConfigDef.Type.STRING,
             "",
             Importance.HIGH,
-            "GCP JSON credentials");
+            "The literal JSON content of the GCP Service Account (SA) key, passed as a string.");
   }
 }
