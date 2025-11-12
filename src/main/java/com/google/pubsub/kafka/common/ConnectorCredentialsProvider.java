@@ -18,6 +18,7 @@ package com.google.pubsub.kafka.common;
 import com.google.api.gax.core.CredentialsProvider;
 import com.google.auth.Credentials;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.oauth2.ServiceAccountCredentials;
 import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -36,6 +37,18 @@ public class ConnectorCredentialsProvider implements CredentialsProvider {
   }
 
   public static ConnectorCredentialsProvider fromConfig(Map<String, Object> config) {
+    // If both the `GCP_SA_CREDENTIALS_*` and `GCP_CREDENTIALS_FILE_*` properties are set,
+    // give preference to the `GCP_SA_CREDENTIALS_*` variants.
+    String credentialsSAPath =
+        config.get(ConnectorUtils.GCP_SA_CREDENTIALS_FILE_PATH_CONFIG).toString();
+    String credentialsSAJson = config.get(ConnectorUtils.GCP_SA_CREDENTIALS_JSON_CONFIG).toString();
+
+    if (!credentialsSAPath.isEmpty()) {
+      return ConnectorCredentialsProvider.getServiceAccountFromFile(credentialsSAPath);
+    } else if (!credentialsSAJson.isEmpty()) {
+      return ConnectorCredentialsProvider.getServiceAccountFromJson(credentialsSAJson);
+    }
+
     String credentialsPath = config.get(ConnectorUtils.GCP_CREDENTIALS_FILE_PATH_CONFIG).toString();
     String credentialsJson = config.get(ConnectorUtils.GCP_CREDENTIALS_JSON_CONFIG).toString();
     if (!credentialsPath.isEmpty()) {
@@ -49,11 +62,34 @@ public class ConnectorCredentialsProvider implements CredentialsProvider {
       return ConnectorCredentialsProvider.fromFile(credentialsPath);
     } else if (!credentialsJson.isEmpty()) {
       return ConnectorCredentialsProvider.fromJson(credentialsJson);
-    } else {
-      return ConnectorCredentialsProvider.fromDefault();
     }
+
+    return ConnectorCredentialsProvider.fromDefault();
   }
 
+  public static ConnectorCredentialsProvider getServiceAccountFromFile(String credentialsSAPath) {
+    return new ConnectorCredentialsProvider(
+        () ->
+            ServiceAccountCredentials.fromStream(new FileInputStream(credentialsSAPath))
+                .createScoped(GCP_SCOPE));
+  }
+
+  public static ConnectorCredentialsProvider getServiceAccountFromJson(String credentialsSAJson) {
+    return new ConnectorCredentialsProvider(
+        () ->
+            ServiceAccountCredentials.fromStream(
+                    new ByteArrayInputStream(credentialsSAJson.getBytes()))
+                .createScoped(GCP_SCOPE));
+  }
+
+  /**
+   * Prefer {@link #getServiceAccountFromFile(String)} instead due to a potential security risk. See
+   * {@see <a
+   * href="https://cloud.google.com/docs/authentication/external/externally-sourced-credentials">documentation</a>}
+   * for more details. This method does not validate the credential configuration. The security risk
+   * occurs when a credential configuration is accepted from a source that is not under your control
+   * and used without validation on your side.
+   */
   public static ConnectorCredentialsProvider fromFile(String credentialPath) {
     return new ConnectorCredentialsProvider(
         () ->
@@ -61,6 +97,14 @@ public class ConnectorCredentialsProvider implements CredentialsProvider {
                 .createScoped(GCP_SCOPE));
   }
 
+  /**
+   * Prefer {@link #getServiceAccountFromJson(String)} instead due to a potential security risk. See
+   * {@see <a
+   * href="https://cloud.google.com/docs/authentication/external/externally-sourced-credentials">documentation</a>}
+   * for more details. This method does not validate the credential configuration. The security risk
+   * occurs when a credential configuration is accepted from a source that is not under your control
+   * and used without validation on your side.
+   */
   public static ConnectorCredentialsProvider fromJson(String credentialsJson) {
     return new ConnectorCredentialsProvider(
         () ->

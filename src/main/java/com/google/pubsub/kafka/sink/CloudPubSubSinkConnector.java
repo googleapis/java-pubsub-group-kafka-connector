@@ -239,13 +239,27 @@ public class CloudPubSubSinkConnector extends SinkConnector {
             Type.STRING,
             "",
             Importance.HIGH,
-            "The path to the GCP credentials file")
+            "Due to a potential security vulnerability, prefer "
+                + ConnectorUtils.GCP_SA_CREDENTIALS_FILE_PATH_CONFIG)
+        .define(
+            ConnectorUtils.GCP_SA_CREDENTIALS_FILE_PATH_CONFIG,
+            Type.STRING,
+            "",
+            Importance.HIGH,
+            "Path to the GCP Service Account (SA) JSON key file.")
         .define(
             ConnectorUtils.GCP_CREDENTIALS_JSON_CONFIG,
             Type.STRING,
             "",
             Importance.HIGH,
-            "GCP JSON credentials")
+            "Due to a potential security vulnerability, prefer "
+                + ConnectorUtils.GCP_SA_CREDENTIALS_JSON_CONFIG)
+        .define(
+            ConnectorUtils.GCP_SA_CREDENTIALS_JSON_CONFIG,
+            Type.STRING,
+            "",
+            Importance.HIGH,
+            "The literal JSON content of the GCP Service Account (SA) key, passed as a string.")
         .define(
             ORDERING_KEY_SOURCE,
             Type.STRING,
