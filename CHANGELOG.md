@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.3.3](https://github.com/googleapis/java-pubsub-group-kafka-connector/compare/v1.3.2...v1.3.3) (2025-12-06)
+
+
+### Bug Fixes
+
+* Add alternative property to directly create ServiceAccount ([#400](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/400)) ([2aa7a18](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/2aa7a182f740c6d33577c0f5a61fe098c86fddc6))
+* Fix description of cps.streamingPull.parallelStreams ([#396](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/396)) ([07df1e6](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/07df1e6dafa1741f33e51a5ef958226d5b77f75e))
+
+
+### Dependencies
+
+* Update dependency com.google.cloud:google-cloud-shared-dependencies to v3.49.1 ([#380](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/380)) ([c331e08](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/c331e08290512664b07fac69bb617b986295b80f))
+* Update dependency com.google.cloud:google-cloud-shared-dependencies to v3.51.0 ([#393](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/393)) ([29068e2](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/29068e2ac3294d506ac2c49932ea94c70b635e0c))
+* Update dependency org.apache.commons:commons-lang3 to v3.18.0 ([#360](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/360)) ([72f739e](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/72f739e80e8342babb5bf5e3038367414f205396))
+* Update dependency org.apache.commons:commons-lang3 to v3.19.0 ([#397](https://github.com/googleapis/java-pubsub-group-kafka-connector/issues/397)) ([7534e69](https://github.com/googleapis/java-pubsub-group-kafka-connector/commit/7534e69e91c29c2dc6a54c70c9d1add142c00bb2))
+
 ## [1.3.2](https://github.com/googleapis/java-pubsub-group-kafka-connector/compare/v1.3.1...v1.3.2) (2025-06-02)
 
 
