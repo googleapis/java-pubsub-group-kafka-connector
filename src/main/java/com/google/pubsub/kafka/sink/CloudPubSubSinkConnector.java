@@ -287,7 +287,13 @@ public class CloudPubSubSinkConnector extends SinkConnector {
             Type.STRING,
             ConnectorUtils.CPS_DEFAULT_ENDPOINT,
             Importance.LOW,
-            "The Pub/Sub endpoint to use.");
+            "The Pub/Sub endpoint to use.")
+        .define(
+            ConnectorUtils.CPS_HOST,
+            Type.STRING,
+            ConnectorUtils.CPS_DEFAULT_HOST,
+            Importance.LOW,
+            "The Pub/Sub cps host to use.");
   }
 
   @Override
