@@ -27,11 +27,11 @@ PSL_SOURCE_CONNECTOR_PROPERTIES=$(curl http://metadata.google.internal/computeMe
 GCS_DIR='gcs_resources'
 
 mkdir $GCS_DIR
-gsutil cp "gs://$GCS_BUCKET/$CPS_CONNECTOR_JAR" $GCS_DIR/
-gsutil cp "gs://$GCS_BUCKET/$CPS_SINK_CONNECTOR_PROPERTIES" $GCS_DIR/
-gsutil cp "gs://$GCS_BUCKET/$CPS_SOURCE_CONNECTOR_PROPERTIES" $GCS_DIR/
-gsutil cp "gs://$GCS_BUCKET/$PSL_SINK_CONNECTOR_PROPERTIES" $GCS_DIR/
-gsutil cp "gs://$GCS_BUCKET/$PSL_SOURCE_CONNECTOR_PROPERTIES" $GCS_DIR/
+gcloud storage cp "gs://$GCS_BUCKET/$CPS_CONNECTOR_JAR" $GCS_DIR/
+gcloud storage cp "gs://$GCS_BUCKET/$CPS_SINK_CONNECTOR_PROPERTIES" $GCS_DIR/
+gcloud storage cp "gs://$GCS_BUCKET/$CPS_SOURCE_CONNECTOR_PROPERTIES" $GCS_DIR/
+gcloud storage cp "gs://$GCS_BUCKET/$PSL_SINK_CONNECTOR_PROPERTIES" $GCS_DIR/
+gcloud storage cp "gs://$GCS_BUCKET/$PSL_SOURCE_CONNECTOR_PROPERTIES" $GCS_DIR/
 echo "Files in $GCS_DIR: "
 ls -l $GCS_DIR/
 
