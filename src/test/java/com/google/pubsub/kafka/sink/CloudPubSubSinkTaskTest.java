@@ -619,17 +619,19 @@ public class CloudPubSubSinkTaskTest {
   public void testEmulatorConfiguration() {
     CloudPubSubSinkConnector connector = new CloudPubSubSinkConnector();
     ConfigDef configDef = connector.config();
-    
-    assertTrue("Emulator configuration should be defined", 
+
+    assertTrue(
+        "Emulator configuration should be defined",
         configDef.names().contains(ConnectorUtils.CPS_USE_EMULATOR));
-    
+
     Map<String, String> emulatorProps = new HashMap<>();
     emulatorProps.put(ConnectorUtils.CPS_TOPIC_CONFIG, CPS_TOPIC);
     emulatorProps.put(ConnectorUtils.CPS_PROJECT_CONFIG, CPS_PROJECT);
     emulatorProps.put(ConnectorUtils.CPS_USE_EMULATOR, "true");
-    
+
     Map<String, Object> parsedProps = configDef.parse(emulatorProps);
-    assertTrue("Emulator should be enabled", (Boolean) parsedProps.get(ConnectorUtils.CPS_USE_EMULATOR));
+    assertTrue(
+        "Emulator should be enabled", (Boolean) parsedProps.get(ConnectorUtils.CPS_USE_EMULATOR));
   }
 
   @Test
