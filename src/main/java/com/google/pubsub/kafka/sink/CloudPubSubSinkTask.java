@@ -69,6 +69,7 @@ public class CloudPubSubSinkTask extends SinkTask {
   private String cpsProject;
   private String cpsTopic;
   private String cpsEndpoint;
+  private boolean useEmulator;
   private String messageBodyName;
   private long maxBufferSize;
   private long maxBufferBytes;
@@ -118,6 +119,7 @@ public class CloudPubSubSinkTask extends SinkTask {
     cpsProject = validatedProps.get(ConnectorUtils.CPS_PROJECT_CONFIG).toString();
     cpsTopic = validatedProps.get(ConnectorUtils.CPS_TOPIC_CONFIG).toString();
     cpsEndpoint = validatedProps.get(ConnectorUtils.CPS_ENDPOINT).toString();
+    useEmulator = (Boolean) validatedProps.get(ConnectorUtils.CPS_USE_EMULATOR);
     maxBufferSize = (Integer) validatedProps.get(CloudPubSubSinkConnector.MAX_BUFFER_SIZE_CONFIG);
     maxBufferBytes = (Long) validatedProps.get(CloudPubSubSinkConnector.MAX_BUFFER_BYTES_CONFIG);
     maxOutstandingRequestBytes =
@@ -399,7 +401,6 @@ public class CloudPubSubSinkTask extends SinkTask {
 
     com.google.cloud.pubsub.v1.Publisher.Builder builder =
         com.google.cloud.pubsub.v1.Publisher.newBuilder(fullTopic)
-            .setCredentialsProvider(gcpCredentialsProvider)
             .setBatchingSettings(batchingSettings.build())
             .setRetrySettings(
                 RetrySettings.newBuilder()
@@ -413,8 +414,26 @@ public class CloudPubSubSinkTask extends SinkTask {
                     .setInitialRpcTimeout(Duration.ofSeconds(10))
                     .setRpcTimeoutMultiplier(2)
                     .build())
-            .setExecutorProvider(FixedExecutorProvider.create(getSystemExecutor()))
-            .setEndpoint(cpsEndpoint);
+            .setExecutorProvider(FixedExecutorProvider.create(getSystemExecutor()));
+
+    // Configure endpoint, credentials and channel based on whether we're using emulator or
+    // production
+    if (useEmulator) {
+      // For emulator: use PUBSUB_EMULATOR_HOST env var, fallback to configured cps.endpoint, then
+      // default
+      String emulatorHost = System.getenv(ConnectorUtils.PUBSUB_EMULATOR_HOST);
+      String endpoint = emulatorHost != null ? emulatorHost : cpsEndpoint;
+      builder
+          .setCredentialsProvider(com.google.api.gax.core.NoCredentialsProvider.create())
+          .setChannelProvider(
+              com.google.api.gax.grpc.InstantiatingGrpcChannelProvider.newBuilder()
+                  .setEndpoint(endpoint)
+                  .setChannelConfigurator(channel -> channel.usePlaintext())
+                  .build());
+    } else {
+      // For production: use configured credentials and endpoint
+      builder.setCredentialsProvider(gcpCredentialsProvider).setEndpoint(cpsEndpoint);
+    }
     if (orderingKeySource != OrderingKeySource.NONE) {
       builder.setEnableMessageOrdering(true);
     }

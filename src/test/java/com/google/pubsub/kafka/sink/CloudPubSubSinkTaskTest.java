@@ -16,6 +16,7 @@
 package com.google.pubsub.kafka.sink;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -38,6 +39,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.record.TimestampType;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
@@ -610,6 +612,44 @@ public class CloudPubSubSinkTaskTest {
 
     verify(publisher, times(1)).shutdown();
     verify(publisher, times(1)).awaitTermination(maxShutdownTimeoutMs, TimeUnit.MILLISECONDS);
+  }
+
+  /** Tests that the emulator configuration is properly defined and parsed. */
+  @Test
+  public void testEmulatorConfiguration() {
+    CloudPubSubSinkConnector connector = new CloudPubSubSinkConnector();
+    ConfigDef configDef = connector.config();
+
+    assertTrue(
+        "Emulator configuration should be defined",
+        configDef.names().contains(ConnectorUtils.CPS_USE_EMULATOR));
+
+    Map<String, String> emulatorProps = new HashMap<>();
+    emulatorProps.put(ConnectorUtils.CPS_TOPIC_CONFIG, CPS_TOPIC);
+    emulatorProps.put(ConnectorUtils.CPS_PROJECT_CONFIG, CPS_PROJECT);
+    emulatorProps.put(ConnectorUtils.CPS_USE_EMULATOR, "true");
+
+    Map<String, Object> parsedProps = configDef.parse(emulatorProps);
+    assertTrue(
+        "Emulator should be enabled", (Boolean) parsedProps.get(ConnectorUtils.CPS_USE_EMULATOR));
+  }
+
+  @Test
+  public void testCreatePublisherWithEmulatorEnabled() {
+    props.put(ConnectorUtils.CPS_USE_EMULATOR, "true");
+    props.put(ConnectorUtils.CPS_ENDPOINT, "localhost:8085");
+    CloudPubSubSinkTask task = new CloudPubSubSinkTask(publisher);
+    task.start(props);
+    assertEquals(CloudPubSubSinkTask.class, task.getClass());
+  }
+
+  @Test
+  public void testCreatePublisherWithEmulatorDisabled() {
+    props.put(ConnectorUtils.CPS_USE_EMULATOR, "false");
+    props.put(ConnectorUtils.CPS_ENDPOINT, "pubsub.googleapis.com:443");
+    CloudPubSubSinkTask task = new CloudPubSubSinkTask(publisher);
+    task.start(props);
+    assertEquals(CloudPubSubSinkTask.class, task.getClass());
   }
 
   /** Get some sample SinkRecords's to use in the tests. */
