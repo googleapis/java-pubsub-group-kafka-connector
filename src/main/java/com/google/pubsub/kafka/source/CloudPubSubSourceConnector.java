@@ -15,14 +15,8 @@
  */
 package com.google.pubsub.kafka.source;
 
-import com.google.api.gax.core.CredentialsProvider;
-import com.google.cloud.pubsub.v1.stub.GrpcSubscriberStub;
-import com.google.cloud.pubsub.v1.stub.SubscriberStubSettings;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.pubsub.kafka.common.ConnectorCredentialsProvider;
 import com.google.pubsub.kafka.common.ConnectorUtils;
 import com.google.pubsub.kafka.common.Version;
-import com.google.pubsub.v1.GetSubscriptionRequest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -33,7 +27,6 @@ import org.apache.kafka.common.config.ConfigDef.Importance;
 import org.apache.kafka.common.config.ConfigDef.Type;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.connect.connector.Task;
-import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.source.SourceConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,15 +128,6 @@ public class CloudPubSubSourceConnector extends SourceConnector {
 
   @Override
   public void start(Map<String, String> props) {
-    // Do a validation of configs here too so that we do not pass null objects to
-    // verifySubscription().
-    Map<String, Object> validated = config().parse(props);
-    String cpsProject = validated.get(ConnectorUtils.CPS_PROJECT_CONFIG).toString();
-    String cpsSubscription = validated.get(CPS_SUBSCRIPTION_CONFIG).toString();
-    ConnectorCredentialsProvider credentialsProvider =
-        ConnectorCredentialsProvider.fromConfig(validated);
-
-    verifySubscription(cpsProject, cpsSubscription, credentialsProvider);
     this.props = props;
     log.info("Started the CloudPubSubSourceConnector");
   }
@@ -298,36 +282,6 @@ public class CloudPubSubSourceConnector extends SourceConnector {
             ConnectorUtils.CPS_DEFAULT_ENDPOINT,
             Importance.LOW,
             "The Pub/Sub endpoint to use.");
-  }
-
-  /**
-   * Check whether the user provided Cloud Pub/Sub subscription name specified by {@link
-   * #CPS_SUBSCRIPTION_CONFIG} exists or not.
-   */
-  @VisibleForTesting
-  public void verifySubscription(
-      String cpsProject, String cpsSubscription, CredentialsProvider credentialsProvider) {
-    try {
-      SubscriberStubSettings subscriberStubSettings =
-          SubscriberStubSettings.newBuilder()
-              .setTransportChannelProvider(
-                  SubscriberStubSettings.defaultGrpcTransportProviderBuilder()
-                      .setMaxInboundMessageSize(20 << 20) // 20MB
-                      .build())
-              .setCredentialsProvider(credentialsProvider)
-              .build();
-      GrpcSubscriberStub stub = GrpcSubscriberStub.create(subscriberStubSettings);
-      GetSubscriptionRequest request =
-          GetSubscriptionRequest.newBuilder()
-              .setSubscription(
-                  String.format(
-                      ConnectorUtils.CPS_SUBSCRIPTION_FORMAT, cpsProject, cpsSubscription))
-              .build();
-      stub.getSubscriptionCallable().call(request);
-    } catch (Exception e) {
-      throw new ConnectException(
-          "Error verifying the subscription " + cpsSubscription + " for project " + cpsProject, e);
-    }
   }
 
   @Override
