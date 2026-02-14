@@ -38,11 +38,11 @@ ls -l $GCS_DIR/
 # Prepare properties files for this run
 RUN_ID=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/run_id -H "Metadata-Flavor: Google")
 PROJECT_NAME=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/project_id -H "Metadata-Flavor: Google")
-PSL_ZONE=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/psl_zone -H "Metadata-Flavor: Google")
+PSL_LOCATION=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/psl_location -H "Metadata-Flavor: Google")
 
 sed -i "s/<runId>/$RUN_ID/g" $GCS_DIR/*.properties
 sed -i "s/<projectName>/$PROJECT_NAME/g" $GCS_DIR/*.properties
-sed -i "s/<pslZone>/$PSL_ZONE/g" $GCS_DIR/*.properties
+sed -i "s/<pslLocation>/$PSL_LOCATION/g" $GCS_DIR/*.properties
 
 # Install and run Kafka brokers
 KAFKA_VERSION=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/kafka_version -H "Metadata-Flavor: Google")
