@@ -11,7 +11,7 @@
   "repo": "googleapis/java-pubsub-group-kafka-connector",
   "repo_short": "java-pubsub-group-kafka-connector",
   "distribution_name": "com.google.cloud:pubsub-group-kafka-connector",
-  "codeowner_team": "@googleapis/api-pubsub",
+  "codeowner_team": "@googleapis/pubsub-team",
   "api_id": "pubsub.googleapis.com",
   "library_type": "AGENT",
   "transport": "grpc",
