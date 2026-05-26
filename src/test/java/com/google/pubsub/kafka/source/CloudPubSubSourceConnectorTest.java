@@ -16,8 +16,7 @@
 package com.google.pubsub.kafka.source;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
@@ -56,7 +55,7 @@ public class CloudPubSubSourceConnectorTest {
   public void testStartWhenSubscriptionNonexistant() {
     doThrow(new ConnectException(""))
         .when(connector)
-        .verifySubscription(anyString(), anyString(), any(ConnectorCredentialsProvider.class));
+        .verifySubscription(anyString(), anyString(), any(ConnectorCredentialsProvider.class), anyString(), anyBoolean());
     connector.start(props);
   }
 
@@ -69,7 +68,7 @@ public class CloudPubSubSourceConnectorTest {
   public void testTaskConfigs() {
     doNothing()
         .when(connector)
-        .verifySubscription(anyString(), anyString(), any(ConnectorCredentialsProvider.class));
+        .verifySubscription(anyString(), anyString(), any(ConnectorCredentialsProvider.class), anyString(), anyBoolean());
     connector.start(props);
     List<Map<String, String>> taskConfigs = connector.taskConfigs(NUM_TASKS);
     assertEquals(taskConfigs.size(), NUM_TASKS);

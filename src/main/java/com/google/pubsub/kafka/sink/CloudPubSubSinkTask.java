@@ -418,11 +418,8 @@ public class CloudPubSubSinkTask extends SinkTask {
 
     // Configure endpoint, credentials and channel based on whether we're using emulator or
     // production
+    String endpoint = ConnectorUtils.getPubsubEndpoint(useEmulator, cpsEndpoint);
     if (useEmulator) {
-      // For emulator: use PUBSUB_EMULATOR_HOST env var, fallback to configured cps.endpoint, then
-      // default
-      String emulatorHost = System.getenv(ConnectorUtils.PUBSUB_EMULATOR_HOST);
-      String endpoint = emulatorHost != null ? emulatorHost : cpsEndpoint;
       builder
           .setCredentialsProvider(com.google.api.gax.core.NoCredentialsProvider.create())
           .setChannelProvider(
@@ -431,8 +428,7 @@ public class CloudPubSubSinkTask extends SinkTask {
                   .setChannelConfigurator(channel -> channel.usePlaintext())
                   .build());
     } else {
-      // For production: use configured credentials and endpoint
-      builder.setCredentialsProvider(gcpCredentialsProvider).setEndpoint(cpsEndpoint);
+      builder.setCredentialsProvider(gcpCredentialsProvider).setEndpoint(endpoint);
     }
     if (orderingKeySource != OrderingKeySource.NONE) {
       builder.setEnableMessageOrdering(true);

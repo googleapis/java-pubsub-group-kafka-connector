@@ -76,6 +76,7 @@ public class CloudPubSubSourceTask extends SourceTask {
   private CloudPubSubSubscriber subscriber;
   private final Set<String> standardAttributes = new HashSet<>();
   private boolean useKafkaHeaders;
+  private boolean useEmulator;
 
   public CloudPubSubSourceTask() {}
 
@@ -99,6 +100,8 @@ public class CloudPubSubSourceTask extends SourceTask {
                 validatedProps.get(CloudPubSubSourceConnector.CPS_SUBSCRIPTION_CONFIG).toString())
             .build();
     String cpsEndpoint = (String) validatedProps.get(ConnectorUtils.CPS_ENDPOINT);
+    useEmulator = (Boolean) validatedProps.get(ConnectorUtils.CPS_USE_EMULATOR);
+    String endpoint = ConnectorUtils.getPubsubEndpoint(useEmulator, cpsEndpoint);
     kafkaTopic = validatedProps.get(CloudPubSubSourceConnector.KAFKA_TOPIC_CONFIG).toString();
     int cpsMaxBatchSize =
         (Integer) validatedProps.get(CloudPubSubSourceConnector.CPS_MAX_BATCH_SIZE_CONFIG);
@@ -142,7 +145,6 @@ public class CloudPubSubSourceTask extends SourceTask {
                 receiver -> {
                   Subscriber.Builder builder =
                       Subscriber.newBuilder(cpsSubscription, receiver)
-                          .setCredentialsProvider(gcpCredentialsProvider)
                           .setFlowControlSettings(
                               FlowControlSettings.newBuilder()
                                   .setLimitExceededBehavior(LimitExceededBehavior.Block)
@@ -150,8 +152,21 @@ public class CloudPubSubSourceTask extends SourceTask {
                                   .setMaxOutstandingRequestBytes(streamingPullBytes)
                                   .build())
                           .setParallelPullCount(streamingPullParallelStreams)
-                          .setEndpoint(cpsEndpoint)
                           .setExecutorProvider(FixedExecutorProvider.create(getSystemExecutor()));
+                  // Configure endpoint, credentials and channel based on whether we're using
+                  // emulator or production
+                  if (useEmulator) {
+                    builder
+                        .setCredentialsProvider(
+                            com.google.api.gax.core.NoCredentialsProvider.create())
+                        .setChannelProvider(
+                            com.google.api.gax.grpc.InstantiatingGrpcChannelProvider.newBuilder()
+                                .setEndpoint(endpoint)
+                                .setChannelConfigurator(channel -> channel.usePlaintext())
+                                .build());
+                  } else {
+                    builder.setCredentialsProvider(gcpCredentialsProvider).setEndpoint(endpoint);
+                  }
                   if (streamingPullMaxAckDeadlineMs > 0) {
                     builder.setMaxAckExtensionPeriod(
                         Duration.ofMillis(streamingPullMaxAckDeadlineMs));
@@ -168,9 +183,10 @@ public class CloudPubSubSourceTask extends SourceTask {
                 new CloudPubSubRoundRobinSubscriber(
                     NUM_CPS_SUBSCRIBERS,
                     gcpCredentialsProvider,
-                    cpsEndpoint,
+                    endpoint,
                     cpsSubscription,
-                    cpsMaxBatchSize),
+                    cpsMaxBatchSize,
+                    useEmulator),
                 runnable ->
                     getSystemExecutor()
                         .scheduleAtFixedRate(runnable, 100, 100, TimeUnit.MILLISECONDS));

@@ -16,6 +16,8 @@
 package com.google.pubsub.kafka.source;
 
 import com.google.api.gax.core.CredentialsProvider;
+import com.google.api.gax.core.NoCredentialsProvider;
+import com.google.api.gax.grpc.InstantiatingGrpcChannelProvider;
 import com.google.cloud.pubsub.v1.stub.GrpcSubscriberStub;
 import com.google.cloud.pubsub.v1.stub.SubscriberStubSettings;
 import com.google.common.annotations.VisibleForTesting;
@@ -140,10 +142,13 @@ public class CloudPubSubSourceConnector extends SourceConnector {
     Map<String, Object> validated = config().parse(props);
     String cpsProject = validated.get(ConnectorUtils.CPS_PROJECT_CONFIG).toString();
     String cpsSubscription = validated.get(CPS_SUBSCRIPTION_CONFIG).toString();
+    String cpsEndpoint = (String) validated.get(ConnectorUtils.CPS_ENDPOINT);
+    boolean useEmulator = (Boolean) validated.get(ConnectorUtils.CPS_USE_EMULATOR);
+    String endpoint = ConnectorUtils.getPubsubEndpoint(useEmulator, cpsEndpoint);
     ConnectorCredentialsProvider credentialsProvider =
         ConnectorCredentialsProvider.fromConfig(validated);
 
-    verifySubscription(cpsProject, cpsSubscription, credentialsProvider);
+    verifySubscription(cpsProject, cpsSubscription, credentialsProvider, endpoint, useEmulator);
     this.props = props;
     log.info("Started the CloudPubSubSourceConnector");
   }
@@ -297,7 +302,13 @@ public class CloudPubSubSourceConnector extends SourceConnector {
             Type.STRING,
             ConnectorUtils.CPS_DEFAULT_ENDPOINT,
             Importance.LOW,
-            "The Pub/Sub endpoint to use.");
+            "The Pub/Sub endpoint to use.")
+        .define(
+            ConnectorUtils.CPS_USE_EMULATOR,
+            Type.BOOLEAN,
+            false,
+            Importance.LOW,
+            "When true, use the Pub/Sub emulator instead of the production service.");
   }
 
   /**
@@ -306,24 +317,43 @@ public class CloudPubSubSourceConnector extends SourceConnector {
    */
   @VisibleForTesting
   public void verifySubscription(
-      String cpsProject, String cpsSubscription, CredentialsProvider credentialsProvider) {
+      String cpsProject,
+      String cpsSubscription,
+      CredentialsProvider credentialsProvider,
+      String endpoint,
+      boolean useEmulator) {
     try {
-      SubscriberStubSettings subscriberStubSettings =
-          SubscriberStubSettings.newBuilder()
-              .setTransportChannelProvider(
-                  SubscriberStubSettings.defaultGrpcTransportProviderBuilder()
-                      .setMaxInboundMessageSize(20 << 20) // 20MB
-                      .build())
-              .setCredentialsProvider(credentialsProvider)
-              .build();
-      GrpcSubscriberStub stub = GrpcSubscriberStub.create(subscriberStubSettings);
+      // Configure endpoint, credentials and channel based on whether we're using emulator or
+      // production
+      SubscriberStubSettings.Builder settingsBuilder = SubscriberStubSettings.newBuilder();
+      if (useEmulator) {
+        settingsBuilder
+            .setCredentialsProvider(NoCredentialsProvider.create())
+            .setTransportChannelProvider(
+                InstantiatingGrpcChannelProvider.newBuilder()
+                    .setMaxInboundMessageSize(20 << 20) // 20MB
+                    .setEndpoint(endpoint)
+                    .setChannelConfigurator(channel -> channel.usePlaintext())
+                    .build());
+      } else {
+        settingsBuilder
+            .setTransportChannelProvider(
+                SubscriberStubSettings.defaultGrpcTransportProviderBuilder()
+                    .setMaxInboundMessageSize(20 << 20) // 20MB
+                    .build())
+            .setCredentialsProvider(credentialsProvider)
+            .setEndpoint(endpoint);
+      }
+
       GetSubscriptionRequest request =
           GetSubscriptionRequest.newBuilder()
               .setSubscription(
                   String.format(
                       ConnectorUtils.CPS_SUBSCRIPTION_FORMAT, cpsProject, cpsSubscription))
               .build();
-      stub.getSubscriptionCallable().call(request);
+      try (GrpcSubscriberStub stub = GrpcSubscriberStub.create(settingsBuilder.build())) {
+        stub.getSubscriptionCallable().call(request);
+      }
     } catch (Exception e) {
       throw new ConnectException(
           "Error verifying the subscription " + cpsSubscription + " for project " + cpsProject, e);

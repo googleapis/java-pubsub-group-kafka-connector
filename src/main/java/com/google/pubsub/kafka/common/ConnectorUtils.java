@@ -58,4 +58,18 @@ public class ConnectorUtils {
     }
     return SYSTEM_EXECUTOR.get();
   }
+
+
+  // Resolve the endpoint. When using the emulator, prefer PUBSUB_EMULATOR_HOST and fall back to
+  // the configured cps.endpoint.
+  public static String getPubsubEndpoint(boolean useEmulator, String cpsEndpoint) {
+    if (useEmulator) {
+      String emulatorHost = System.getenv(PUBSUB_EMULATOR_HOST);
+      if (emulatorHost != null && !emulatorHost.isEmpty()) {
+        return emulatorHost;
+      }
+    }
+
+    return cpsEndpoint;
+  }
 }

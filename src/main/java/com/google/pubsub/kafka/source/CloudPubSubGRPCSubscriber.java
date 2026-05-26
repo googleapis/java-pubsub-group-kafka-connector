@@ -18,10 +18,13 @@ package com.google.pubsub.kafka.source;
 import com.google.api.core.ApiFuture;
 import com.google.api.core.ApiFutures;
 import com.google.api.gax.core.CredentialsProvider;
+import com.google.api.gax.core.NoCredentialsProvider;
+import com.google.api.gax.grpc.InstantiatingGrpcChannelProvider;
 import com.google.cloud.pubsub.v1.stub.GrpcSubscriberStub;
 import com.google.cloud.pubsub.v1.stub.SubscriberStubSettings;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.protobuf.Empty;
+import com.google.pubsub.kafka.common.ConnectorUtils;
 import com.google.pubsub.v1.AcknowledgeRequest;
 import com.google.pubsub.v1.ProjectSubscriptionName;
 import com.google.pubsub.v1.PullRequest;
@@ -48,16 +51,19 @@ public class CloudPubSubGRPCSubscriber implements CloudPubSubSubscriber {
   private final String endpoint;
   private final ProjectSubscriptionName subscriptionName;
   private final int cpsMaxBatchSize;
+  private final boolean useEmulator;
 
   CloudPubSubGRPCSubscriber(
       CredentialsProvider gcpCredentialsProvider,
       String endpoint,
       ProjectSubscriptionName subscriptionName,
-      int cpsMaxBatchSize) {
+      int cpsMaxBatchSize,
+      boolean useEmulator) {
     this.gcpCredentialsProvider = gcpCredentialsProvider;
     this.endpoint = endpoint;
     this.subscriptionName = subscriptionName;
     this.cpsMaxBatchSize = cpsMaxBatchSize;
+    this.useEmulator = useEmulator;
     makeSubscriber();
   }
 
@@ -103,15 +109,32 @@ public class CloudPubSubGRPCSubscriber implements CloudPubSubSubscriber {
         subscriber.close();
       }
       log.info("Creating subscriber.");
-      SubscriberStubSettings subscriberStubSettings =
-          SubscriberStubSettings.newBuilder()
-              .setTransportChannelProvider(
-                  SubscriberStubSettings.defaultGrpcTransportProviderBuilder()
-                      .setMaxInboundMessageSize(20 << 20) // 20MB
-                      .build())
-              .setCredentialsProvider(gcpCredentialsProvider)
-              .setEndpoint(endpoint)
-              .build();
+
+      // Configure endpoint, credentials and channel based on whether we're using emulator or
+      // production
+      SubscriberStubSettings subscriberStubSettings;
+      if (useEmulator) {
+        subscriberStubSettings =
+            SubscriberStubSettings.newBuilder()
+                .setCredentialsProvider(NoCredentialsProvider.create())
+                .setTransportChannelProvider(
+                    InstantiatingGrpcChannelProvider.newBuilder()
+                        .setMaxInboundMessageSize(20 << 20) // 20MB
+                        .setEndpoint(endpoint)
+                        .setChannelConfigurator(channel -> channel.usePlaintext())
+                        .build())
+                .build();
+      } else {
+        subscriberStubSettings =
+            SubscriberStubSettings.newBuilder()
+                .setTransportChannelProvider(
+                    SubscriberStubSettings.defaultGrpcTransportProviderBuilder()
+                        .setMaxInboundMessageSize(20 << 20) // 20MB
+                        .build())
+                .setCredentialsProvider(gcpCredentialsProvider)
+                .setEndpoint(endpoint)
+                .build();
+      }
       subscriber = GrpcSubscriberStub.create(subscriberStubSettings);
       // We change the subscriber every 25 - 35 minutes in order to avoid GOAWAY errors.
       nextSubscriberResetTime =

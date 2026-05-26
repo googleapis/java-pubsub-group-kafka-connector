@@ -38,12 +38,13 @@ public class CloudPubSubRoundRobinSubscriber implements CloudPubSubSubscriber {
       CredentialsProvider gcpCredentialsProvider,
       String endpoint,
       ProjectSubscriptionName subscriptionName,
-      int cpsMaxBatchSize) {
+      int cpsMaxBatchSize,
+      boolean useEmulator) {
     subscribers = new ArrayList<>();
     for (int i = 0; i < subscriberCount; ++i) {
       subscribers.add(
           new CloudPubSubGRPCSubscriber(
-              gcpCredentialsProvider, endpoint, subscriptionName, cpsMaxBatchSize));
+              gcpCredentialsProvider, endpoint, subscriptionName, cpsMaxBatchSize, useEmulator));
     }
   }
 

@@ -18,6 +18,7 @@ package com.google.pubsub.kafka.source;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -36,6 +37,8 @@ import com.google.pubsub.v1.ReceivedMessage;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.connect.data.Field;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
@@ -114,6 +117,41 @@ public class CloudPubSubSourceTaskTest {
     props.put(
         CloudPubSubSourceConnector.KAFKA_PARTITION_SCHEME_CONFIG,
         CloudPubSubSourceConnector.PartitionScheme.ROUND_ROBIN.toString());
+  }
+
+  /** Tests that the emulator configuration is properly defined and parsed. */
+  @Test
+  public void testEmulatorConfiguration() {
+    CloudPubSubSourceConnector connector = new CloudPubSubSourceConnector();
+    ConfigDef configDef = connector.config();
+
+    assertTrue(
+        "Emulator configuration should be defined",
+        configDef.names().contains(ConnectorUtils.CPS_USE_EMULATOR));
+
+    props.put(ConnectorUtils.CPS_USE_EMULATOR, "true");
+
+    Map<String, Object> parsedProps = configDef.parse(props);
+    assertTrue(
+        "Emulator should be enabled", (Boolean) parsedProps.get(ConnectorUtils.CPS_USE_EMULATOR));
+  }
+
+  @Test
+  public void testStartWithEmulatorEnabled() {
+    props.put(ConnectorUtils.CPS_USE_EMULATOR, "true");
+    props.put(ConnectorUtils.CPS_ENDPOINT, "localhost:8085");
+    CloudPubSubSourceTask task = new CloudPubSubSourceTask(subscriber);
+    task.start(props);
+    assertEquals(CloudPubSubSourceTask.class, task.getClass());
+  }
+
+  @Test
+  public void testStartWithEmulatorDisabled() {
+    props.put(ConnectorUtils.CPS_USE_EMULATOR, "false");
+    props.put(ConnectorUtils.CPS_ENDPOINT, "pubsub.googleapis.com:443");
+    CloudPubSubSourceTask task = new CloudPubSubSourceTask(subscriber);
+    task.start(props);
+    assertEquals(CloudPubSubSourceTask.class, task.getClass());
   }
 
   /** Tests when no messages are received from the Cloud Pub/Sub PullResponse. */
