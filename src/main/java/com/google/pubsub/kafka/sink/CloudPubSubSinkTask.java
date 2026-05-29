@@ -176,7 +176,7 @@ public class CloudPubSubSinkTask extends SinkTask {
           attributes.put(header.key(), header.value().toString());
         }
       }
-      if (attributes.size() == 0 && value == null) {
+      if (attributes.isEmpty() && (value == null || value.isEmpty())) {
         log.warn("Message received with no value and no attributes. Not publishing message");
         SettableApiFuture<String> nullMessageFuture = SettableApiFuture.<String>create();
         nullMessageFuture.set("No message");
