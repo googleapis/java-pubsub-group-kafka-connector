@@ -71,6 +71,7 @@ public class ConnectorCredentialsProvider implements CredentialsProvider {
     return new ConnectorCredentialsProvider(
         () ->
             ServiceAccountCredentials.fromStream(new FileInputStream(credentialsSAPath))
+                .createWithUseJwtAccessWithScope(true)
                 .createScoped(GCP_SCOPE));
   }
 
@@ -79,6 +80,7 @@ public class ConnectorCredentialsProvider implements CredentialsProvider {
         () ->
             ServiceAccountCredentials.fromStream(
                     new ByteArrayInputStream(credentialsSAJson.getBytes()))
+                .createWithUseJwtAccessWithScope(true)
                 .createScoped(GCP_SCOPE));
   }
 
