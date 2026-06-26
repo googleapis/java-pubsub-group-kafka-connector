@@ -37,7 +37,6 @@ import com.google.pubsub.v1.ReceivedMessage;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.connect.data.Field;
 import org.apache.kafka.connect.data.Schema;

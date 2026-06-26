@@ -55,7 +55,12 @@ public class CloudPubSubSourceConnectorTest {
   public void testStartWhenSubscriptionNonexistant() {
     doThrow(new ConnectException(""))
         .when(connector)
-        .verifySubscription(anyString(), anyString(), any(ConnectorCredentialsProvider.class), anyString(), anyBoolean());
+        .verifySubscription(
+            anyString(),
+            anyString(),
+            any(ConnectorCredentialsProvider.class),
+            anyString(),
+            anyBoolean());
     connector.start(props);
   }
 
@@ -68,7 +73,12 @@ public class CloudPubSubSourceConnectorTest {
   public void testTaskConfigs() {
     doNothing()
         .when(connector)
-        .verifySubscription(anyString(), anyString(), any(ConnectorCredentialsProvider.class), anyString(), anyBoolean());
+        .verifySubscription(
+            anyString(),
+            anyString(),
+            any(ConnectorCredentialsProvider.class),
+            anyString(),
+            anyBoolean());
     connector.start(props);
     List<Map<String, String>> taskConfigs = connector.taskConfigs(NUM_TASKS);
     assertEquals(taskConfigs.size(), NUM_TASKS);
