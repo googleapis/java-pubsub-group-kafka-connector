@@ -20,6 +20,9 @@ import com.google.protobuf.ByteString;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.regex.Pattern;
+import org.apache.kafka.common.config.ConfigDef;
+import org.apache.kafka.common.config.ConfigException;
 
 /** Utility methods and constants that are repeated across one or more classes. */
 public class ConnectorUtils {
@@ -31,6 +34,7 @@ public class ConnectorUtils {
   public static final String CPS_DEFAULT_ENDPOINT = "pubsub.googleapis.com:443";
   public static final String CPS_USE_EMULATOR = "cps.useEmulator";
   public static final String PUBSUB_EMULATOR_HOST = "PUBSUB_EMULATOR_HOST";
+  public static final String CPS_ENFORCE_OFFICIAL_ENDPOINTS = "CPS_ENFORCE_OFFICIAL_ENDPOINTS";
   public static final String CPS_MESSAGE_KEY_ATTRIBUTE = "key";
   public static final String CPS_ORDERING_KEY_ATTRIBUTE = "orderingKey";
   public static final String GCP_CREDENTIALS_FILE_PATH_CONFIG = "gcp.credentials.file.path";
@@ -42,6 +46,91 @@ public class ConnectorUtils {
   public static final String KAFKA_PARTITION_ATTRIBUTE = "kafka.partition";
   public static final String KAFKA_OFFSET_ATTRIBUTE = "kafka.offset";
   public static final String KAFKA_TIMESTAMP_ATTRIBUTE = "kafka.timestamp";
+
+  /**
+   * Patterns matching Google Cloud Pub/Sub endpoints:
+   * 1. Global: pubsub.googleapis.com
+   * 2. Locational: <region>-pubsub.googleapis.com (e.g. us-central1-pubsub.googleapis.com)
+   * 3. Regional: pubsub.<region>.rep.googleapis.com (e.g. pubsub.us-central1.rep.googleapis.com)
+   */
+  public static final Pattern GLOBAL_ENDPOINT_PATTERN =
+    Pattern.compile("^pubsub\\.googleapis\\.com$");
+
+  public static final Pattern LOCATIONAL_ENDPOINT_PATTERN =
+    Pattern.compile("^[a-z]+-[a-z]+[0-9]+-pubsub\\.googleapis\\.com$");
+
+  public static final Pattern REGIONAL_REP_ENDPOINT_PATTERN =
+    Pattern.compile("^pubsub\\.[a-z]+-[a-z]+[0-9]+\\.rep\\.googleapis\\.com$");
+
+  public static boolean isAllowedCpsHost(String host) {
+    return GLOBAL_ENDPOINT_PATTERN.matcher(host).matches()
+      || LOCATIONAL_ENDPOINT_PATTERN.matcher(host).matches()
+      || REGIONAL_REP_ENDPOINT_PATTERN.matcher(host).matches();
+  }
+
+  public static void validateEndpoint(String endpoint) {
+    if (endpoint == null || endpoint.trim().isEmpty()) {
+      throw new ConfigException(CPS_ENDPOINT, endpoint, "Endpoint cannot be null or empty.");
+    }
+    String trimmed = endpoint.trim();
+
+    int colonIndex = trimmed.lastIndexOf(':');
+    if (colonIndex <= 0
+        || colonIndex != trimmed.indexOf(':')
+        || colonIndex == trimmed.length() - 1
+        || trimmed.contains("/")
+        || trimmed.contains("?")
+        || trimmed.contains("#")
+        || trimmed.contains("@")) {
+      throw new ConfigException(
+          CPS_ENDPOINT,
+          endpoint,
+          "Endpoint must be in '<host>:<port>' format (e.g., 'pubsub.googleapis.com:443').");
+    }
+
+    String host = trimmed.substring(0, colonIndex);
+    String portStr = trimmed.substring(colonIndex + 1);
+
+    if (!isAllowedCpsHost(host)) {
+      throw new ConfigException(
+          CPS_ENDPOINT,
+          endpoint,
+          "Host is not an allowed Cloud Pub/Sub endpoint.");
+    }
+
+    int port;
+    try {
+      port = Integer.parseInt(portStr);
+    } catch (NumberFormatException unused) {
+      port = -1;
+    }
+    if (port < 1 || port > 65535) {
+      throw new ConfigException(CPS_ENDPOINT, endpoint, "Port must be between 1 and 65535.");
+    }
+  }
+
+  /** Validator class for {@link ConnectorUtils#CPS_ENDPOINT}. */
+  public static class CpsEndpointValidator implements ConfigDef.Validator {
+    @Override
+    public void ensureValid(String name, Object o) {
+      String enforceOfficialEndpoints = System.getenv(CPS_ENFORCE_OFFICIAL_ENDPOINTS);
+      if (!Boolean.parseBoolean(enforceOfficialEndpoints) && !"1".equals(enforceOfficialEndpoints)) {
+        return;
+      }
+      if (o == null) {
+        validateEndpoint(null);
+      } else if (o instanceof String) {
+        validateEndpoint((String) o);
+      } else {
+        validateEndpoint(o.toString());
+      }
+    }
+
+    @Override
+    public String toString() {
+      return "Official Cloud Pub/Sub endpoint in '<host>:<port>' format (e.g., 'pubsub.googleapis.com:443')";
+    }
+  }
 
   private static ScheduledExecutorService newDaemonExecutor(String prefix) {
     return Executors.newScheduledThreadPool(

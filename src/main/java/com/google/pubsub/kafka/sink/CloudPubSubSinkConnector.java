@@ -286,6 +286,7 @@ public class CloudPubSubSinkConnector extends SinkConnector {
             ConnectorUtils.CPS_ENDPOINT,
             Type.STRING,
             ConnectorUtils.CPS_DEFAULT_ENDPOINT,
+            new ConnectorUtils.CpsEndpointValidator(),
             Importance.LOW,
             "The Pub/Sub endpoint to use.")
         .define(
