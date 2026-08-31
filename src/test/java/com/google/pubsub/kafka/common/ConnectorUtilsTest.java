@@ -408,22 +408,24 @@ public class ConnectorUtilsTest {
   public void testErrorMessages() {
     ConfigException nullEx =
         assertThrows(ConfigException.class, () -> ConnectorUtils.validateEndpoint(null));
-    assertThat(nullEx.getMessage()).contains("Endpoint cannot be null or empty.");
+    assertThat(nullEx).hasMessageThat().contains("Endpoint cannot be null or empty.");
 
     ConfigException emptyEx =
         assertThrows(ConfigException.class, () -> ConnectorUtils.validateEndpoint(""));
-    assertThat(emptyEx.getMessage()).contains("Endpoint cannot be null or empty.");
+    assertThat(emptyEx).hasMessageThat().contains("Endpoint cannot be null or empty.");
 
     ConfigException noPortEx =
         assertThrows(
             ConfigException.class, () -> ConnectorUtils.validateEndpoint("pubsub.googleapis.com"));
-    assertThat(noPortEx.getMessage())
+    assertThat(noPortEx)
+        .hasMessageThat()
         .contains(
             "Endpoint must be in '<host>:<port>' format (e.g., 'pubsub.googleapis.com:443').");
 
     ConfigException colonPrefixEx =
         assertThrows(ConfigException.class, () -> ConnectorUtils.validateEndpoint(":443"));
-    assertThat(colonPrefixEx.getMessage())
+    assertThat(colonPrefixEx)
+        .hasMessageThat()
         .contains(
             "Endpoint must be in '<host>:<port>' format (e.g., 'pubsub.googleapis.com:443').");
 
@@ -431,26 +433,28 @@ public class ConnectorUtilsTest {
         assertThrows(
             ConfigException.class,
             () -> ConnectorUtils.validateEndpoint("pubsub.googleapis.com\\evil:443"));
-    assertThat(backslashEx.getMessage())
+    assertThat(backslashEx)
+        .hasMessageThat()
         .contains(
             "Endpoint must be in '<host>:<port>' format (e.g., 'pubsub.googleapis.com:443').");
 
     ConfigException hostEx =
         assertThrows(
             ConfigException.class, () -> ConnectorUtils.validateEndpoint("evil.com:443"));
-    assertThat(hostEx.getMessage())
+    assertThat(hostEx)
+        .hasMessageThat()
         .endsWith(": Host is not an allowed Cloud Pub/Sub endpoint.");
-    assertThat(hostEx.getMessage()).doesNotContain("Host 'evil.com'");
+    assertThat(hostEx).hasMessageThat().doesNotContain("Host 'evil.com'");
 
     ConfigException portEx =
         assertThrows(
             ConfigException.class, () -> ConnectorUtils.validateEndpoint("pubsub.googleapis.com:0"));
-    assertThat(portEx.getMessage()).contains("Port must be between 1 and 65535.");
+    assertThat(portEx).hasMessageThat().contains("Port must be between 1 and 65535.");
 
     ConfigException portNotNumberEx =
         assertThrows(
             ConfigException.class,
             () -> ConnectorUtils.validateEndpoint("pubsub.googleapis.com:invalid"));
-    assertThat(portNotNumberEx.getMessage()).contains("Port must be between 1 and 65535.");
+    assertThat(portNotNumberEx).hasMessageThat().contains("Port must be between 1 and 65535.");
   }
 }

@@ -18,6 +18,7 @@ package com.google.pubsub.kafka.common;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.protobuf.ByteString;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -28,6 +29,8 @@ import org.apache.kafka.common.config.ConfigException;
 
 /** Utility methods and constants that are repeated across one or more classes. */
 public class ConnectorUtils {
+  private ConnectorUtils() {}
+
   public static final String SCHEMA_NAME = ByteString.class.getName();
   public static final String CPS_SUBSCRIPTION_FORMAT = "projects/%s/subscriptions/%s";
   public static final String CPS_PROJECT_CONFIG = "cps.project";
@@ -135,16 +138,11 @@ public class ConnectorUtils {
     @Override
     public void ensureValid(String name, Object o) {
       String enforceOfficialEndpoints = envLookup.get();
-      if (!Boolean.parseBoolean(enforceOfficialEndpoints) && !"1".equals(enforceOfficialEndpoints)) {
+      if (!Boolean.parseBoolean(enforceOfficialEndpoints)
+          && !Objects.equals(enforceOfficialEndpoints, "1")) {
         return;
       }
-      if (o == null) {
-        validateEndpoint(null);
-      } else if (o instanceof String) {
-        validateEndpoint((String) o);
-      } else {
-        validateEndpoint(o.toString());
-      }
+      validateEndpoint(o == null ? null : o.toString());
     }
 
     @Override
