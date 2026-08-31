@@ -19,6 +19,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 
 import java.util.Arrays;
+import java.util.Objects;
 import org.apache.kafka.common.config.ConfigException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -388,7 +389,7 @@ public class ConnectorUtilsTest {
     validator.ensureValid(ConnectorUtils.CPS_ENDPOINT, "pubsub.googleapis.com:443");
 
     String env = System.getenv(ConnectorUtils.CPS_ENFORCE_OFFICIAL_ENDPOINTS);
-    if (!Boolean.parseBoolean(env) && !"1".equals(env)) {
+    if (!Boolean.parseBoolean(env) && !Objects.equals(env, "1")) {
       validator.ensureValid(ConnectorUtils.CPS_ENDPOINT, "localhost:8085");
     } else {
       assertThrows(
@@ -402,7 +403,7 @@ public class ConnectorUtilsTest {
     String originalProp = System.getProperty(ConnectorUtils.CPS_ENFORCE_OFFICIAL_ENDPOINTS);
     try {
       String env = System.getenv(ConnectorUtils.CPS_ENFORCE_OFFICIAL_ENDPOINTS);
-      boolean envEnabled = Boolean.parseBoolean(env) || "1".equals(env);
+      boolean envEnabled = Boolean.parseBoolean(env) || Objects.equals(env, "1");
       if (envEnabled) {
         // Setting system property to false must be ignored; env var still enforces endpoints.
         System.setProperty(ConnectorUtils.CPS_ENFORCE_OFFICIAL_ENDPOINTS, "false");

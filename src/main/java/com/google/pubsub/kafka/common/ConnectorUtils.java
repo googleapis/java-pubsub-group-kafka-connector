@@ -120,7 +120,7 @@ public final class ConnectorUtils {
   }
 
   /** Validator class for {@link ConnectorUtils#CPS_ENDPOINT}. */
-  public static class CpsEndpointValidator implements ConfigDef.Validator {
+  public static final class CpsEndpointValidator implements ConfigDef.Validator {
     private final Supplier<String> envLookup;
 
     public CpsEndpointValidator() {
@@ -154,13 +154,13 @@ public final class ConnectorUtils {
   }
 
   // A shared executor for Pub/Sub clients to use.
-  private static Optional<ScheduledExecutorService> SYSTEM_EXECUTOR = Optional.empty();
+  private static Optional<ScheduledExecutorService> systemExecutor = Optional.empty();
 
   public static synchronized ScheduledExecutorService getSystemExecutor() {
-    if (!SYSTEM_EXECUTOR.isPresent()) {
-      SYSTEM_EXECUTOR = Optional.of(newDaemonExecutor("pubsub-connect-system"));
+    if (!systemExecutor.isPresent()) {
+      systemExecutor = Optional.of(newDaemonExecutor("pubsub-connect-system"));
     }
-    return SYSTEM_EXECUTOR.get();
+    return systemExecutor.get();
   }
 
   // Resolve the endpoint. When using the emulator, prefer PUBSUB_EMULATOR_HOST and fall back to
