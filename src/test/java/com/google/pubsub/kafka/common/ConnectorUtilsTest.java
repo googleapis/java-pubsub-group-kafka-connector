@@ -381,21 +381,43 @@ public class ConnectorUtilsTest {
   }
 
   @Test
-  public void testCpsEndpointValidator_defaultConstructorWithSystemProperty() {
-    String originalProp = System.getProperty(ConnectorUtils.CPS_ENFORCE_OFFICIAL_ENDPOINTS);
-    try {
-      System.setProperty(ConnectorUtils.CPS_ENFORCE_OFFICIAL_ENDPOINTS, "false");
-      ConnectorUtils.CpsEndpointValidator disabledValidator =
-          new ConnectorUtils.CpsEndpointValidator();
-      disabledValidator.ensureValid(ConnectorUtils.CPS_ENDPOINT, "localhost:8085");
+  public void testCpsEndpointValidator_defaultConstructor() {
+    ConnectorUtils.CpsEndpointValidator validator =
+        new ConnectorUtils.CpsEndpointValidator();
+    // Official endpoint always passes
+    validator.ensureValid(ConnectorUtils.CPS_ENDPOINT, "pubsub.googleapis.com:443");
 
-      System.setProperty(ConnectorUtils.CPS_ENFORCE_OFFICIAL_ENDPOINTS, "true");
-      ConnectorUtils.CpsEndpointValidator enabledValidator =
-          new ConnectorUtils.CpsEndpointValidator();
-      enabledValidator.ensureValid(ConnectorUtils.CPS_ENDPOINT, "pubsub.googleapis.com:443");
+    String env = System.getenv(ConnectorUtils.CPS_ENFORCE_OFFICIAL_ENDPOINTS);
+    if (!Boolean.parseBoolean(env) && !"1".equals(env)) {
+      validator.ensureValid(ConnectorUtils.CPS_ENDPOINT, "localhost:8085");
+    } else {
       assertThrows(
           ConfigException.class,
-          () -> enabledValidator.ensureValid(ConnectorUtils.CPS_ENDPOINT, "localhost:8085"));
+          () -> validator.ensureValid(ConnectorUtils.CPS_ENDPOINT, "localhost:8085"));
+    }
+  }
+
+  @Test
+  public void testCpsEndpointValidator_ignoresSystemProperty() {
+    String originalProp = System.getProperty(ConnectorUtils.CPS_ENFORCE_OFFICIAL_ENDPOINTS);
+    try {
+      String env = System.getenv(ConnectorUtils.CPS_ENFORCE_OFFICIAL_ENDPOINTS);
+      boolean envEnabled = Boolean.parseBoolean(env) || "1".equals(env);
+      if (envEnabled) {
+        // Setting system property to false must be ignored; env var still enforces endpoints.
+        System.setProperty(ConnectorUtils.CPS_ENFORCE_OFFICIAL_ENDPOINTS, "false");
+        ConnectorUtils.CpsEndpointValidator validator =
+            new ConnectorUtils.CpsEndpointValidator();
+        assertThrows(
+            ConfigException.class,
+            () -> validator.ensureValid(ConnectorUtils.CPS_ENDPOINT, "localhost:8085"));
+      } else {
+        // Setting system property to true must be ignored; env var is disabled so unofficial passes.
+        System.setProperty(ConnectorUtils.CPS_ENFORCE_OFFICIAL_ENDPOINTS, "true");
+        ConnectorUtils.CpsEndpointValidator validator =
+            new ConnectorUtils.CpsEndpointValidator();
+        validator.ensureValid(ConnectorUtils.CPS_ENDPOINT, "localhost:8085");
+      }
     } finally {
       if (originalProp != null) {
         System.setProperty(ConnectorUtils.CPS_ENFORCE_OFFICIAL_ENDPOINTS, originalProp);

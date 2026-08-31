@@ -28,7 +28,7 @@ import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigException;
 
 /** Utility methods and constants that are repeated across one or more classes. */
-public class ConnectorUtils {
+public final class ConnectorUtils {
   private ConnectorUtils() {}
 
   public static final String SCHEMA_NAME = ByteString.class.getName();
@@ -124,11 +124,7 @@ public class ConnectorUtils {
     private final Supplier<String> envLookup;
 
     public CpsEndpointValidator() {
-      this(
-          () -> {
-            String prop = System.getProperty(CPS_ENFORCE_OFFICIAL_ENDPOINTS);
-            return prop != null ? prop : System.getenv(CPS_ENFORCE_OFFICIAL_ENDPOINTS);
-          });
+      this(() -> System.getenv(CPS_ENFORCE_OFFICIAL_ENDPOINTS));
     }
 
     CpsEndpointValidator(Supplier<String> envLookup) {
