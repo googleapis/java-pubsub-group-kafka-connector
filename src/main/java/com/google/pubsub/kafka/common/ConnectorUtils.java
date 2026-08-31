@@ -17,9 +17,11 @@ package com.google.pubsub.kafka.common;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.protobuf.ByteString;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigException;
@@ -63,9 +65,13 @@ public class ConnectorUtils {
     Pattern.compile("^pubsub\\.[a-z]+-[a-z]+[0-9]+\\.rep\\.googleapis\\.com$");
 
   public static boolean isAllowedCpsHost(String host) {
-    return GLOBAL_ENDPOINT_PATTERN.matcher(host).matches()
-      || LOCATIONAL_ENDPOINT_PATTERN.matcher(host).matches()
-      || REGIONAL_REP_ENDPOINT_PATTERN.matcher(host).matches();
+    if (host == null) {
+      return false;
+    }
+    String normalizedHost = host.toLowerCase(Locale.ROOT);
+    return GLOBAL_ENDPOINT_PATTERN.matcher(normalizedHost).matches()
+        || LOCATIONAL_ENDPOINT_PATTERN.matcher(normalizedHost).matches()
+        || REGIONAL_REP_ENDPOINT_PATTERN.matcher(normalizedHost).matches();
   }
 
   public static void validateEndpoint(String endpoint) {
@@ -79,6 +85,7 @@ public class ConnectorUtils {
         || colonIndex != trimmed.indexOf(':')
         || colonIndex == trimmed.length() - 1
         || trimmed.contains("/")
+        || trimmed.contains("\\")
         || trimmed.contains("?")
         || trimmed.contains("#")
         || trimmed.contains("@")) {
@@ -111,9 +118,23 @@ public class ConnectorUtils {
 
   /** Validator class for {@link ConnectorUtils#CPS_ENDPOINT}. */
   public static class CpsEndpointValidator implements ConfigDef.Validator {
+    private final Supplier<String> envLookup;
+
+    public CpsEndpointValidator() {
+      this(
+          () -> {
+            String prop = System.getProperty(CPS_ENFORCE_OFFICIAL_ENDPOINTS);
+            return prop != null ? prop : System.getenv(CPS_ENFORCE_OFFICIAL_ENDPOINTS);
+          });
+    }
+
+    CpsEndpointValidator(Supplier<String> envLookup) {
+      this.envLookup = envLookup;
+    }
+
     @Override
     public void ensureValid(String name, Object o) {
-      String enforceOfficialEndpoints = System.getenv(CPS_ENFORCE_OFFICIAL_ENDPOINTS);
+      String enforceOfficialEndpoints = envLookup.get();
       if (!Boolean.parseBoolean(enforceOfficialEndpoints) && !"1".equals(enforceOfficialEndpoints)) {
         return;
       }
