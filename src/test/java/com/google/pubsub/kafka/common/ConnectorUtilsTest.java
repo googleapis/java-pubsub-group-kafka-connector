@@ -17,6 +17,7 @@ package com.google.pubsub.kafka.common;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
+
 import java.util.Arrays;
 import org.apache.kafka.common.config.ConfigException;
 import org.junit.Test;
