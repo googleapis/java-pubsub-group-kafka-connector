@@ -28,7 +28,6 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class ConnectorUtilsTest {
 
-
   @Test
   public void testValidDefaultEndpoint() {
     ConnectorUtils.validateEndpoint(ConnectorUtils.CPS_DEFAULT_ENDPOINT);
@@ -140,7 +139,8 @@ public class ConnectorUtilsTest {
     assertThrows(ConfigException.class, () -> ConnectorUtils.validateEndpoint("attacker.com:443"));
     assertThrows(
         ConfigException.class, () -> ConnectorUtils.validateEndpoint("pubsub.attacker.com:443"));
-    assertThrows(ConfigException.class, () -> ConnectorUtils.validateEndpoint("googleapis.com:443"));
+    assertThrows(
+        ConfigException.class, () -> ConnectorUtils.validateEndpoint("googleapis.com:443"));
     assertThrows(ConfigException.class, () -> ConnectorUtils.validateEndpoint("google.com:443"));
     assertThrows(
         ConfigException.class, () -> ConnectorUtils.validateEndpoint("storage.googleapis.com:443"));
@@ -224,8 +224,7 @@ public class ConnectorUtilsTest {
   @Test
   public void testInvalidEndpoints_pathsQueryFragment() {
     assertThrows(
-        ConfigException.class,
-        () -> ConnectorUtils.validateEndpoint("pubsub.googleapis.com:443/"));
+        ConfigException.class, () -> ConnectorUtils.validateEndpoint("pubsub.googleapis.com:443/"));
     assertThrows(
         ConfigException.class,
         () -> ConnectorUtils.validateEndpoint("pubsub.googleapis.com:443\\"));
@@ -295,8 +294,7 @@ public class ConnectorUtilsTest {
     assertThrows(
         ConfigException.class,
         () -> ConnectorUtils.validateEndpoint("pubsub.googleapis.com:443:443"));
-    assertThrows(
-        ConfigException.class, () -> ConnectorUtils.validateEndpoint(":443"));
+    assertThrows(ConfigException.class, () -> ConnectorUtils.validateEndpoint(":443"));
   }
 
   @Test
@@ -342,8 +340,7 @@ public class ConnectorUtilsTest {
     // Official endpoints pass
     validator.ensureValid(ConnectorUtils.CPS_ENDPOINT, "pubsub.googleapis.com:443");
     validator.ensureValid(ConnectorUtils.CPS_ENDPOINT, "us-central1-pubsub.googleapis.com:443");
-    validator.ensureValid(
-        ConnectorUtils.CPS_ENDPOINT, "pubsub.us-central1.rep.googleapis.com:443");
+    validator.ensureValid(ConnectorUtils.CPS_ENDPOINT, "pubsub.us-central1.rep.googleapis.com:443");
     validator.ensureValid(ConnectorUtils.CPS_ENDPOINT, "PUBSUB.GOOGLEAPIS.COM:443");
 
     // Unofficial or invalid endpoints fail
@@ -360,11 +357,9 @@ public class ConnectorUtilsTest {
         ConfigException.class,
         () -> validator.ensureValid(ConnectorUtils.CPS_ENDPOINT, "pubsub.googleapis.com"));
     assertThrows(
-        ConfigException.class,
-        () -> validator.ensureValid(ConnectorUtils.CPS_ENDPOINT, null));
+        ConfigException.class, () -> validator.ensureValid(ConnectorUtils.CPS_ENDPOINT, null));
     assertThrows(
-        ConfigException.class,
-        () -> validator.ensureValid(ConnectorUtils.CPS_ENDPOINT, ""));
+        ConfigException.class, () -> validator.ensureValid(ConnectorUtils.CPS_ENDPOINT, ""));
   }
 
   @Test
@@ -383,8 +378,7 @@ public class ConnectorUtilsTest {
 
   @Test
   public void testCpsEndpointValidator_defaultConstructor() {
-    ConnectorUtils.CpsEndpointValidator validator =
-        new ConnectorUtils.CpsEndpointValidator();
+    ConnectorUtils.CpsEndpointValidator validator = new ConnectorUtils.CpsEndpointValidator();
     // Official endpoint always passes
     validator.ensureValid(ConnectorUtils.CPS_ENDPOINT, "pubsub.googleapis.com:443");
 
@@ -407,16 +401,15 @@ public class ConnectorUtilsTest {
       if (envEnabled) {
         // Setting system property to false must be ignored; env var still enforces endpoints.
         System.setProperty(ConnectorUtils.CPS_ENFORCE_OFFICIAL_ENDPOINTS, "false");
-        ConnectorUtils.CpsEndpointValidator validator =
-            new ConnectorUtils.CpsEndpointValidator();
+        ConnectorUtils.CpsEndpointValidator validator = new ConnectorUtils.CpsEndpointValidator();
         assertThrows(
             ConfigException.class,
             () -> validator.ensureValid(ConnectorUtils.CPS_ENDPOINT, "localhost:8085"));
       } else {
-        // Setting system property to true must be ignored; env var is disabled so unofficial passes.
+        // Setting system property to true must be ignored; env var is disabled so unofficial
+        // passes.
         System.setProperty(ConnectorUtils.CPS_ENFORCE_OFFICIAL_ENDPOINTS, "true");
-        ConnectorUtils.CpsEndpointValidator validator =
-            new ConnectorUtils.CpsEndpointValidator();
+        ConnectorUtils.CpsEndpointValidator validator = new ConnectorUtils.CpsEndpointValidator();
         validator.ensureValid(ConnectorUtils.CPS_ENDPOINT, "localhost:8085");
       }
     } finally {
@@ -463,8 +456,7 @@ public class ConnectorUtilsTest {
             "Endpoint must be in '<host>:<port>' format (e.g., 'pubsub.googleapis.com:443').");
 
     ConfigException hostEx =
-        assertThrows(
-            ConfigException.class, () -> ConnectorUtils.validateEndpoint("evil.com:443"));
+        assertThrows(ConfigException.class, () -> ConnectorUtils.validateEndpoint("evil.com:443"));
     assertThat(hostEx)
         .hasMessageThat()
         .endsWith(": Host is not an allowed Cloud Pub/Sub endpoint.");
@@ -472,7 +464,8 @@ public class ConnectorUtilsTest {
 
     ConfigException portEx =
         assertThrows(
-            ConfigException.class, () -> ConnectorUtils.validateEndpoint("pubsub.googleapis.com:0"));
+            ConfigException.class,
+            () -> ConnectorUtils.validateEndpoint("pubsub.googleapis.com:0"));
     assertThat(portEx).hasMessageThat().contains("Port must be between 1 and 65535.");
 
     ConfigException portNotNumberEx =

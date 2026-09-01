@@ -53,19 +53,18 @@ public final class ConnectorUtils {
   public static final String KAFKA_TIMESTAMP_ATTRIBUTE = "kafka.timestamp";
 
   /**
-   * Patterns matching Google Cloud Pub/Sub endpoints:
-   * 1. Global: pubsub.googleapis.com
-   * 2. Locational: <region>-pubsub.googleapis.com (e.g. us-central1-pubsub.googleapis.com)
-   * 3. Regional: pubsub.<region>.rep.googleapis.com (e.g. pubsub.us-central1.rep.googleapis.com)
+   * Patterns matching Google Cloud Pub/Sub endpoints: 1. Global: pubsub.googleapis.com 2.
+   * Locational: <region>-pubsub.googleapis.com (e.g. us-central1-pubsub.googleapis.com) 3.
+   * Regional: pubsub.<region>.rep.googleapis.com (e.g. pubsub.us-central1.rep.googleapis.com)
    */
   public static final Pattern GLOBAL_ENDPOINT_PATTERN =
-    Pattern.compile("^pubsub\\.googleapis\\.com$");
+      Pattern.compile("^pubsub\\.googleapis\\.com$");
 
   public static final Pattern LOCATIONAL_ENDPOINT_PATTERN =
-    Pattern.compile("^[a-z]+-[a-z]+[0-9]+-pubsub\\.googleapis\\.com$");
+      Pattern.compile("^[a-z]+-[a-z]+[0-9]+-pubsub\\.googleapis\\.com$");
 
   public static final Pattern REGIONAL_REP_ENDPOINT_PATTERN =
-    Pattern.compile("^pubsub\\.[a-z]+-[a-z]+[0-9]+\\.rep\\.googleapis\\.com$");
+      Pattern.compile("^pubsub\\.[a-z]+-[a-z]+[0-9]+\\.rep\\.googleapis\\.com$");
 
   public static boolean isAllowedCpsHost(String host) {
     if (host == null) {
@@ -103,9 +102,7 @@ public final class ConnectorUtils {
 
     if (!isAllowedCpsHost(host)) {
       throw new ConfigException(
-          CPS_ENDPOINT,
-          endpoint,
-          "Host is not an allowed Cloud Pub/Sub endpoint.");
+          CPS_ENDPOINT, endpoint, "Host is not an allowed Cloud Pub/Sub endpoint.");
     }
 
     int port;
@@ -143,7 +140,8 @@ public final class ConnectorUtils {
 
     @Override
     public String toString() {
-      return "Official Cloud Pub/Sub endpoint in '<host>:<port>' format (e.g., 'pubsub.googleapis.com:443')";
+      return "Official Cloud Pub/Sub endpoint in '<host>:<port>' format (e.g.,"
+          + " 'pubsub.googleapis.com:443')";
     }
   }
 
