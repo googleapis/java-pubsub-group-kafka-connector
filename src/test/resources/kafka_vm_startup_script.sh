@@ -49,7 +49,7 @@ KAFKA_VERSION=$(curl http://metadata.google.internal/computeMetadata/v1/instance
 SCALA_VERSION=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/scala_version -H "Metadata-Flavor: Google")
 KAFKA_URL="https://archive.apache.org/dist/kafka/$KAFKA_VERSION/kafka_$SCALA_VERSION-$KAFKA_VERSION.tgz"
 KAFKA_DIR="kafka_$SCALA_VERSION-$KAFKA_VERSION"
-EXTERNAL_IP=$(curl http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip -H "Metadata-Flavor: Google")
+EXTERNAL_IP=$(curl -s http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip -H "Metadata-Flavor: Google")
 
 wget $KAFKA_URL
 tar -xzf "$KAFKA_DIR.tgz"
@@ -57,6 +57,8 @@ sed -i "s@#advertised.listeners@advertised.listeners@g" $KAFKA_DIR/config/server
 sed -i "s@your.host.name@$EXTERNAL_IP@g" $KAFKA_DIR/config/server.properties
 $KAFKA_DIR/bin/zookeeper-server-start.sh $KAFKA_DIR/config/zookeeper.properties &
 $KAFKA_DIR/bin/kafka-server-start.sh $KAFKA_DIR/config/server.properties &
+
+sleep 10
 
 # Run connectors
 sed -i "s@#plugin.path=@plugin.path=$(pwd)\/$GCS_DIR@g" $KAFKA_DIR/config/connect-standalone.properties
