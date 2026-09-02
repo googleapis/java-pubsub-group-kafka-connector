@@ -15,7 +15,7 @@
 
 set -x
 sudo apt-get update
-sudo apt-get install -yq wget openjdk-11-jdk maven
+sudo apt-get install -yq wget openjdk-17-jdk maven
 
 # Download connector JARs and properties files
 GCS_BUCKET=$(curl http://metadata.google.internal/computeMetadata/v1/instance/attributes/gcs_bucket -H "Metadata-Flavor: Google")

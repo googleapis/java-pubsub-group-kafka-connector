@@ -178,7 +178,7 @@ public class Base {
     try (InstanceTemplatesClient instanceTemplatesClient = InstanceTemplatesClient.create()) {
 
       String machineType = "e2-medium";
-      String sourceImage = "projects/debian-cloud/global/images/family/debian-11";
+      String sourceImage = "projects/debian-cloud/global/images/family/debian-12";
 
       // The template describes the size and source image of the boot disk
       // to attach to the instance.
