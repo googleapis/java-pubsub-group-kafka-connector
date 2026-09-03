@@ -15,7 +15,7 @@
  */
 package com.google.pubsublite.kafka.source;
 
-import com.google.cloud.pubsublite.CloudZone;
+import com.google.cloud.pubsublite.CloudRegionOrZone;
 import com.google.cloud.pubsublite.ProjectPath;
 import com.google.cloud.pubsublite.SubscriptionName;
 import com.google.cloud.pubsublite.SubscriptionPath;
@@ -35,7 +35,8 @@ class PollerFactoryImpl implements PollerFactory {
             .setProject(
                 ProjectPath.parse("projects/" + config.get(ConfigDefs.PROJECT_FLAG).value())
                     .project())
-            .setLocation(CloudZone.parse(config.get(ConfigDefs.LOCATION_FLAG).value().toString()))
+            .setLocation(
+                CloudRegionOrZone.parse(config.get(ConfigDefs.LOCATION_FLAG).value().toString()))
             .setName(
                 SubscriptionName.of(
                     config.get(ConfigDefs.SUBSCRIPTION_NAME_FLAG).value().toString()))

@@ -126,36 +126,62 @@ public class StandaloneIT extends Base {
               .setName(ReservationName.of((pslReservationId)))
               .build();
 
-  private static final String kafkaPslSinkTestTopic = "psl-sink-test-topic";
+  private static final String kafkaPslSinkZonalTestTopic = "psl-sink-test-topic-zonal";
+  private static final String kafkaPslSinkRegionalTestTopic = "psl-sink-test-topic-regional";
   private static final String pslSinkTopicId = "psl-sink-topic-" + runId;
-  private static final TopicPath pslSinkTopicPath =
+  private static final TopicPath pslSinkZonalTopicPath =
       TopicPath.newBuilder()
           .setProject(ProjectId.of(projectId))
           .setLocation(CloudZone.of(CloudRegion.of(region), zone))
           .setName(com.google.cloud.pubsublite.TopicName.of(pslSinkTopicId))
           .build();
+  private static final TopicPath pslSinkRegionalTopicPath =
+      TopicPath.newBuilder()
+          .setProject(ProjectId.of(projectId))
+          .setLocation(CloudRegion.of(region))
+          .setName(com.google.cloud.pubsublite.TopicName.of(pslSinkTopicId))
+          .build();
   private static final String pslSinkSubscriptionId = "psl-sink-subscription-" + runId;
-  private static final SubscriptionPath pslSinkSubscriptionPath =
+  private static final SubscriptionPath pslSinkZonalSubscriptionPath =
       SubscriptionPath.newBuilder()
           .setName(com.google.cloud.pubsublite.SubscriptionName.of(pslSinkSubscriptionId))
           .setProject(ProjectId.of(projectId))
           .setLocation(CloudZone.of(CloudRegion.of(region), zone))
           .build();
+  private static final SubscriptionPath pslSinkRegionalSubscriptionPath =
+      SubscriptionPath.newBuilder()
+          .setName(com.google.cloud.pubsublite.SubscriptionName.of(pslSinkSubscriptionId))
+          .setProject(ProjectId.of(projectId))
+          .setLocation(CloudRegion.of(region))
+          .build();
 
-  private static final String kafkaPslSourceTestTopic = "psl-source-test-topic";
+  private static final String kafkaPslSourceZonalTestTopic = "psl-source-test-topic-zonal";
+  private static final String kafkaPslSourceRegionalTestTopic = "psl-source-test-topic-regional";
   private static final String pslSourceTopicId = "psl-source-topic-" + runId;
-  private static final TopicPath pslSourceTopicPath =
+  private static final TopicPath pslSourceZonalTopicPath =
       TopicPath.newBuilder()
           .setProject(ProjectId.of(projectId))
           .setLocation(CloudZone.of(CloudRegion.of(region), zone))
           .setName(com.google.cloud.pubsublite.TopicName.of(pslSourceTopicId))
           .build();
+  private static final TopicPath pslSourceRegionalTopicPath =
+      TopicPath.newBuilder()
+          .setProject(ProjectId.of(projectId))
+          .setLocation(CloudRegion.of(region))
+          .setName(com.google.cloud.pubsublite.TopicName.of(pslSourceTopicId))
+          .build();
   private static final String pslSourceSubscriptionId = "psl-source-subscription-" + runId;
-  private static final SubscriptionPath pslSourceSubscriptionPath =
+  private static final SubscriptionPath pslSourceZonalSubscriptionPath =
       SubscriptionPath.newBuilder()
           .setName(com.google.cloud.pubsublite.SubscriptionName.of(pslSourceSubscriptionId))
           .setProject(ProjectId.of(projectId))
           .setLocation(CloudZone.of(CloudRegion.of(region), zone))
+          .build();
+  private static final SubscriptionPath pslSourceRegionalSubscriptionPath =
+      SubscriptionPath.newBuilder()
+          .setName(com.google.cloud.pubsublite.SubscriptionName.of(pslSourceSubscriptionId))
+          .setProject(ProjectId.of(projectId))
+          .setLocation(CloudRegion.of(region))
           .build();
 
   private static final String instanceName = "kafka-it-" + runId;
@@ -186,7 +212,8 @@ public class StandaloneIT extends Base {
     log.atInfo().log("Packaged connector jar.");
     uploadGCSResources();
     setupCpsResources();
-    setupPslResources();
+    setupPslZonalResources();
+    setupPslRegionalResources();
     setupGceInstance();
   }
 
@@ -245,7 +272,28 @@ public class StandaloneIT extends Base {
     }
   }
 
-  protected static void setupPslResources() throws Exception {
+  protected static void setupPslZonalResources() throws Exception {
+    setupPslResources(
+        pslSinkZonalTopicPath,
+        pslSourceZonalTopicPath,
+        pslSinkZonalSubscriptionPath,
+        pslSourceZonalSubscriptionPath);
+  }
+
+  protected static void setupPslRegionalResources() throws Exception {
+    setupPslResources(
+        pslSinkRegionalTopicPath,
+        pslSourceRegionalTopicPath,
+        pslSinkRegionalSubscriptionPath,
+        pslSourceRegionalSubscriptionPath);
+  }
+
+  protected static void setupPslResources(
+      TopicPath pslSinkTopicPath,
+      TopicPath pslSourceTopicPath,
+      SubscriptionPath pslSinkSubscriptionPath,
+      SubscriptionPath pslSourceSubscriptionPath)
+      throws Exception {
     try (AdminClient pslAdminClient =
         AdminClient.create(
             AdminClientSettings.newBuilder().setRegion(CloudRegion.of(region)).build())) {
@@ -384,25 +432,33 @@ public class StandaloneIT extends Base {
     try (AdminClient pslAdminClient =
         AdminClient.create(
             AdminClientSettings.newBuilder().setRegion(CloudRegion.of(region)).build())) {
-      notFoundIgnoredClosureRunner.apply(
-          () -> {
-            pslAdminClient.deleteSubscription(pslSinkSubscriptionPath);
-          });
-      notFoundIgnoredClosureRunner.apply(
-          () -> {
-            pslAdminClient.deleteSubscription(pslSourceSubscriptionPath);
-          });
-      notFoundIgnoredClosureRunner.apply(
-          () -> {
-            pslAdminClient.deleteTopic(pslSinkTopicPath);
-          });
-      notFoundIgnoredClosureRunner.apply(
-          () -> {
-            pslAdminClient.deleteTopic(pslSourceTopicPath);
-          });
+      final SubscriptionPath[] subscriptionPaths = {
+        pslSinkZonalSubscriptionPath,
+        pslSinkRegionalSubscriptionPath,
+        pslSourceZonalSubscriptionPath,
+        pslSourceRegionalSubscriptionPath
+      };
+      for (SubscriptionPath subscriptionPath : subscriptionPaths) {
+        notFoundIgnoredClosureRunner.apply(
+            () -> {
+              pslAdminClient.deleteSubscription(subscriptionPath);
+            });
+      }
+      final TopicPath[] topicPaths = {
+        pslSinkZonalTopicPath,
+        pslSinkRegionalTopicPath,
+        pslSourceZonalTopicPath,
+        pslSourceRegionalTopicPath
+      };
+      for (TopicPath topicPath : topicPaths) {
+        notFoundIgnoredClosureRunner.apply(
+            () -> {
+              pslAdminClient.deleteTopic(topicPath);
+            });
+      }
+
       log.atInfo().log("Deleted PSL topics and subscriptions.");
     }
-
     try (InstancesClient instancesClient = InstancesClient.create()) {
       instancesClient.deleteAsync(projectId, location, instanceName).get(3, MINUTES);
     }
@@ -555,7 +611,20 @@ public class StandaloneIT extends Base {
   }
 
   @Test
-  public void testPslSinkConnector() throws Exception {
+  public void testPslZonalSinkConnector() throws Exception {
+    testPslSinkConnector(
+        pslSinkZonalTopicPath, pslSinkZonalSubscriptionPath, kafkaPslSinkZonalTestTopic);
+  }
+
+  // @Test
+  // public void testPslRegionalSinkConnector() throws Exception {
+  //  testPslSinkConnector(pslSinkRegionalTopicPath, pslSinkRegionalSubscriptionPath,
+  // kafkaPslSinkRegionalTestTopic);
+  // }
+
+  public void testPslSinkConnector(
+      TopicPath topicPath, SubscriptionPath pslSinkSubscriptionPath, String kafkaPslSinkTestTopic)
+      throws Exception {
     Properties props = new Properties();
     props.put("bootstrap.servers", kafkaInstanceIpAddress + ":" + KAFKA_PORT);
     props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
@@ -614,7 +683,17 @@ public class StandaloneIT extends Base {
   }
 
   @Test(timeout = 5 * 60 * 1000L)
-  public void testPslSourceConnector() throws Exception {
+  public void testPslZonalSourceConnector() throws Exception {
+    testPslSourceConnector(pslSinkZonalTopicPath, kafkaPslSourceZonalTestTopic);
+  }
+
+  @Test(timeout = 5 * 60 * 1000L)
+  public void testPslRegionalSourceConnector() throws Exception {
+    testPslSourceConnector(pslSinkRegionalTopicPath, kafkaPslSourceRegionalTestTopic);
+  }
+
+  public void testPslSourceConnector(TopicPath pslSourceTopicPath, String kafkaPslSourceTestTopic)
+      throws Exception {
     // Publish to CPS topic
     PublisherSettings publisherSettings =
         PublisherSettings.newBuilder()
