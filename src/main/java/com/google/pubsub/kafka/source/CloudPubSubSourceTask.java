@@ -105,6 +105,8 @@ public class CloudPubSubSourceTask extends SourceTask {
     kafkaTopic = validatedProps.get(CloudPubSubSourceConnector.KAFKA_TOPIC_CONFIG).toString();
     int cpsMaxBatchSize =
         (Integer) validatedProps.get(CloudPubSubSourceConnector.CPS_MAX_BATCH_SIZE_CONFIG);
+    long cpsPollTimeoutMs =
+            (Long) validatedProps.get(CloudPubSubSourceConnector.CPS_POLL_TIMEOUT_MS);
     kafkaPartitions =
         (Integer) validatedProps.get(CloudPubSubSourceConnector.KAFKA_PARTITIONS_CONFIG);
     kafkaMessageKeyAttribute =
@@ -176,7 +178,8 @@ public class CloudPubSubSourceTask extends SourceTask {
                         Duration.ofMillis(streamingPullMaxMsPerAckDeadlineExtension));
                   }
                   return builder.build();
-                });
+                },
+                cpsPollTimeoutMs);
       } else {
         subscriber =
             new AckBatchingSubscriber(
@@ -186,6 +189,7 @@ public class CloudPubSubSourceTask extends SourceTask {
                     endpoint,
                     cpsSubscription,
                     cpsMaxBatchSize,
+                    cpsPollTimeoutMs,
                     useEmulator),
                 runnable ->
                     getSystemExecutor()

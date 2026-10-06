@@ -20,6 +20,7 @@ import com.google.api.core.ApiFutures;
 import com.google.api.gax.core.CredentialsProvider;
 import com.google.api.gax.core.NoCredentialsProvider;
 import com.google.api.gax.grpc.InstantiatingGrpcChannelProvider;
+import com.google.api.gax.rpc.DeadlineExceededException;
 import com.google.cloud.pubsub.v1.stub.GrpcSubscriberStub;
 import com.google.cloud.pubsub.v1.stub.SubscriberStubSettings;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -50,6 +51,7 @@ public class CloudPubSubGRPCSubscriber implements CloudPubSubSubscriber {
   private final String endpoint;
   private final ProjectSubscriptionName subscriptionName;
   private final int cpsMaxBatchSize;
+  private final long cpsPollTimeoutMs;
   private final boolean useEmulator;
 
   CloudPubSubGRPCSubscriber(
@@ -57,11 +59,13 @@ public class CloudPubSubGRPCSubscriber implements CloudPubSubSubscriber {
       String endpoint,
       ProjectSubscriptionName subscriptionName,
       int cpsMaxBatchSize,
+      long cpsPollTimeoutMs,
       boolean useEmulator) {
     this.gcpCredentialsProvider = gcpCredentialsProvider;
     this.endpoint = endpoint;
     this.subscriptionName = subscriptionName;
     this.cpsMaxBatchSize = cpsMaxBatchSize;
+    this.cpsPollTimeoutMs = cpsPollTimeoutMs;
     this.useEmulator = useEmulator;
     makeSubscriber();
   }
@@ -71,7 +75,7 @@ public class CloudPubSubGRPCSubscriber implements CloudPubSubSubscriber {
     if (System.currentTimeMillis() > nextSubscriberResetTime) {
       makeSubscriber();
     }
-    return ApiFutures.transform(
+    ApiFuture<List<ReceivedMessage>> pullFuture = ApiFutures.transform(
         subscriber
             .pullCallable()
             .futureCall(
@@ -81,6 +85,12 @@ public class CloudPubSubGRPCSubscriber implements CloudPubSubSubscriber {
                     .build()),
         PullResponse::getReceivedMessagesList,
         MoreExecutors.directExecutor());
+
+    return ApiFutures.catching(
+            pullFuture,
+            DeadlineExceededException.class,
+            exception -> java.util.Collections.emptyList(),
+            MoreExecutors.directExecutor());
   }
 
   @Override
@@ -109,12 +119,24 @@ public class CloudPubSubGRPCSubscriber implements CloudPubSubSubscriber {
       }
       log.info("Creating subscriber.");
 
+      SubscriberStubSettings.Builder builder = SubscriberStubSettings.newBuilder();
+
+      if (cpsPollTimeoutMs > 0) {
+        org.threeten.bp.Duration shortTimeout = org.threeten.bp.Duration.ofMillis(cpsPollTimeoutMs);
+        com.google.api.gax.retrying.RetrySettings pullRetrySettings =
+                builder.pullSettings().getRetrySettings().toBuilder()
+                        .setInitialRpcTimeout(shortTimeout)
+                        .setMaxRpcTimeout(shortTimeout)
+                        .setTotalTimeout(shortTimeout)
+                        .build();
+        builder.pullSettings().setRetrySettings(pullRetrySettings);
+      }
+
       // Configure endpoint, credentials and channel based on whether we're using emulator or
       // production
       SubscriberStubSettings subscriberStubSettings;
       if (useEmulator) {
-        subscriberStubSettings =
-            SubscriberStubSettings.newBuilder()
+        subscriberStubSettings = builder
                 .setCredentialsProvider(NoCredentialsProvider.create())
                 .setTransportChannelProvider(
                     InstantiatingGrpcChannelProvider.newBuilder()
@@ -124,8 +146,7 @@ public class CloudPubSubGRPCSubscriber implements CloudPubSubSubscriber {
                         .build())
                 .build();
       } else {
-        subscriberStubSettings =
-            SubscriberStubSettings.newBuilder()
+        subscriberStubSettings = builder
                 .setTransportChannelProvider(
                     SubscriberStubSettings.defaultGrpcTransportProviderBuilder()
                         .setMaxInboundMessageSize(20 << 20) // 20MB

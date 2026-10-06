@@ -121,6 +121,39 @@ public class StreamingPullSubscriberTest {
   }
 
   @Test
+  public void pullTimesOutEmpty() throws Exception {
+    when(underlying.stopAsync()).thenReturn(underlying);
+    StreamingPullSubscriber timed = new StreamingPullSubscriber(underlyingFactory, 50);
+    assertThat(timed.pull().get()).isEmpty();
+    timed.close();
+  }
+
+  @Test
+  public void pullAfterTimeoutDeliversLaterMessage() throws Exception {
+    when(underlying.stopAsync()).thenReturn(underlying);
+    StreamingPullSubscriber timed = new StreamingPullSubscriber(underlyingFactory, 50);
+    assertThat(timed.pull().get()).isEmpty();
+
+    PubsubMessage message =
+        PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("abc")).build();
+    messageReceiver.receiveMessage(message, mock(AckReplyConsumer.class));
+    assertThat(messagesFor(timed.pull().get())).isEqualTo(ImmutableList.of(message));
+    timed.close();
+  }
+
+  @Test
+  public void pullCompletesWithMessageBeforeTimeout() throws Exception {
+    when(underlying.stopAsync()).thenReturn(underlying);
+    StreamingPullSubscriber timed = new StreamingPullSubscriber(underlyingFactory, 5_000);
+    PubsubMessage message =
+        PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("abc")).build();
+    Future<List<ReceivedMessage>> future = executorService.submit(() -> timed.pull().get());
+    messageReceiver.receiveMessage(message, mock(AckReplyConsumer.class));
+    assertThat(messagesFor(future.get())).isEqualTo(ImmutableList.of(message));
+    timed.close();
+  }
+
+  @Test
   public void pullSuccess() throws Exception {
     PubsubMessage message =
         PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("abc")).build();
