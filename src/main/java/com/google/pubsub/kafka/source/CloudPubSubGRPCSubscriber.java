@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,6 +101,16 @@ public class CloudPubSubGRPCSubscriber implements CloudPubSubSubscriber {
   @Override
   public void close() {
     subscriber.close();
+  }
+
+  /**
+   * Waits until the closed stub has terminated or {@code deadlineNanos} (System.nanoTime) passes.
+   */
+  void awaitTermination(long deadlineNanos) throws InterruptedException {
+    long remaining = deadlineNanos - System.nanoTime();
+    if (remaining > 0) {
+      subscriber.awaitTermination(remaining, TimeUnit.NANOSECONDS);
+    }
   }
 
   private void makeSubscriber() {

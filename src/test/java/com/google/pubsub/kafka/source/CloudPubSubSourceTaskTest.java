@@ -17,10 +17,13 @@ package com.google.pubsub.kafka.source;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -32,6 +35,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import com.google.pubsub.kafka.common.ConnectorUtils;
+import com.google.pubsub.kafka.common.TestCredentialsProviders;
+import com.google.pubsub.kafka.common.TestCredentialsProviders.FailingConstructorProvider;
+import com.google.pubsub.kafka.common.TestCredentialsProviders.RecordingProvider;
 import com.google.pubsub.v1.PubsubMessage;
 import com.google.pubsub.v1.ReceivedMessage;
 import java.util.HashMap;
@@ -151,6 +157,36 @@ public class CloudPubSubSourceTaskTest {
     CloudPubSubSourceTask task = new CloudPubSubSourceTask(subscriber);
     task.start(props);
     assertEquals(CloudPubSubSourceTask.class, task.getClass());
+  }
+
+  @Test
+  public void testStartConfiguresCredentialsProviderAndStopClosesIt() {
+    props.put(
+        ConnectorUtils.GCP_CREDENTIALS_PROVIDER_CLASS_CONFIG, RecordingProvider.class.getName());
+    props.put(
+        ConnectorUtils.GCP_CREDENTIALS_PROVIDER_PREFIX + TestCredentialsProviders.TEST_ID,
+        "sourceTask");
+    props.put(ConnectorUtils.GCP_CREDENTIALS_PROVIDER_PREFIX + "foo", "bar");
+
+    task.start(props);
+    RecordingProvider provider = RecordingProvider.forTest("sourceTask");
+    assertEquals("bar", provider.config.get("foo"));
+    assertFalse(provider.closed);
+
+    task.stop();
+    assertTrue(provider.closed);
+  }
+
+  @Test
+  public void testStartWithEmulatorDoesNotCreateCredentialsProvider() {
+    props.put(ConnectorUtils.CPS_USE_EMULATOR, "true");
+    props.put(ConnectorUtils.CPS_ENDPOINT, "localhost:8085");
+    props.put(
+        ConnectorUtils.GCP_CREDENTIALS_PROVIDER_CLASS_CONFIG,
+        FailingConstructorProvider.class.getName());
+
+    task.start(props);
+    task.stop();
   }
 
   /** Tests when no messages are received from the Cloud Pub/Sub PullResponse. */
@@ -640,5 +676,37 @@ public class CloudPubSubSourceTaskTest {
       builder.setOrderingKey(orderingKey);
     }
     return ReceivedMessage.newBuilder().setAckId(ackId).setMessage(builder.build()).build();
+  }
+
+  @Test
+  public void testStopClosesProviderEvenWhenSubscriberCloseFails() {
+    props.put(
+        ConnectorUtils.GCP_CREDENTIALS_PROVIDER_CLASS_CONFIG, RecordingProvider.class.getName());
+    props.put(
+        ConnectorUtils.GCP_CREDENTIALS_PROVIDER_PREFIX + TestCredentialsProviders.TEST_ID,
+        "sourceCloseFails");
+    task.start(props);
+    doThrow(new IllegalStateException("subscriber FAILED")).when(subscriber).close();
+
+    assertThrows(IllegalStateException.class, () -> task.stop());
+
+    assertTrue(RecordingProvider.forTest("sourceCloseFails").closed);
+  }
+
+  // Kafka Connect does not call stop() on a source task whose start() failed.
+  @Test
+  public void testFailedStartClosesTheProvider() {
+    props.put(
+        ConnectorUtils.GCP_CREDENTIALS_PROVIDER_CLASS_CONFIG, RecordingProvider.class.getName());
+    props.put(
+        ConnectorUtils.GCP_CREDENTIALS_PROVIDER_PREFIX + TestCredentialsProviders.TEST_ID,
+        "sourceStartFails");
+    props.put(
+        ConnectorUtils.GCP_CREDENTIALS_PROVIDER_PREFIX + RecordingProvider.FAIL_CREDENTIALS,
+        "true");
+
+    assertThrows(RuntimeException.class, () -> new CloudPubSubSourceTask().start(props));
+
+    assertTrue(RecordingProvider.forTest("sourceStartFails").closed);
   }
 }

@@ -16,6 +16,8 @@
 package com.google.pubsub.kafka.source;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
@@ -23,6 +25,9 @@ import static org.mockito.Mockito.spy;
 
 import com.google.pubsub.kafka.common.ConnectorCredentialsProvider;
 import com.google.pubsub.kafka.common.ConnectorUtils;
+import com.google.pubsub.kafka.common.TestCredentialsProviders;
+import com.google.pubsub.kafka.common.TestCredentialsProviders.FailingConstructorProvider;
+import com.google.pubsub.kafka.common.TestCredentialsProviders.RecordingProvider;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +66,68 @@ public class CloudPubSubSourceConnectorTest {
             any(ConnectorCredentialsProvider.class),
             anyString(),
             anyBoolean());
+    connector.start(props);
+  }
+
+  @Test
+  public void testStartClosesCredentialsProviderAndTasksGetProviderSettings() {
+    doNothing()
+        .when(connector)
+        .verifySubscription(
+            anyString(),
+            anyString(),
+            any(ConnectorCredentialsProvider.class),
+            anyString(),
+            anyBoolean());
+    props.put(
+        ConnectorUtils.GCP_CREDENTIALS_PROVIDER_CLASS_CONFIG, RecordingProvider.class.getName());
+    props.put(
+        ConnectorUtils.GCP_CREDENTIALS_PROVIDER_PREFIX + TestCredentialsProviders.TEST_ID,
+        "sourceConnector");
+
+    connector.start(props);
+
+    assertTrue(RecordingProvider.forTest("sourceConnector").closed);
+    for (Map<String, String> taskConfig : connector.taskConfigs(NUM_TASKS)) {
+      assertEquals(
+          "sourceConnector",
+          taskConfig.get(
+              ConnectorUtils.GCP_CREDENTIALS_PROVIDER_PREFIX + TestCredentialsProviders.TEST_ID));
+    }
+  }
+
+  @Test
+  public void testStartClosesCredentialsProviderWhenVerificationFails() {
+    doThrow(new ConnectException(""))
+        .when(connector)
+        .verifySubscription(
+            anyString(),
+            anyString(),
+            any(ConnectorCredentialsProvider.class),
+            anyString(),
+            anyBoolean());
+    props.put(
+        ConnectorUtils.GCP_CREDENTIALS_PROVIDER_CLASS_CONFIG, RecordingProvider.class.getName());
+    props.put(
+        ConnectorUtils.GCP_CREDENTIALS_PROVIDER_PREFIX + TestCredentialsProviders.TEST_ID,
+        "sourceConnectorVerifyFails");
+
+    assertThrows(ConnectException.class, () -> connector.start(props));
+
+    assertTrue(RecordingProvider.forTest("sourceConnectorVerifyFails").closed);
+  }
+
+  @Test
+  public void testStartWithEmulatorDoesNotCreateCredentialsProvider() {
+    doNothing()
+        .when(connector)
+        .verifySubscription(anyString(), anyString(), any(), anyString(), anyBoolean());
+    props.put(ConnectorUtils.CPS_USE_EMULATOR, "true");
+    props.put(ConnectorUtils.CPS_ENDPOINT, "localhost:8085");
+    props.put(
+        ConnectorUtils.GCP_CREDENTIALS_PROVIDER_CLASS_CONFIG,
+        FailingConstructorProvider.class.getName());
+
     connector.start(props);
   }
 

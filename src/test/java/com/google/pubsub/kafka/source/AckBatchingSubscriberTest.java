@@ -37,6 +37,7 @@ import com.google.pubsub.kafka.source.AckBatchingSubscriber.AlarmFactory;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -116,5 +117,52 @@ public class AckBatchingSubscriberTest {
     batchDone.set(null);
     future1.get();
     future2.get();
+  }
+
+  // Credentials can be closed right after the subscriber, so the final ack batch must have
+  // completed before the underlying stub is closed.
+  @Test
+  public void closeWaitsForTheFinalAckBatchBeforeClosingTheStub() throws Exception {
+    subscriber =
+        new AckBatchingSubscriber(underlying, alarmFactory, java.time.Duration.ofSeconds(10));
+    SettableApiFuture<Empty> ackResponse = SettableApiFuture.create();
+    when(underlying.ackMessages(any())).thenReturn(ackResponse);
+    AtomicBoolean ackDoneWhenClosed = new AtomicBoolean();
+    org.mockito.Mockito.doAnswer(
+            invocation -> {
+              ackDoneWhenClosed.set(ackResponse.isDone());
+              return null;
+            })
+        .when(underlying)
+        .close();
+    subscriber.ackMessages(ImmutableList.of("a"));
+    new Thread(
+            () -> {
+              try {
+                Thread.sleep(200);
+              } catch (InterruptedException ignored) {
+              }
+              ackResponse.set(Empty.getDefaultInstance());
+            })
+        .start();
+
+    subscriber.close();
+
+    assertThat(ackDoneWhenClosed.get()).isTrue();
+  }
+
+  // Without a provider that needs closing, stop() must not get slower than upstream.
+  @Test
+  public void closeDoesNotWaitForAcksByDefault() {
+    SettableApiFuture<Empty> neverCompletes = SettableApiFuture.create();
+    when(underlying.ackMessages(any())).thenReturn(neverCompletes);
+    subscriber.ackMessages(ImmutableList.of("a"));
+
+    long start = System.nanoTime();
+    subscriber.close();
+
+    assertThat(java.time.Duration.ofNanos(System.nanoTime() - start))
+        .isLessThan(java.time.Duration.ofSeconds(1));
+    verify(underlying, times(1)).close();
   }
 }
