@@ -74,6 +74,9 @@ public class CloudPubSubSourceTask extends SourceTask {
   // Keeps track of the current partition to publish to if the partition scheme is round robin.
   private int currentRoundRobinPartition = -1;
   private CloudPubSubSubscriber subscriber;
+  private ConnectorCredentialsProvider gcpCredentialsProvider;
+  // Half for the final acks, half for the stubs: stop() waits at most 10 seconds in total.
+  private static final java.time.Duration PROVIDER_SHUTDOWN_WAIT = java.time.Duration.ofSeconds(5);
   private final Set<String> standardAttributes = new HashSet<>();
   private boolean useKafkaHeaders;
   private boolean useEmulator;
@@ -134,66 +137,27 @@ public class CloudPubSubSourceTask extends SourceTask {
         (Long)
             validatedProps.get(
                 CloudPubSubSourceConnector.CPS_STREAMING_PULL_MAX_MS_PER_ACK_EXTENSION);
-    ConnectorCredentialsProvider gcpCredentialsProvider =
-        ConnectorCredentialsProvider.fromConfig(validatedProps);
-
-    // Only do this if we did not set it through the constructor.
-    if (subscriber == null) {
-      if (useStreamingPull) {
-        subscriber =
-            new StreamingPullSubscriber(
-                receiver -> {
-                  Subscriber.Builder builder =
-                      Subscriber.newBuilder(cpsSubscription, receiver)
-                          .setFlowControlSettings(
-                              FlowControlSettings.newBuilder()
-                                  .setLimitExceededBehavior(LimitExceededBehavior.Block)
-                                  .setMaxOutstandingElementCount(streamingPullMessages)
-                                  .setMaxOutstandingRequestBytes(streamingPullBytes)
-                                  .build())
-                          .setParallelPullCount(streamingPullParallelStreams)
-                          .setExecutorProvider(FixedExecutorProvider.create(getSystemExecutor()));
-                  // Configure endpoint, credentials and channel based on whether we're using
-                  // emulator or production
-                  if (useEmulator) {
-                    builder
-                        .setCredentialsProvider(
-                            com.google.api.gax.core.NoCredentialsProvider.create())
-                        .setChannelProvider(
-                            com.google.api.gax.grpc.InstantiatingGrpcChannelProvider.newBuilder()
-                                .setEndpoint(endpoint)
-                                .setChannelConfigurator(channel -> channel.usePlaintext())
-                                .build());
-                  } else {
-                    builder.setCredentialsProvider(gcpCredentialsProvider).setEndpoint(endpoint);
-                  }
-                  if (streamingPullMaxAckDeadlineMs > 0) {
-                    builder.setMaxAckExtensionPeriod(
-                        Duration.ofMillis(streamingPullMaxAckDeadlineMs));
-                  }
-                  if (streamingPullMaxMsPerAckDeadlineExtension > 0) {
-                    builder.setMaxDurationPerAckExtension(
-                        Duration.ofMillis(streamingPullMaxMsPerAckDeadlineExtension));
-                  }
-                  return builder.build();
-                });
-      } else {
-        subscriber =
-            new AckBatchingSubscriber(
-                new CloudPubSubRoundRobinSubscriber(
-                    NUM_CPS_SUBSCRIBERS,
-                    gcpCredentialsProvider,
-                    endpoint,
-                    cpsSubscription,
-                    cpsMaxBatchSize,
-                    useEmulator),
-                runnable ->
-                    getSystemExecutor()
-                        .scheduleAtFixedRate(runnable, 100, 100, TimeUnit.MILLISECONDS));
+    // The emulator needs no credentials, so the provider is not created for it.
+    gcpCredentialsProvider =
+        useEmulator ? null : ConnectorCredentialsProvider.fromConfig(validatedProps, props);
+    // Kafka Connect does not call stop() on a source task whose start() failed.
+    try {
+      startSubscriber(
+          useStreamingPull,
+          streamingPullBytes,
+          streamingPullMessages,
+          streamingPullParallelStreams,
+          streamingPullMaxAckDeadlineMs,
+          streamingPullMaxMsPerAckDeadlineExtension,
+          cpsMaxBatchSize,
+          endpoint);
+    } catch (RuntimeException | Error e) {
+      if (gcpCredentialsProvider != null) {
+        gcpCredentialsProvider.close();
+        gcpCredentialsProvider = null;
       }
+      throw e;
     }
-    standardAttributes.add(kafkaMessageKeyAttribute);
-    standardAttributes.add(kafkaMessageTimestampAttribute);
     log.info("Started a CloudPubSubSourceTask.");
   }
 
@@ -362,10 +326,97 @@ public class CloudPubSubSourceTask extends SourceTask {
     return null;
   }
 
+  private void startSubscriber(
+      boolean useStreamingPull,
+      long streamingPullBytes,
+      long streamingPullMessages,
+      int streamingPullParallelStreams,
+      long streamingPullMaxAckDeadlineMs,
+      long streamingPullMaxMsPerAckDeadlineExtension,
+      int cpsMaxBatchSize,
+      String endpoint) {
+
+    // Only do this if we did not set it through the constructor.
+    if (subscriber == null) {
+      if (useStreamingPull) {
+        subscriber =
+            new StreamingPullSubscriber(
+                receiver -> {
+                  Subscriber.Builder builder =
+                      Subscriber.newBuilder(cpsSubscription, receiver)
+                          .setFlowControlSettings(
+                              FlowControlSettings.newBuilder()
+                                  .setLimitExceededBehavior(LimitExceededBehavior.Block)
+                                  .setMaxOutstandingElementCount(streamingPullMessages)
+                                  .setMaxOutstandingRequestBytes(streamingPullBytes)
+                                  .build())
+                          .setParallelPullCount(streamingPullParallelStreams)
+                          .setExecutorProvider(FixedExecutorProvider.create(getSystemExecutor()));
+                  // Configure endpoint, credentials and channel based on whether we're using
+                  // emulator or production
+                  if (useEmulator) {
+                    builder
+                        .setCredentialsProvider(
+                            com.google.api.gax.core.NoCredentialsProvider.create())
+                        .setChannelProvider(
+                            com.google.api.gax.grpc.InstantiatingGrpcChannelProvider.newBuilder()
+                                .setEndpoint(endpoint)
+                                .setChannelConfigurator(channel -> channel.usePlaintext())
+                                .build());
+                  } else {
+                    builder.setCredentialsProvider(gcpCredentialsProvider).setEndpoint(endpoint);
+                  }
+                  if (streamingPullMaxAckDeadlineMs > 0) {
+                    builder.setMaxAckExtensionPeriod(
+                        Duration.ofMillis(streamingPullMaxAckDeadlineMs));
+                  }
+                  if (streamingPullMaxMsPerAckDeadlineExtension > 0) {
+                    builder.setMaxDurationPerAckExtension(
+                        Duration.ofMillis(streamingPullMaxMsPerAckDeadlineExtension));
+                  }
+                  return builder.build();
+                });
+      } else {
+        subscriber =
+            new AckBatchingSubscriber(
+                new CloudPubSubRoundRobinSubscriber(
+                    NUM_CPS_SUBSCRIBERS,
+                    gcpCredentialsProvider,
+                    endpoint,
+                    cpsSubscription,
+                    cpsMaxBatchSize,
+                    useEmulator,
+                    providerShutdownWait()),
+                runnable ->
+                    getSystemExecutor()
+                        .scheduleAtFixedRate(runnable, 100, 100, TimeUnit.MILLISECONDS),
+                providerShutdownWait());
+      }
+    }
+    standardAttributes.add(kafkaMessageKeyAttribute);
+    standardAttributes.add(kafkaMessageTimestampAttribute);
+  }
+
+  /**
+   * How long stop() lets in-flight calls finish before the provider is closed. Only a configured
+   * provider that holds resources needs this; otherwise stop() behaves as before.
+   */
+  private java.time.Duration providerShutdownWait() {
+    return gcpCredentialsProvider != null && gcpCredentialsProvider.holdsResources()
+        ? PROVIDER_SHUTDOWN_WAIT
+        : java.time.Duration.ZERO;
+  }
+
   @Override
   public void stop() {
-    if (subscriber != null) {
-      subscriber.close();
+    try {
+      if (subscriber != null) {
+        subscriber.close();
+      }
+    } finally {
+      if (gcpCredentialsProvider != null) {
+        gcpCredentialsProvider.close();
+      }
     }
   }
 

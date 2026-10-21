@@ -46,6 +46,9 @@ public final class ConnectorUtils {
   public static final String GCP_CREDENTIALS_JSON_CONFIG = "gcp.credentials.json";
   public static final String GCP_SA_CREDENTIALS_FILE_PATH_CONFIG = "gcp.sa.credentials.file.path";
   public static final String GCP_SA_CREDENTIALS_JSON_CONFIG = "gcp.sa.credentials.json";
+  public static final String GCP_CREDENTIALS_PROVIDER_CLASS_CONFIG =
+      "gcp.credentials.provider.class";
+  public static final String GCP_CREDENTIALS_PROVIDER_PREFIX = "gcp.credentials.provider.";
   public static final String KAFKA_MESSAGE_CPS_BODY_FIELD = "message";
   public static final String KAFKA_TOPIC_ATTRIBUTE = "kafka.topic";
   public static final String KAFKA_PARTITION_ATTRIBUTE = "kafka.partition";

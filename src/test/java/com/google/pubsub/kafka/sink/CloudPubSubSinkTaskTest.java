@@ -16,8 +16,10 @@
 package com.google.pubsub.kafka.sink;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -29,11 +31,15 @@ import com.google.api.core.ApiFuture;
 import com.google.cloud.pubsub.v1.Publisher;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.kafka.common.ConnectorUtils;
+import com.google.pubsub.kafka.common.TestCredentialsProviders;
+import com.google.pubsub.kafka.common.TestCredentialsProviders.FailingConstructorProvider;
+import com.google.pubsub.kafka.common.TestCredentialsProviders.RecordingProvider;
 import com.google.pubsub.v1.PubsubMessage;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -652,6 +658,37 @@ public class CloudPubSubSinkTaskTest {
     assertEquals(CloudPubSubSinkTask.class, task.getClass());
   }
 
+  @Test
+  public void testStartConfiguresCredentialsProviderAndStopClosesIt() throws Exception {
+    props.put(
+        ConnectorUtils.GCP_CREDENTIALS_PROVIDER_CLASS_CONFIG, RecordingProvider.class.getName());
+    props.put(
+        ConnectorUtils.GCP_CREDENTIALS_PROVIDER_PREFIX + TestCredentialsProviders.TEST_ID,
+        "sinkTask");
+    props.put(ConnectorUtils.GCP_CREDENTIALS_PROVIDER_PREFIX + "foo", "bar");
+
+    task.start(props);
+    RecordingProvider provider = RecordingProvider.forTest("sinkTask");
+    assertEquals("bar", provider.config.get("foo"));
+    assertFalse(provider.closed);
+
+    when(publisher.awaitTermination(anyLong(), any())).thenReturn(true);
+    task.stop();
+    assertTrue(provider.closed);
+  }
+
+  @Test
+  public void testStartWithEmulatorDoesNotCreateCredentialsProvider() {
+    props.put(ConnectorUtils.CPS_USE_EMULATOR, "true");
+    props.put(ConnectorUtils.CPS_ENDPOINT, "localhost:8085");
+    props.put(
+        ConnectorUtils.GCP_CREDENTIALS_PROVIDER_CLASS_CONFIG,
+        FailingConstructorProvider.class.getName());
+
+    task.start(props);
+    task.stop();
+  }
+
   /** Get some sample SinkRecords's to use in the tests. */
   private List<SinkRecord> getSampleRecords() {
     List<SinkRecord> records = new ArrayList<>();
@@ -817,5 +854,79 @@ public class CloudPubSubSinkTaskTest {
   private ApiFuture<String> getFailedPublishFuture() {
     SpyableFuture<String> future = new SpyableFuture(new Exception());
     return spy(future);
+  }
+
+  // Outstanding publishes may still need credentials, so the provider stays open until the
+  // publisher has terminated, and is closed then.
+  @Test
+  public void testStopClosesProviderOnlyOncePublisherTerminates() throws Exception {
+    props.put(
+        ConnectorUtils.GCP_CREDENTIALS_PROVIDER_CLASS_CONFIG, RecordingProvider.class.getName());
+    props.put(
+        ConnectorUtils.GCP_CREDENTIALS_PROVIDER_PREFIX + TestCredentialsProviders.TEST_ID,
+        "sinkTimeout");
+    task.start(props);
+    CountDownLatch terminated = new CountDownLatch(1);
+    when(publisher.awaitTermination(anyLong(), any()))
+        .thenReturn(false)
+        .thenAnswer(
+            invocation -> {
+              terminated.await();
+              return true;
+            });
+
+    task.stop();
+    RecordingProvider provider = RecordingProvider.forTest("sinkTimeout");
+    assertFalse(provider.closed);
+
+    terminated.countDown();
+    assertTrue(eventually(() -> provider.closed));
+  }
+
+  @Test
+  public void testStopRestoresInterruptAndStillClosesProviderLater() throws Exception {
+    props.put(
+        ConnectorUtils.GCP_CREDENTIALS_PROVIDER_CLASS_CONFIG, RecordingProvider.class.getName());
+    props.put(
+        ConnectorUtils.GCP_CREDENTIALS_PROVIDER_PREFIX + TestCredentialsProviders.TEST_ID,
+        "sinkInterrupted");
+    task.start(props);
+    when(publisher.awaitTermination(anyLong(), any()))
+        .thenThrow(new InterruptedException())
+        .thenReturn(true);
+
+    try {
+      task.stop();
+      assertTrue(Thread.currentThread().isInterrupted());
+    } finally {
+      Thread.interrupted();
+    }
+    assertTrue(eventually(() -> RecordingProvider.forTest("sinkInterrupted").closed));
+  }
+
+  // Without an injected publisher, start() builds the real one; it must use the provider.
+  @Test
+  public void testPublisherUsesTheConfiguredProvider() {
+    props.put(
+        ConnectorUtils.GCP_CREDENTIALS_PROVIDER_CLASS_CONFIG, RecordingProvider.class.getName());
+    props.put(
+        ConnectorUtils.GCP_CREDENTIALS_PROVIDER_PREFIX + TestCredentialsProviders.TEST_ID,
+        "sinkRealPublisher");
+    CloudPubSubSinkTask realTask = new CloudPubSubSinkTask();
+
+    realTask.start(props);
+    try {
+      assertTrue(RecordingProvider.forTest("sinkRealPublisher").credentialCalls.get() > 0);
+    } finally {
+      realTask.stop();
+    }
+  }
+
+  private static boolean eventually(java.util.function.BooleanSupplier condition)
+      throws InterruptedException {
+    for (int i = 0; i < 100 && !condition.getAsBoolean(); i++) {
+      Thread.sleep(50);
+    }
+    return condition.getAsBoolean();
   }
 }

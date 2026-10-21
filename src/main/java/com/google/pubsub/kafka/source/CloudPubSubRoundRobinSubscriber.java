@@ -20,6 +20,7 @@ import com.google.api.gax.core.CredentialsProvider;
 import com.google.protobuf.Empty;
 import com.google.pubsub.v1.ProjectSubscriptionName;
 import com.google.pubsub.v1.ReceivedMessage;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -30,7 +31,8 @@ import java.util.List;
  */
 public class CloudPubSubRoundRobinSubscriber implements CloudPubSubSubscriber {
 
-  private final List<CloudPubSubSubscriber> subscribers;
+  private final List<CloudPubSubGRPCSubscriber> subscribers;
+  private final Duration shutdownWait;
   private int currentSubscriberIndex = 0;
 
   public CloudPubSubRoundRobinSubscriber(
@@ -40,18 +42,64 @@ public class CloudPubSubRoundRobinSubscriber implements CloudPubSubSubscriber {
       ProjectSubscriptionName subscriptionName,
       int cpsMaxBatchSize,
       boolean useEmulator) {
+    this(
+        subscriberCount,
+        gcpCredentialsProvider,
+        endpoint,
+        subscriptionName,
+        cpsMaxBatchSize,
+        useEmulator,
+        Duration.ZERO);
+  }
+
+  /**
+   * @param shutdownWait how long close() waits, in total, for the closed stubs to terminate; used
+   *     when the credentials are closed right after. Zero does not wait.
+   */
+  public CloudPubSubRoundRobinSubscriber(
+      int subscriberCount,
+      CredentialsProvider gcpCredentialsProvider,
+      String endpoint,
+      ProjectSubscriptionName subscriptionName,
+      int cpsMaxBatchSize,
+      boolean useEmulator,
+      Duration shutdownWait) {
+    this.shutdownWait = shutdownWait;
     subscribers = new ArrayList<>();
-    for (int i = 0; i < subscriberCount; ++i) {
-      subscribers.add(
-          new CloudPubSubGRPCSubscriber(
-              gcpCredentialsProvider, endpoint, subscriptionName, cpsMaxBatchSize, useEmulator));
+    try {
+      for (int i = 0; i < subscriberCount; ++i) {
+        subscribers.add(
+            new CloudPubSubGRPCSubscriber(
+                gcpCredentialsProvider, endpoint, subscriptionName, cpsMaxBatchSize, useEmulator));
+      }
+    } catch (RuntimeException | Error e) {
+      // Do not leak the stubs already built; keep the original error.
+      for (CloudPubSubGRPCSubscriber built : subscribers) {
+        try {
+          built.close();
+        } catch (RuntimeException closeFailure) {
+          e.addSuppressed(closeFailure);
+        }
+      }
+      throw e;
     }
   }
 
   @Override
   public void close() {
-    for (CloudPubSubSubscriber subscriber : subscribers) {
+    for (CloudPubSubGRPCSubscriber subscriber : subscribers) {
       subscriber.close();
+    }
+    if (shutdownWait.isZero()) {
+      return;
+    }
+    long deadline = System.nanoTime() + shutdownWait.toNanos();
+    try {
+      for (CloudPubSubGRPCSubscriber subscriber : subscribers) {
+        subscriber.awaitTermination(deadline);
+      }
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
     }
   }
 
