@@ -54,6 +54,7 @@ retry_with_backoff 3 10 \
   mvn install -B -V -ntp \
     -DskipTests=true \
     -Dmaven.javadoc.skip=true \
-    -Dclirr.skip=true
+    -Dclirr.skip=true \
+    -P=-clirr-compatibility-check
 
-mvn -B dependency:analyze -DfailOnWarning=true
+mvn -B dependency:analyze -DfailOnWarning=true -P=-clirr-compatibility-check
