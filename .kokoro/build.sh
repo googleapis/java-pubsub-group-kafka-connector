@@ -32,6 +32,7 @@ retry_with_backoff 3 10 \
   mvn install -B -V \
     -DskipTests=true \
     -Dclirr.skip=true \
+    -P=-clirr-compatibility-check \
     -Denforcer.skip=true \
     -Dmaven.javadoc.skip=true \
     -Dgcloud.download.skip=true \
@@ -47,7 +48,7 @@ set +e
 
 case ${JOB_TYPE} in
 test)
-    mvn test -B -Dclirr.skip=true -Denforcer.skip=true
+    mvn test -B -Dclirr.skip=true -P=-clirr-compatibility-check -Denforcer.skip=true
     RETURN_CODE=$?
     ;;
 lint)
