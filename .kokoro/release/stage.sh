@@ -34,6 +34,7 @@ retry_with_backoff 3 10 \
     --settings ${MAVEN_SETTINGS_FILE} \
     -DskipTests=true \
     -Dclirr.skip=true \
+    -P=-clirr-compatibility-check \
     -DperformRelease=true \
     -Dgpg.executable=gpg \
     -Dgpg.passphrase=${GPG_PASSPHRASE} \

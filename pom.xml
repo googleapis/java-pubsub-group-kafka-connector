@@ -310,6 +310,18 @@
           </execution>
         </executions>
       </plugin>
+      <!-- Disable inherited clirr-maven-plugin execution from google-cloud-shared-config
+           so Maven does not resolve legacy plexus/classworlds dependencies not in Airlock. -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>clirr-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>default</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 </project>
