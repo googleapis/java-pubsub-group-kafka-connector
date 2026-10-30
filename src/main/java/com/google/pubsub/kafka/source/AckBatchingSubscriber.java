@@ -23,12 +23,14 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import com.google.protobuf.Empty;
 import com.google.pubsub.v1.ReceivedMessage;
+import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class AckBatchingSubscriber implements CloudPubSubSubscriber {
   interface AlarmFactory {
@@ -47,8 +49,20 @@ public class AckBatchingSubscriber implements CloudPubSubSubscriber {
 
   private final Future<?> alarm;
 
+  private final Duration finalAckWait;
+
   public AckBatchingSubscriber(CloudPubSubSubscriber underlying, AlarmFactory alarmFactory) {
+    this(underlying, alarmFactory, Duration.ZERO);
+  }
+
+  /**
+   * @param finalAckWait how long close() waits for the last ack batch before closing the underlying
+   *     subscriber; used when the credentials are closed right after. Zero does not wait.
+   */
+  public AckBatchingSubscriber(
+      CloudPubSubSubscriber underlying, AlarmFactory alarmFactory, Duration finalAckWait) {
     this.underlying = underlying;
+    this.finalAckWait = finalAckWait;
     this.alarm = alarmFactory.newAlarm(this::flush);
   }
 
@@ -66,12 +80,12 @@ public class AckBatchingSubscriber implements CloudPubSubSubscriber {
     return idsAndFuture.future;
   }
 
-  private void flush() {
+  private ApiFuture<Empty> flush() {
     List<String> ackIds = new ArrayList<>();
     List<SettableApiFuture<Empty>> futures = new ArrayList<>();
     synchronized (this) {
       if (toSend.isEmpty()) {
-        return;
+        return null;
       }
       toSend.forEach(
           pair -> {
@@ -95,6 +109,7 @@ public class AckBatchingSubscriber implements CloudPubSubSubscriber {
           }
         },
         MoreExecutors.directExecutor());
+    return response;
   }
 
   @Override
@@ -104,7 +119,16 @@ public class AckBatchingSubscriber implements CloudPubSubSubscriber {
       alarm.get();
     } catch (Throwable ignored) {
     }
-    flush();
+    ApiFuture<Empty> lastAcks = flush();
+    if (lastAcks != null && !finalAckWait.isZero()) {
+      try {
+        lastAcks.get(finalAckWait.toMillis(), TimeUnit.MILLISECONDS);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      } catch (Exception ignored) {
+        // Failed or slow acks are redelivered by Pub/Sub.
+      }
+    }
     underlying.close();
   }
 }

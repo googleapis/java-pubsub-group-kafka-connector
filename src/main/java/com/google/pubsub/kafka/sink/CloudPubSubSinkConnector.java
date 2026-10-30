@@ -15,6 +15,7 @@
  */
 package com.google.pubsub.kafka.sink;
 
+import com.google.pubsub.kafka.common.ConnectorCredentialsProvider;
 import com.google.pubsub.kafka.common.ConnectorUtils;
 import com.google.pubsub.kafka.common.Version;
 import java.util.ArrayList;
@@ -22,6 +23,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.kafka.common.config.Config;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigDef.Importance;
 import org.apache.kafka.common.config.ConfigDef.Type;
@@ -142,6 +144,16 @@ public class CloudPubSubSinkConnector extends SinkConnector {
     return configs;
   }
 
+  /**
+   * Adds the cross-setting checks that ConfigDef cannot express, such as conflicting credentials.
+   */
+  @Override
+  public Config validate(Map<String, String> connectorConfigs) {
+    Config config = super.validate(connectorConfigs);
+    ConnectorCredentialsProvider.validateCredentialSettings(connectorConfigs, config);
+    return config;
+  }
+
   @Override
   public ConfigDef config() {
     return new ConfigDef()
@@ -260,6 +272,23 @@ public class CloudPubSubSinkConnector extends SinkConnector {
             "",
             Importance.HIGH,
             "The literal JSON content of the GCP Service Account (SA) key, passed as a string.")
+        .define(
+            ConnectorUtils.GCP_CREDENTIALS_PROVIDER_CLASS_CONFIG,
+            Type.STRING,
+            "",
+            ConnectorCredentialsProvider.PROVIDER_CLASS_VALIDATOR,
+            Importance.HIGH,
+            "Class implementing com.google.api.gax.core.CredentialsProvider that supplies GCP"
+                + " credentials, instead of a key or Application Default Credentials. It needs a"
+                + " public no-arg constructor. If it implements"
+                + " org.apache.kafka.common.Configurable, it is passed every property prefixed"
+                + " with "
+                + ConnectorUtils.GCP_CREDENTIALS_PROVIDER_PREFIX
+                + ", prefix stripped. If it implements AutoCloseable, it is closed when the"
+                + " instance that created it is done with it: when a task stops (for the sink,"
+                + " once its publisher has terminated), right after the source connector checks"
+                + " the subscription, or when start() fails. Cannot be combined with the other"
+                + " gcp.credentials or gcp.sa.credentials settings.")
         .define(
             ORDERING_KEY_SOURCE,
             Type.STRING,

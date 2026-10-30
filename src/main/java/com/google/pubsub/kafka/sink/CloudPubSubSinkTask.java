@@ -85,6 +85,14 @@ public class CloudPubSubSinkTask extends SinkTask {
   private boolean enableCompression;
   private long compressionBytesThreshold;
   private ConnectorCredentialsProvider gcpCredentialsProvider;
+  private static final java.time.Duration PROVIDER_CLOSE_WAIT = java.time.Duration.ofMinutes(10);
+  private static final java.util.concurrent.ExecutorService PROVIDER_CLOSER =
+      java.util.concurrent.Executors.newCachedThreadPool(
+          runnable -> {
+            Thread thread = new Thread(runnable, "pubsub-sink-credentials-closer");
+            thread.setDaemon(true);
+            return thread;
+          });
   private com.google.cloud.pubsub.v1.Publisher publisher;
 
   /** Holds a list of the publishing futures that have not been processed for a single partition. */
@@ -142,7 +150,9 @@ public class CloudPubSubSinkTask extends SinkTask {
     enableCompression = (Boolean) validatedProps.get(CloudPubSubSinkConnector.ENABLE_COMPRESSION);
     compressionBytesThreshold =
         (Long) validatedProps.get(CloudPubSubSinkConnector.COMPRESSION_BYTES_THRESHOLD);
-    gcpCredentialsProvider = ConnectorCredentialsProvider.fromConfig(validatedProps);
+    // The emulator needs no credentials, so the provider is not created for it.
+    gcpCredentialsProvider =
+        useEmulator ? null : ConnectorCredentialsProvider.fromConfig(validatedProps, props);
     if (publisher == null) {
       // Only do this if we did not use the constructor.
       createPublisher();
@@ -455,21 +465,66 @@ public class CloudPubSubSinkTask extends SinkTask {
   public void stop() {
     log.info("Stopping CloudPubSubSinkTask");
 
+    boolean terminated = true;
+    boolean shutdownFailed = false;
     if (publisher != null) {
       log.info("Shutting down PubSub publisher");
       try {
         publisher.shutdown();
-        boolean terminated =
-            publisher.awaitTermination(maxShutdownTimeoutMs, TimeUnit.MILLISECONDS);
+        terminated = publisher.awaitTermination(maxShutdownTimeoutMs, TimeUnit.MILLISECONDS);
         if (!terminated) {
           log.warn(
               String.format(
                   "PubSub publisher did not terminate cleanly in %d ms", maxShutdownTimeoutMs));
         }
+      } catch (InterruptedException e) {
+        terminated = false;
+        Thread.currentThread().interrupt();
+        log.error("Interrupted while shutting down PubSub publisher", e);
       } catch (Exception e) {
+        terminated = false;
+        shutdownFailed = true;
         // There is not much we can do here besides logging it as an error
         log.error("An exception occurred while shutting down PubSub publisher", e);
       }
     }
+    if (gcpCredentialsProvider != null) {
+      if (terminated || !gcpCredentialsProvider.holdsResources()) {
+        gcpCredentialsProvider.close();
+      } else {
+        // After a failed shutdown() the publisher may never terminate, so wait no longer than the
+        // shutdown timeout for it.
+        closeProviderOnceTerminated(
+            publisher,
+            gcpCredentialsProvider,
+            shutdownFailed
+                ? java.time.Duration.ofMillis(maxShutdownTimeoutMs)
+                : PROVIDER_CLOSE_WAIT);
+      }
+    }
+  }
+
+  /**
+   * Outstanding publishes may still need credentials, so the provider is closed in the background
+   * once the publisher has terminated, or after {@code maxWait}. Static so the task itself is not
+   * kept alive meanwhile.
+   */
+  private static void closeProviderOnceTerminated(
+      com.google.cloud.pubsub.v1.Publisher publisher,
+      ConnectorCredentialsProvider provider,
+      java.time.Duration maxWait) {
+    log.warn("The publisher has not terminated; closing the GCP credentials provider when it does");
+    PROVIDER_CLOSER.execute(
+        () -> {
+          try {
+            publisher.awaitTermination(maxWait.toMillis(), TimeUnit.MILLISECONDS);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          } catch (RuntimeException e) {
+            log.warn("Waiting for the PubSub publisher to terminate failed", e);
+          } finally {
+            provider.close();
+          }
+        });
   }
 }
