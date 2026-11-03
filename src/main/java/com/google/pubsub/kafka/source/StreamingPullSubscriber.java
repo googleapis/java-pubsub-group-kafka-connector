@@ -16,6 +16,8 @@
 
 package com.google.pubsub.kafka.source;
 
+import static com.google.pubsub.kafka.common.ConnectorUtils.getSystemExecutor;
+
 import com.google.api.core.ApiFuture;
 import com.google.api.core.ApiFutureCallback;
 import com.google.api.core.ApiFutures;
@@ -40,10 +42,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 public class StreamingPullSubscriber implements CloudPubSubSubscriber {
 
   private final SubscriberInterface underlying;
+  private final long cpsPollTimeoutMs;
 
   @GuardedBy("this")
   private Optional<ApiException> error = Optional.empty();
@@ -61,6 +65,12 @@ public class StreamingPullSubscriber implements CloudPubSubSubscriber {
   private Optional<SettableApiFuture<Void>> notification = Optional.empty();
 
   public StreamingPullSubscriber(StreamingPullSubscriberFactory factory) throws ApiException {
+    this(factory, 0);
+  }
+
+  public StreamingPullSubscriber(StreamingPullSubscriberFactory factory, long cpsPollTimeoutMs)
+      throws ApiException {
+    this.cpsPollTimeoutMs = cpsPollTimeoutMs;
     underlying = factory.newSubscriber(this::addMessage);
     underlying.addListener(
         new Listener() {
@@ -132,9 +142,21 @@ public class StreamingPullSubscriber implements CloudPubSubSubscriber {
       return ApiFutures.immediateFuture(null);
     }
     if (!notification.isPresent()) {
-      notification = Optional.of(SettableApiFuture.create());
+      SettableApiFuture<Void> future = SettableApiFuture.create();
+      notification = Optional.of(future);
+      if (cpsPollTimeoutMs > 0) {
+        getSystemExecutor()
+            .schedule(() -> expireFuture(future), cpsPollTimeoutMs, TimeUnit.MILLISECONDS);
+      }
     }
     return notification.get();
+  }
+
+  private synchronized void expireFuture(ApiFuture<Void> future) {
+    if (notification.isPresent() && notification.get() == future) {
+      notification.get().set(null);
+      notification = Optional.empty();
+    }
   }
 
   private synchronized List<ReceivedMessage> takeMessages() {

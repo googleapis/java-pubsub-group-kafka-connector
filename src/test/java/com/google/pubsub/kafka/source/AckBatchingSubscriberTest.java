@@ -26,6 +26,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import com.google.api.core.ApiFuture;
+import com.google.api.core.ApiFutures;
 import com.google.api.core.SettableApiFuture;
 import com.google.api.gax.rpc.StatusCode.Code;
 import com.google.cloud.pubsublite.internal.CheckedApiException;
@@ -34,6 +35,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Futures;
 import com.google.protobuf.Empty;
 import com.google.pubsub.kafka.source.AckBatchingSubscriber.AlarmFactory;
+import com.google.pubsub.v1.ReceivedMessage;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -66,6 +69,15 @@ public class AckBatchingSubscriberTest {
     subscriber.pull();
     verify(underlying, times(1)).pull();
     verifyNoMoreInteractions(underlying);
+  }
+
+  @Test
+  public void pullReturnsEmptyWhenUnderlyingTimesOut() throws Exception {
+    when(underlying.pull())
+        .thenReturn(ApiFutures.immediateFuture(ImmutableList.<ReceivedMessage>of()));
+    List<ReceivedMessage> messages = subscriber.pull().get();
+    assertThat(messages).isEmpty();
+    verify(underlying, times(1)).pull();
   }
 
   @Test

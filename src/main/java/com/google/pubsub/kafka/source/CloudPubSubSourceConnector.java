@@ -56,6 +56,7 @@ public class CloudPubSubSourceConnector extends SourceConnector {
   public static final String CPS_MAKE_ORDERING_KEY_ATTRIBUTE = "cps.makeOrderingKeyAttribute";
   public static final String CPS_SUBSCRIPTION_CONFIG = "cps.subscription";
   public static final String CPS_MAX_BATCH_SIZE_CONFIG = "cps.maxBatchSize";
+  public static final String CPS_POLL_TIMEOUT_MS = "cps.pollTimeoutMs";
   public static final String CPS_STREAMING_PULL_ENABLED = "cps.streamingPull.enabled";
   public static final String CPS_STREAMING_PULL_FLOW_CONTROL_MESSAGES =
       "cps.streamingPull.flowControlMessages";
@@ -194,6 +195,13 @@ public class CloudPubSubSourceConnector extends SourceConnector {
             ConfigDef.Range.between(1, Integer.MAX_VALUE),
             Importance.MEDIUM,
             "The maximum number of messages to batch per pull request to Cloud Pub/Sub.")
+        .define(
+            CPS_POLL_TIMEOUT_MS,
+            Type.LONG,
+            0L,
+            ConfigDef.Range.atLeast(0),
+            Importance.MEDIUM,
+            "The maximum number of milliseconds to wait for messages. A value of `0` waits indefinitely until a message arrives or the subscriber fails.")
         .define(
             CPS_STREAMING_PULL_ENABLED,
             Type.BOOLEAN,
