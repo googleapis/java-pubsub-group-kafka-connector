@@ -243,7 +243,7 @@ public class Base {
                       .setKey("cps_source_connector_properties_name")
                       .setValue(cpsSourceConnectorPropertiesGCSName)
                       .build())
-              .addItems(Items.newBuilder().setKey("psl_zone").setValue(location).build())
+              .addItems(Items.newBuilder().setKey("psl_location").setValue(region).build())
               .addItems(
                   Items.newBuilder()
                       .setKey("psl_sink_connector_properties_name")
