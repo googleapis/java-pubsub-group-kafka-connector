@@ -69,6 +69,7 @@ public class CloudPubSubSourceTask extends SourceTask {
   private String kafkaMessageKeyAttribute;
   private String kafkaMessageTimestampAttribute;
   private boolean makeOrderingKeyAttribute;
+  private boolean makeMessageIdAttribute;
   private int kafkaPartitions;
   private PartitionScheme kafkaPartitionScheme;
   // Keeps track of the current partition to publish to if the partition scheme is round robin.
@@ -117,6 +118,8 @@ public class CloudPubSubSourceTask extends SourceTask {
     useKafkaHeaders = (Boolean) validatedProps.get(CloudPubSubSourceConnector.USE_KAFKA_HEADERS);
     makeOrderingKeyAttribute =
         (Boolean) validatedProps.get(CloudPubSubSourceConnector.CPS_MAKE_ORDERING_KEY_ATTRIBUTE);
+    makeMessageIdAttribute =
+        (Boolean) validatedProps.get(CloudPubSubSourceConnector.CPS_MAKE_MESSAGE_ID_ATTRIBUTE);
     boolean useStreamingPull =
         (Boolean) validatedProps.get(CloudPubSubSourceConnector.CPS_STREAMING_PULL_ENABLED);
     long streamingPullBytes =
@@ -210,6 +213,7 @@ public class CloudPubSubSourceTask extends SourceTask {
         Map<String, String> messageAttributes = message.getAttributesMap();
         String key;
         String orderingKey = message.getOrderingKey();
+        String messageId = message.getMessageId();
         if (ConnectorUtils.CPS_ORDERING_KEY_ATTRIBUTE.equals(kafkaMessageKeyAttribute)) {
           key = orderingKey;
         } else {
@@ -224,7 +228,8 @@ public class CloudPubSubSourceTask extends SourceTask {
 
         boolean hasCustomAttributes =
             !standardAttributes.containsAll(messageAttributes.keySet())
-                || (makeOrderingKeyAttribute && orderingKey != null && !orderingKey.isEmpty());
+                || (makeOrderingKeyAttribute && orderingKey != null && !orderingKey.isEmpty())
+                || (makeMessageIdAttribute && !messageId.isEmpty());
 
         Map<String, String> ack = Collections.singletonMap(cpsSubscription.toString(), ackId);
         SourceRecord record = null;
@@ -232,11 +237,11 @@ public class CloudPubSubSourceTask extends SourceTask {
           if (useKafkaHeaders) {
             record =
                 createRecordWithHeaders(
-                    messageAttributes, ack, key, orderingKey, messageBytes, timestamp);
+                    messageAttributes, ack, key, orderingKey, messageId, messageBytes, timestamp);
           } else {
             record =
                 createRecordWithStruct(
-                    messageAttributes, ack, key, orderingKey, messageBytes, timestamp);
+                    messageAttributes, ack, key, orderingKey, messageId, messageBytes, timestamp);
           }
         } else {
           record =
@@ -265,16 +270,23 @@ public class CloudPubSubSourceTask extends SourceTask {
       Map<String, String> ack,
       String key,
       String orderingKey,
+      String messageId,
       byte[] messageBytes,
       Long timestamp) {
+    boolean addMessageId = makeMessageIdAttribute && !messageId.isEmpty();
     ConnectHeaders headers = new ConnectHeaders();
     for (Entry<String, String> attribute : messageAttributes.entrySet()) {
-      if (!attribute.getKey().equals(kafkaMessageKeyAttribute)) {
+      if (!attribute.getKey().equals(kafkaMessageKeyAttribute)
+          && !(addMessageId
+              && attribute.getKey().equals(ConnectorUtils.CPS_MESSAGE_ID_ATTRIBUTE))) {
         headers.addString(attribute.getKey(), attribute.getValue());
       }
     }
     if (makeOrderingKeyAttribute && orderingKey != null && !orderingKey.isEmpty()) {
       headers.addString(ConnectorUtils.CPS_ORDERING_KEY_ATTRIBUTE, orderingKey);
+    }
+    if (addMessageId) {
+      headers.addString(ConnectorUtils.CPS_MESSAGE_ID_ATTRIBUTE, messageId);
     }
 
     return new SourceRecord(
@@ -295,19 +307,26 @@ public class CloudPubSubSourceTask extends SourceTask {
       Map<String, String> ack,
       String key,
       String orderingKey,
+      String messageId,
       byte[] messageBytes,
       Long timestamp) {
     SchemaBuilder valueSchemaBuilder =
         SchemaBuilder.struct()
             .field(ConnectorUtils.KAFKA_MESSAGE_CPS_BODY_FIELD, Schema.BYTES_SCHEMA);
 
+    boolean addMessageId = makeMessageIdAttribute && !messageId.isEmpty();
     for (Entry<String, String> attribute : messageAttributes.entrySet()) {
-      if (!attribute.getKey().equals(kafkaMessageKeyAttribute)) {
+      if (!attribute.getKey().equals(kafkaMessageKeyAttribute)
+          && !(addMessageId
+              && attribute.getKey().equals(ConnectorUtils.CPS_MESSAGE_ID_ATTRIBUTE))) {
         valueSchemaBuilder.field(attribute.getKey(), Schema.STRING_SCHEMA);
       }
     }
     if (makeOrderingKeyAttribute && orderingKey != null && !orderingKey.isEmpty()) {
       valueSchemaBuilder.field(ConnectorUtils.CPS_ORDERING_KEY_ATTRIBUTE, Schema.STRING_SCHEMA);
+    }
+    if (addMessageId) {
+      valueSchemaBuilder.field(ConnectorUtils.CPS_MESSAGE_ID_ATTRIBUTE, Schema.STRING_SCHEMA);
     }
 
     Schema valueSchema = valueSchemaBuilder.build();
@@ -316,6 +335,8 @@ public class CloudPubSubSourceTask extends SourceTask {
     for (Field field : valueSchema.fields()) {
       if (field.name().equals(ConnectorUtils.CPS_ORDERING_KEY_ATTRIBUTE)) {
         value.put(field.name(), orderingKey);
+      } else if (addMessageId && field.name().equals(ConnectorUtils.CPS_MESSAGE_ID_ATTRIBUTE)) {
+        value.put(field.name(), messageId);
       } else if (!field.name().equals(ConnectorUtils.KAFKA_MESSAGE_CPS_BODY_FIELD)) {
         value.put(field.name(), messageAttributes.get(field.name()));
       }

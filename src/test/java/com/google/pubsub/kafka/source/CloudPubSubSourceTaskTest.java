@@ -371,6 +371,171 @@ public class CloudPubSubSourceTaskTest {
   }
 
   /**
+   * Tests when the message ID should be stored as an attribute in the Kafka record headers. The
+   * message has no custom attributes, so without this option the record would carry no headers.
+   */
+  @Test
+  public void testPollWithMessageIdAsRecordHeader() throws Exception {
+    props.put(CloudPubSubSourceConnector.USE_KAFKA_HEADERS, "true");
+    props.put(CloudPubSubSourceConnector.CPS_MAKE_MESSAGE_ID_ATTRIBUTE, "true");
+    task.start(props);
+    ReceivedMessage rm =
+        createReceivedMessage(ACK_ID1, CPS_MESSAGE, new HashMap<>(), null, "1234567890");
+    when(subscriber.pull().get()).thenReturn(ImmutableList.of(rm));
+    List<SourceRecord> result = task.poll();
+    verify(subscriber, never()).ackMessages(any());
+    assertEquals(1, result.size());
+
+    SourceRecord record = result.get(0);
+    assertEquals(Schema.BYTES_SCHEMA, record.valueSchema());
+    assertArrayEquals(KAFKA_VALUE, (byte[]) record.value());
+    assertEquals(1, record.headers().size());
+    assertEquals(
+        "1234567890",
+        record.headers().lastWithName(ConnectorUtils.CPS_MESSAGE_ID_ATTRIBUTE).value());
+  }
+
+  /**
+   * Tests when the message ID should be stored as an attribute in the Kafka record headers next to
+   * the message's own attributes.
+   */
+  @Test
+  public void testPollWithMessageIdAndAttributesAsRecordHeaders() throws Exception {
+    props.put(CloudPubSubSourceConnector.USE_KAFKA_HEADERS, "true");
+    props.put(CloudPubSubSourceConnector.CPS_MAKE_MESSAGE_ID_ATTRIBUTE, "true");
+    task.start(props);
+    Map<String, String> attributes = new HashMap<>();
+    attributes.put("attribute1", "attribute_value1");
+    ReceivedMessage rm =
+        createReceivedMessage(ACK_ID1, CPS_MESSAGE, attributes, null, "1234567890");
+    when(subscriber.pull().get()).thenReturn(ImmutableList.of(rm));
+    List<SourceRecord> result = task.poll();
+    assertEquals(1, result.size());
+
+    SourceRecord record = result.get(0);
+    assertEquals(2, record.headers().size());
+    assertEquals("attribute_value1", record.headers().lastWithName("attribute1").value());
+    assertEquals(
+        "1234567890",
+        record.headers().lastWithName(ConnectorUtils.CPS_MESSAGE_ID_ATTRIBUTE).value());
+  }
+
+  /** Tests when the message ID should be stored as an attribute in the value struct. */
+  @Test
+  public void testPollWithMessageIdAsAttribute() throws Exception {
+    props.put(CloudPubSubSourceConnector.CPS_MAKE_MESSAGE_ID_ATTRIBUTE, "true");
+    task.start(props);
+    ReceivedMessage rm =
+        createReceivedMessage(ACK_ID1, CPS_MESSAGE, new HashMap<>(), null, "1234567890");
+    when(subscriber.pull().get()).thenReturn(ImmutableList.of(rm));
+    List<SourceRecord> result = task.poll();
+    verify(subscriber, never()).ackMessages(any());
+    assertEquals(1, result.size());
+
+    Schema expectedSchema =
+        SchemaBuilder.struct()
+            .field(ConnectorUtils.KAFKA_MESSAGE_CPS_BODY_FIELD, Schema.BYTES_SCHEMA)
+            .field(ConnectorUtils.CPS_MESSAGE_ID_ATTRIBUTE, Schema.STRING_SCHEMA)
+            .build();
+    Struct expectedValue =
+        new Struct(expectedSchema)
+            .put(ConnectorUtils.KAFKA_MESSAGE_CPS_BODY_FIELD, KAFKA_VALUE)
+            .put(ConnectorUtils.CPS_MESSAGE_ID_ATTRIBUTE, "1234567890");
+
+    SourceRecord expected =
+        new SourceRecord(
+            null,
+            null,
+            KAFKA_TOPIC,
+            0,
+            Schema.OPTIONAL_STRING_SCHEMA,
+            null,
+            expectedSchema,
+            expectedValue);
+    assertRecordsEqual(expected, result.get(0));
+  }
+
+  /**
+   * Tests that when the option is on and the publisher also set an attribute named "messageId", the
+   * record carries a single header with the service-assigned ID.
+   */
+  @Test
+  public void testPollWithMessageIdAsRecordHeaderReplacesPublisherAttribute() throws Exception {
+    props.put(CloudPubSubSourceConnector.USE_KAFKA_HEADERS, "true");
+    props.put(CloudPubSubSourceConnector.CPS_MAKE_MESSAGE_ID_ATTRIBUTE, "true");
+    task.start(props);
+    Map<String, String> attributes = new HashMap<>();
+    attributes.put(ConnectorUtils.CPS_MESSAGE_ID_ATTRIBUTE, "publisher-id");
+    ReceivedMessage rm =
+        createReceivedMessage(ACK_ID1, CPS_MESSAGE, attributes, null, "1234567890");
+    when(subscriber.pull().get()).thenReturn(ImmutableList.of(rm));
+    List<SourceRecord> result = task.poll();
+    assertEquals(1, result.size());
+
+    SourceRecord record = result.get(0);
+    assertEquals(1, record.headers().size());
+    assertEquals(
+        "1234567890",
+        record.headers().lastWithName(ConnectorUtils.CPS_MESSAGE_ID_ATTRIBUTE).value());
+  }
+
+  /**
+   * Tests that when the option is on and the publisher also set an attribute named "messageId", the
+   * value struct has a single "messageId" field holding the service-assigned ID.
+   */
+  @Test
+  public void testPollWithMessageIdAsAttributeReplacesPublisherAttribute() throws Exception {
+    props.put(CloudPubSubSourceConnector.CPS_MAKE_MESSAGE_ID_ATTRIBUTE, "true");
+    task.start(props);
+    Map<String, String> attributes = new HashMap<>();
+    attributes.put(ConnectorUtils.CPS_MESSAGE_ID_ATTRIBUTE, "publisher-id");
+    ReceivedMessage rm =
+        createReceivedMessage(ACK_ID1, CPS_MESSAGE, attributes, null, "1234567890");
+    when(subscriber.pull().get()).thenReturn(ImmutableList.of(rm));
+    List<SourceRecord> result = task.poll();
+    assertEquals(1, result.size());
+
+    Struct value = (Struct) result.get(0).value();
+    assertEquals(2, value.schema().fields().size());
+    assertEquals("1234567890", value.getString(ConnectorUtils.CPS_MESSAGE_ID_ATTRIBUTE));
+  }
+
+  /**
+   * Tests that with the option off, a publisher attribute named "messageId" is passed through
+   * unchanged, as it was before the option existed.
+   */
+  @Test
+  public void testPollWithPublisherMessageIdAttributePreservedByDefault() throws Exception {
+    task.start(props);
+    Map<String, String> attributes = new HashMap<>();
+    attributes.put(ConnectorUtils.CPS_MESSAGE_ID_ATTRIBUTE, "publisher-id");
+    ReceivedMessage rm =
+        createReceivedMessage(ACK_ID1, CPS_MESSAGE, attributes, null, "1234567890");
+    when(subscriber.pull().get()).thenReturn(ImmutableList.of(rm));
+    List<SourceRecord> result = task.poll();
+    assertEquals(1, result.size());
+
+    Struct value = (Struct) result.get(0).value();
+    assertEquals("publisher-id", value.getString(ConnectorUtils.CPS_MESSAGE_ID_ATTRIBUTE));
+  }
+
+  /** Tests that the message ID is not copied unless asked for, so existing output is unchanged. */
+  @Test
+  public void testPollWithMessageIdNotCopiedByDefault() throws Exception {
+    props.put(CloudPubSubSourceConnector.USE_KAFKA_HEADERS, "true");
+    task.start(props);
+    ReceivedMessage rm =
+        createReceivedMessage(ACK_ID1, CPS_MESSAGE, new HashMap<>(), null, "1234567890");
+    when(subscriber.pull().get()).thenReturn(ImmutableList.of(rm));
+    List<SourceRecord> result = task.poll();
+    assertEquals(1, result.size());
+
+    SourceRecord record = result.get(0);
+    assertEquals(Schema.BYTES_SCHEMA, record.valueSchema());
+    assertEquals(0, record.headers().size());
+  }
+
+  /**
    * Tests when the message retrieved from Cloud Pub/Sub have several attributes, including one that
    * matches {@link #KAFKA_MESSAGE_KEY_ATTRIBUTE}
    */
@@ -634,10 +799,22 @@ public class CloudPubSubSourceTaskTest {
 
   private ReceivedMessage createReceivedMessage(
       String ackId, ByteString data, Map<String, String> attributes, String orderingKey) {
+    return createReceivedMessage(ackId, data, attributes, orderingKey, null);
+  }
+
+  private ReceivedMessage createReceivedMessage(
+      String ackId,
+      ByteString data,
+      Map<String, String> attributes,
+      String orderingKey,
+      String messageId) {
     PubsubMessage.Builder builder =
         PubsubMessage.newBuilder().setData(data).putAllAttributes(attributes);
     if (orderingKey != null) {
       builder.setOrderingKey(orderingKey);
+    }
+    if (messageId != null) {
+      builder.setMessageId(messageId);
     }
     return ReceivedMessage.newBuilder().setAckId(ackId).setMessage(builder.build()).build();
   }
