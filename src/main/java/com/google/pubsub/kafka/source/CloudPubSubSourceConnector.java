@@ -54,6 +54,7 @@ public class CloudPubSubSourceConnector extends SourceConnector {
   public static final String KAFKA_MESSAGE_TIMESTAMP_CONFIG = "kafka.timestamp.attribute";
   public static final String KAFKA_TOPIC_CONFIG = "kafka.topic";
   public static final String CPS_MAKE_ORDERING_KEY_ATTRIBUTE = "cps.makeOrderingKeyAttribute";
+  public static final String CPS_MAKE_MESSAGE_ID_ATTRIBUTE = "cps.makeMessageIdAttribute";
   public static final String CPS_SUBSCRIPTION_CONFIG = "cps.subscription";
   public static final String CPS_MAX_BATCH_SIZE_CONFIG = "cps.maxBatchSize";
   public static final String CPS_STREAMING_PULL_ENABLED = "cps.streamingPull.enabled";
@@ -297,6 +298,13 @@ public class CloudPubSubSourceConnector extends SourceConnector {
             Importance.LOW,
             "When true, add the ordering key to the set of attributes with the key \"orderingKey\" "
                 + "if it is non-empty.")
+        .define(
+            CPS_MAKE_MESSAGE_ID_ATTRIBUTE,
+            Type.BOOLEAN,
+            false,
+            Importance.LOW,
+            "When true, add the Pub/Sub message ID to the set of attributes with the key "
+                + "\"messageId\". Useful for de-duplicating redelivered messages downstream.")
         .define(
             ConnectorUtils.CPS_ENDPOINT,
             Type.STRING,

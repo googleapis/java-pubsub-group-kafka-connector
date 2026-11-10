@@ -42,6 +42,7 @@ public final class ConnectorUtils {
   public static final String CPS_ENFORCE_OFFICIAL_ENDPOINTS = "CPS_ENFORCE_OFFICIAL_ENDPOINTS";
   public static final String CPS_MESSAGE_KEY_ATTRIBUTE = "key";
   public static final String CPS_ORDERING_KEY_ATTRIBUTE = "orderingKey";
+  public static final String CPS_MESSAGE_ID_ATTRIBUTE = "messageId";
   public static final String GCP_CREDENTIALS_FILE_PATH_CONFIG = "gcp.credentials.file.path";
   public static final String GCP_CREDENTIALS_JSON_CONFIG = "gcp.credentials.json";
   public static final String GCP_SA_CREDENTIALS_FILE_PATH_CONFIG = "gcp.sa.credentials.file.path";
