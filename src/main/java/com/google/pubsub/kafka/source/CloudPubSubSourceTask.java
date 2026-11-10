@@ -273,16 +273,19 @@ public class CloudPubSubSourceTask extends SourceTask {
       String messageId,
       byte[] messageBytes,
       Long timestamp) {
+    boolean addMessageId = makeMessageIdAttribute && !messageId.isEmpty();
     ConnectHeaders headers = new ConnectHeaders();
     for (Entry<String, String> attribute : messageAttributes.entrySet()) {
-      if (!attribute.getKey().equals(kafkaMessageKeyAttribute)) {
+      if (!attribute.getKey().equals(kafkaMessageKeyAttribute)
+          && !(addMessageId
+              && attribute.getKey().equals(ConnectorUtils.CPS_MESSAGE_ID_ATTRIBUTE))) {
         headers.addString(attribute.getKey(), attribute.getValue());
       }
     }
     if (makeOrderingKeyAttribute && orderingKey != null && !orderingKey.isEmpty()) {
       headers.addString(ConnectorUtils.CPS_ORDERING_KEY_ATTRIBUTE, orderingKey);
     }
-    if (makeMessageIdAttribute && !messageId.isEmpty()) {
+    if (addMessageId) {
       headers.addString(ConnectorUtils.CPS_MESSAGE_ID_ATTRIBUTE, messageId);
     }
 
@@ -311,15 +314,18 @@ public class CloudPubSubSourceTask extends SourceTask {
         SchemaBuilder.struct()
             .field(ConnectorUtils.KAFKA_MESSAGE_CPS_BODY_FIELD, Schema.BYTES_SCHEMA);
 
+    boolean addMessageId = makeMessageIdAttribute && !messageId.isEmpty();
     for (Entry<String, String> attribute : messageAttributes.entrySet()) {
-      if (!attribute.getKey().equals(kafkaMessageKeyAttribute)) {
+      if (!attribute.getKey().equals(kafkaMessageKeyAttribute)
+          && !(addMessageId
+              && attribute.getKey().equals(ConnectorUtils.CPS_MESSAGE_ID_ATTRIBUTE))) {
         valueSchemaBuilder.field(attribute.getKey(), Schema.STRING_SCHEMA);
       }
     }
     if (makeOrderingKeyAttribute && orderingKey != null && !orderingKey.isEmpty()) {
       valueSchemaBuilder.field(ConnectorUtils.CPS_ORDERING_KEY_ATTRIBUTE, Schema.STRING_SCHEMA);
     }
-    if (makeMessageIdAttribute && !messageId.isEmpty()) {
+    if (addMessageId) {
       valueSchemaBuilder.field(ConnectorUtils.CPS_MESSAGE_ID_ATTRIBUTE, Schema.STRING_SCHEMA);
     }
 
@@ -329,7 +335,7 @@ public class CloudPubSubSourceTask extends SourceTask {
     for (Field field : valueSchema.fields()) {
       if (field.name().equals(ConnectorUtils.CPS_ORDERING_KEY_ATTRIBUTE)) {
         value.put(field.name(), orderingKey);
-      } else if (field.name().equals(ConnectorUtils.CPS_MESSAGE_ID_ATTRIBUTE)) {
+      } else if (addMessageId && field.name().equals(ConnectorUtils.CPS_MESSAGE_ID_ATTRIBUTE)) {
         value.put(field.name(), messageId);
       } else if (!field.name().equals(ConnectorUtils.KAFKA_MESSAGE_CPS_BODY_FIELD)) {
         value.put(field.name(), messageAttributes.get(field.name()));

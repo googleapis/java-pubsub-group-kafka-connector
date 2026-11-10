@@ -304,7 +304,8 @@ public class CloudPubSubSourceConnector extends SourceConnector {
             false,
             Importance.LOW,
             "When true, add the Pub/Sub message ID to the set of attributes with the key "
-                + "\"messageId\". Useful for de-duplicating redelivered messages downstream.")
+                + "\"messageId\", replacing any attribute of that name set by the publisher. "
+                + "Useful for de-duplicating redelivered messages downstream.")
         .define(
             ConnectorUtils.CPS_ENDPOINT,
             Type.STRING,

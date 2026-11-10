@@ -455,6 +455,70 @@ public class CloudPubSubSourceTaskTest {
     assertRecordsEqual(expected, result.get(0));
   }
 
+  /**
+   * Tests that when the option is on and the publisher also set an attribute named "messageId", the
+   * record carries a single header with the service-assigned ID.
+   */
+  @Test
+  public void testPollWithMessageIdAsRecordHeaderReplacesPublisherAttribute() throws Exception {
+    props.put(CloudPubSubSourceConnector.USE_KAFKA_HEADERS, "true");
+    props.put(CloudPubSubSourceConnector.CPS_MAKE_MESSAGE_ID_ATTRIBUTE, "true");
+    task.start(props);
+    Map<String, String> attributes = new HashMap<>();
+    attributes.put(ConnectorUtils.CPS_MESSAGE_ID_ATTRIBUTE, "publisher-id");
+    ReceivedMessage rm =
+        createReceivedMessage(ACK_ID1, CPS_MESSAGE, attributes, null, "1234567890");
+    when(subscriber.pull().get()).thenReturn(ImmutableList.of(rm));
+    List<SourceRecord> result = task.poll();
+    assertEquals(1, result.size());
+
+    SourceRecord record = result.get(0);
+    assertEquals(1, record.headers().size());
+    assertEquals(
+        "1234567890",
+        record.headers().lastWithName(ConnectorUtils.CPS_MESSAGE_ID_ATTRIBUTE).value());
+  }
+
+  /**
+   * Tests that when the option is on and the publisher also set an attribute named "messageId", the
+   * value struct has a single "messageId" field holding the service-assigned ID.
+   */
+  @Test
+  public void testPollWithMessageIdAsAttributeReplacesPublisherAttribute() throws Exception {
+    props.put(CloudPubSubSourceConnector.CPS_MAKE_MESSAGE_ID_ATTRIBUTE, "true");
+    task.start(props);
+    Map<String, String> attributes = new HashMap<>();
+    attributes.put(ConnectorUtils.CPS_MESSAGE_ID_ATTRIBUTE, "publisher-id");
+    ReceivedMessage rm =
+        createReceivedMessage(ACK_ID1, CPS_MESSAGE, attributes, null, "1234567890");
+    when(subscriber.pull().get()).thenReturn(ImmutableList.of(rm));
+    List<SourceRecord> result = task.poll();
+    assertEquals(1, result.size());
+
+    Struct value = (Struct) result.get(0).value();
+    assertEquals(2, value.schema().fields().size());
+    assertEquals("1234567890", value.getString(ConnectorUtils.CPS_MESSAGE_ID_ATTRIBUTE));
+  }
+
+  /**
+   * Tests that with the option off, a publisher attribute named "messageId" is passed through
+   * unchanged, as it was before the option existed.
+   */
+  @Test
+  public void testPollWithPublisherMessageIdAttributePreservedByDefault() throws Exception {
+    task.start(props);
+    Map<String, String> attributes = new HashMap<>();
+    attributes.put(ConnectorUtils.CPS_MESSAGE_ID_ATTRIBUTE, "publisher-id");
+    ReceivedMessage rm =
+        createReceivedMessage(ACK_ID1, CPS_MESSAGE, attributes, null, "1234567890");
+    when(subscriber.pull().get()).thenReturn(ImmutableList.of(rm));
+    List<SourceRecord> result = task.poll();
+    assertEquals(1, result.size());
+
+    Struct value = (Struct) result.get(0).value();
+    assertEquals("publisher-id", value.getString(ConnectorUtils.CPS_MESSAGE_ID_ATTRIBUTE));
+  }
+
   /** Tests that the message ID is not copied unless asked for, so existing output is unchanged. */
   @Test
   public void testPollWithMessageIdNotCopiedByDefault() throws Exception {
